@@ -11,9 +11,9 @@ import { selectDirectory, readDirectory, readFile, writeFile, deleteFile } from 
 import { parseMarkdown, stringifyMarkdown, updateFrontmatter } from '@/lib/markdown';
 import { getRecentFolders, addRecentFolder, clearRecentFolders, formatTimestamp } from '@/lib/recentFolders';
 import { getSettings } from '@/lib/settings';
-import { saveDirectoryHandle, loadDirectoryHandle, saveAppState, loadAppState } from '@/lib/persistedState';
+import { saveDirectoryHandle, loadDirectoryHandle, saveAppState, loadAppState, clearPersistedData } from '@/lib/persistedState';
 import type { FileTreeItem, MarkdownFile } from '@/types';
-import { FolderOpen, Save, Clock, FileCode, ArrowLeft, Plus, RotateCcw, Settings as SettingsIcon, Menu } from 'lucide-react';
+import { FolderOpen, Save, Clock, FileCode, ArrowLeft, Plus, RotateCcw, Settings as SettingsIcon, Menu, LogOut, Github } from 'lucide-react';
 
 type ViewMode = 'table' | 'editor' | 'settings';
 
@@ -122,6 +122,26 @@ function App() {
 
     restoreState();
   }, []);
+
+  const handleLogout = async () => {
+    // Check for unsaved changes
+    if (hasChanges && !window.confirm('You have unsaved changes. Discard them and logout?')) {
+      return;
+    }
+
+    // Clear persisted data from IndexedDB
+    await clearPersistedData();
+
+    // Clear state
+    setDirHandle(null);
+    setAllPosts([]);
+    setSelectedFilePath(null);
+    setCurrentFile(null);
+    setHasChanges(false);
+    setViewMode('table');
+    
+    showToast('Logged out successfully', 'success');
+  };
 
   const handleClearRecent = () => {
     if (window.confirm('Clear all recent folders?')) {
@@ -386,6 +406,23 @@ function App() {
             </div>
           )}
 
+          {/* Footer with GitHub Link */}
+          <div className="pt-6 border-t border-border">
+            <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
+              <a
+                href="https://github.com/emir/markdown-plus-plus"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 hover:text-foreground transition-colors touch-target py-2 px-3 rounded-md hover:bg-accent"
+              >
+                <Github className="h-4 w-4" />
+                <span>View on GitHub</span>
+              </a>
+              <span className="text-muted-foreground/50">•</span>
+              <span>v1.0.0</span>
+            </div>
+          </div>
+
         </div>
       </div>
     );
@@ -447,19 +484,19 @@ function App() {
             {viewMode !== 'editor' && (
               <>
                 <button
-                  onClick={handleSelectDirectory}
-                  className="inline-flex items-center justify-center rounded-md border border-input bg-background px-2 sm:px-4 py-2.5 hover:bg-accent hover:text-accent-foreground transition-colors touch-target"
-                  title="Change Folder"
-                >
-                  <FolderOpen className="h-5 w-5" />
-                </button>
-                
-                <button
                   onClick={() => setViewMode('settings')}
                   className="inline-flex items-center justify-center rounded-md border border-input bg-background px-2 sm:px-4 py-2.5 hover:bg-accent hover:text-accent-foreground transition-colors touch-target"
                   title="Settings"
                 >
                   <SettingsIcon className="h-5 w-5" />
+                </button>
+                
+                <button
+                  onClick={handleLogout}
+                  className="inline-flex items-center justify-center rounded-md border border-input bg-background px-2 sm:px-4 py-2.5 hover:bg-destructive/10 hover:text-destructive transition-colors touch-target"
+                  title="Logout"
+                >
+                  <LogOut className="h-5 w-5" />
                 </button>
               </>
             )}
