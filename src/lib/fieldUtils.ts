@@ -1,4 +1,4 @@
-import type { FieldType } from './metadataAnalyzer';
+import type { FieldType } from './metaAnalyzer';
 
 /**
  * Converts field key to a human-readable label

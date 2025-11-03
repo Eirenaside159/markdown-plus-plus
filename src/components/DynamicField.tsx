@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { FieldType } from '@/lib/metadataAnalyzer';
+import type { FieldType } from '@/lib/metaAnalyzer';
 
 interface DynamicFieldProps {
   fieldKey: string;
