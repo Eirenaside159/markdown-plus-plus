@@ -7,11 +7,6 @@ export async function selectDirectory(): Promise<FileSystemDirectoryHandle | nul
     });
     return dirHandle;
   } catch (err) {
-    if ((err as Error).name === 'AbortError') {
-      console.log('User cancelled directory selection');
-    } else {
-      console.error('Error selecting directory:', err);
-    }
     return null;
   }
 }

@@ -1,98 +1,121 @@
-# Markdown Editor
+# Markdown++
 
-Basit ve temiz bir markdown editörü. Vite, React, TypeScript ve Tailwind CSS ile geliştirilmiştir.
+**A web-based content management panel for static site generators and file-driven solutions.**
 
-## Özellikler
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-- 📁 **Folder Seçimi**: Bilgisayarınızdan klasör seçin ve markdown dosyalarını görüntüleyin
-- 📊 **Tablo Görünümü**: Tüm gönderileri tarihe göre sıralı tablo halinde listeleyin
-- ✏️ **Markdown Editör**: Canlı önizleme ile düzenleme  
-- 🏷️ **Metadata Yönetimi**: Frontmatter (kategoriler, taglar) düzenleme
-- 💾 **Hızlı Kaydetme**: Ctrl/Cmd + S ile kaydetme
-- 🗑️ **Silme**: Tabloda doğrudan dosya silme
-- ✏️ **Hızlı Düzenleme**: Tablodan tek tıkla editöre geçiş
-- 🎨 **Pure HTML + Tailwind**: Saf HTML elementleri ve Tailwind CSS
-- 🚫 **No Dependencies**: Radix UI veya UI kütüphanesi yok
-- 👁️ **3 Görünüm Modu**: Edit, Preview, Split
-- 🔄 **İki Görünüm**: Table ve Editor arasında geçiş
+## 💡 Why?
 
-## Kurulum
+We build our landing pages using static site generators and file-based systems instead of heavy, database-driven CMS platforms. This keeps our websites fast, stable, and highly compatible, which is ideal for performance-focused projects and ad campaigns.
 
+But managing content this way is not easy. Writing and editing Markdown files, especially in multiple languages, quickly becomes painful and time-consuming.
+
+Markdown++ solves this problem.
+It is a lightweight editor for static sites that makes creating, editing, and managing Markdown content simple, fast, and collaborative without compromising performance.
+
+**Markdown++ is the missing web-based panel for static site generators.**
+
+- ✅ **No backend** - Runs entirely in your browser
+- ✅ **No database** - Your data stays on your computer
+- ✅ **Zero setup** - Use it directly from the web or run locally
+- ✅ **Optional auth** - Deploy with basic auth if needed
+- ✅ **Mobile & iPad ready** - Edit from anywhere
+
+Built to be simple, practical, and work the way you do.
+
+## ✨ Features
+
+### Content Management
+- 📁 **Local folder access** - Direct file system access via browser
+- 📊 **Table view** - Sortable, filterable list of all posts
+- ✏️ **WYSIWYG editor** - Medium-like editing with Tiptap
+- 📝 **Smart metadata** - Auto-detects and manages frontmatter
+- ➕ **Create & delete** - Full CRUD operations
+- 🔗 **Related posts** - Links posts by canonical URL
+- 💾 **Quick save** - Ctrl/Cmd + S support
+
+### Technical
+- 🔒 **Privacy-first** - Zero data collection
+- 📂 **File System API** - Native browser file access
+- 📱 **iOS/Android optimized** - Touch-friendly, safe areas
+- 🎯 **PWA ready** - Install as native app
+
+## 🚀 Quick Start
+
+### Option 1: Use Online
+Just visit the hosted version and start editing.
+
+### Option 2: Run Locally
 ```bash
 npm install
-```
-
-## Geliştirme
-
-```bash
 npm run dev
 ```
 
-Tarayıcınızda `http://localhost:5173` adresine gidin.
-
-## Build
-
+### Option 3: Deploy Your Own
 ```bash
 npm run build
+# Deploy the dist/ folder anywhere
+# Add basic auth if you want protection
 ```
 
-## Kullanım
+## 📖 Usage
 
-### Tablo Görünümü
-1. **Select Folder** ile markdown klasörünüzü seçin
-2. Tüm gönderileri tarihe göre sıralı tablo halinde görün
-3. Sütunlar: Title, Author, Date, Categories, Tags, Description
-4. **Edit** butonu ile dosyayı editöre açın
-5. **Delete** butonu ile dosyayı silin (onay gerektirir)
+1. **Open** - Visit the app or run locally
+2. **Select folder** - Choose your markdown files directory
+3. **Edit** - Browse, filter, and edit posts
+4. **Save** - Changes write directly to files
+5. **Refresh** - Your workspace persists
 
-### Editör Görünümü
-1. Header'daki **Table / Editor** toggle ile görünüm değiştirin
-2. Sol panelden düzenlemek istediğiniz dosyayı seçin
-3. Orta panelde markdown içeriğini düzenleyin (Edit/Preview/Split)
-4. Sağ panelden metadata'ları düzenleyin
-5. **Save** veya **Ctrl/Cmd + S** ile kaydedin
-6. **Refresh** butonu ile dosya listesini yenileyin
+**That's it.** No setup, no config, no database.
 
-## Frontmatter Desteği
+## 🛠️ Tech Stack
 
-Uygulamanın desteklediği metadata alanları:
+- **React 19** + **TypeScript** - UI
+- **Vite 7** - Build
+- **Tailwind CSS** - Styling
+- **Tiptap** - Editor
+- **File System API** - File access
+- **IndexedDB** - State persistence
 
+## 🌐 Browser Support
+
+| Browser | Version | Status |
+|---------|---------|--------|
+| Chrome | 86+ | ✅ Full support |
+| Edge | 86+ | ✅ Full support |
+| Safari | 15.2+ | ⚠️ Limited (no File System API) |
+| Firefox | - | ❌ Not supported yet |
+
+## 📝 Frontmatter
+
+Works with any frontmatter structure:
 ```yaml
 ---
-title: "Başlık"
-author: "Yazar"
-date: "2025-11-02"
-description: "Açıklama"
-categories:
-  - Kategori 1
-  - Kategori 2
-tags:
-  - tag1
-  - tag2
+title: "My Post"
+date: 2025-11-03
+tags: [react, typescript]
+custom_field: "anything"
 ---
 ```
 
-## Teknolojiler
+Auto-detects fields and creates proper inputs. No config needed.
 
-- **Vite**: Hızlı build tool
-- **React**: UI kütüphanesi
-- **TypeScript**: Type-safe geliştirme
-- **Tailwind CSS**: Utility-first CSS styling (Radix UI kullanılmadan)
-- **react-markdown**: Markdown rendering
-- **gray-matter**: Frontmatter parsing
-- **File System Access API**: Tarayıcıdan dosya sistemi erişimi
-- **Lucide Icons**: Modern icon seti
+## 🔐 Privacy
 
-### Önemli Not
-Bu proje **Radix UI kullanmaz**. Tüm UI elementleri saf HTML ve Tailwind CSS ile yazılmıştır.
+- ✅ All data stays on your device
+- ✅ No tracking, analytics, or telemetry
+- ✅ No server, no database
+- ✅ Optional: Deploy with auth for team access
 
-## Tarayıcı Desteği
+## 💬 Feedback
 
-File System Access API kullanıldığı için modern tarayıcılar gereklidir:
-- Chrome 86+
-- Edge 86+
-- Safari 15.2+ (kısıtlı)
+Ideas and suggestions welcome! Open an issue to discuss.
 
-## Lisans
+## 📄 License
 
-MIT
+MIT - Use freely for personal or commercial projects.
+
+---
+
+Built for teams who love static sites but hate the friction.

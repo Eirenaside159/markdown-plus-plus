@@ -3,20 +3,53 @@ import type { MarkdownFile, FrontMatter } from '@/types';
 
 export function parseMarkdown(content: string, path: string, name: string): MarkdownFile {
   try {
-    const { data, content: markdownContent } = matter(content, {
-      // More tolerant parsing
+    // Clean up content - remove extra blank lines at the start
+    const cleanedContent = content.trim();
+    
+    const { data, content: markdownContent } = matter(cleanedContent, {
+      // More tolerant parsing - supports UTF-8 characters (Arabic, Turkish, etc.)
       excerpt: false,
     });
     
-    // Ensure frontmatter has expected structure
+    // Convert null values to empty strings
+    const cleanedData: Record<string, any> = {};
+    for (const key in data) {
+      if (data[key] === null) {
+        cleanedData[key] = '';
+      } else {
+        cleanedData[key] = data[key];
+      }
+    }
+    
+    // Preserve ALL existing frontmatter fields
+    // Only set defaults for missing standard fields
     const frontmatter: FrontMatter = {
-      title: data.title || name.replace(/\.md$/, ''),
-      author: data.author || '',
-      date: data.date || '',
-      description: data.description || '',
-      categories: Array.isArray(data.categories) ? data.categories : [],
-      tags: Array.isArray(data.tags) ? data.tags : [],
+      ...cleanedData, // Keep all existing fields first
     };
+    
+    // Set standard fields only if they don't exist
+    if (!frontmatter.title) frontmatter.title = name.replace(/\.md$/, '');
+    if (frontmatter.author === undefined) frontmatter.author = '';
+    if (frontmatter.date === undefined) frontmatter.date = '';
+    if (frontmatter.description === undefined) frontmatter.description = '';
+    
+    // Handle both 'category' (singular) and 'categories' (plural)
+    if (frontmatter.categories === undefined) {
+      if (cleanedData.category !== undefined) {
+        // Convert single category to array
+        frontmatter.categories = Array.isArray(cleanedData.category) ? cleanedData.category : [cleanedData.category];
+      } else {
+        frontmatter.categories = [];
+      }
+    } else if (!Array.isArray(frontmatter.categories)) {
+      frontmatter.categories = frontmatter.categories ? [frontmatter.categories] : [];
+    }
+    
+    if (frontmatter.tags === undefined) {
+      frontmatter.tags = [];
+    } else if (!Array.isArray(frontmatter.tags)) {
+      frontmatter.tags = frontmatter.tags ? [frontmatter.tags] : [];
+    }
     
     return {
       name,
@@ -26,9 +59,6 @@ export function parseMarkdown(content: string, path: string, name: string): Mark
       rawContent: content,
     };
   } catch (error) {
-    console.error('Error parsing markdown:', error);
-    console.warn('File will be loaded without frontmatter parsing');
-    
     // If frontmatter parsing fails, try to extract content without it
     let cleanContent = content;
     
@@ -59,15 +89,29 @@ export function parseMarkdown(content: string, path: string, name: string): Mark
 }
 
 export function stringifyMarkdown(file: MarkdownFile): string {
-  return matter.stringify(file.content, file.frontmatter);
+  // Preserve all fields, only skip null/undefined
+  const cleanedFrontmatter: Record<string, unknown> = {};
+  
+  for (const key in file.frontmatter) {
+    const value = file.frontmatter[key as keyof FrontMatter];
+    
+    // Only skip null/undefined - keep empty strings and empty arrays
+    if (value === null || value === undefined) {
+      continue;
+    }
+    
+    cleanedFrontmatter[key] = value;
+  }
+  
+  return matter.stringify(file.content, cleanedFrontmatter);
 }
 
 export function updateFrontmatter(file: MarkdownFile, updates: Partial<FrontMatter>): MarkdownFile {
   return {
     ...file,
     frontmatter: {
-      ...file.frontmatter,
-      ...updates,
+      ...file.frontmatter, // Preserve all existing fields including custom ones
+      ...updates, // Only update the specified fields
     },
   };
 }
