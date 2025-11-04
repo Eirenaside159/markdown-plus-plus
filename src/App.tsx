@@ -7,6 +7,7 @@ import { SidebarTabs } from '@/components/SidebarTabs';
 import { Settings } from '@/components/Settings';
 import { Sheet } from '@/components/ui/Sheet';
 import { Toast, useToast } from '@/components/ui/Toast';
+import { WelcomeWarningModal, shouldShowWarning } from '@/components/WelcomeWarningModal';
 import { selectDirectory, readDirectory, readFile, writeFile, deleteFile } from '@/lib/fileSystem';
 import { parseMarkdown, stringifyMarkdown, updateFrontmatter } from '@/lib/markdown';
 import { getRecentFolders, addRecentFolder, clearRecentFolders, formatTimestamp } from '@/lib/recentFolders';
@@ -28,7 +29,13 @@ function App() {
   const [showNewPostModal, setShowNewPostModal] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isRestoring, setIsRestoring] = useState(true);
+  const [showWarningModal, setShowWarningModal] = useState(false);
   const { toast, showToast, hideToast } = useToast();
+
+  // Check if warning should be shown on mount
+  useEffect(() => {
+    setShowWarningModal(shouldShowWarning());
+  }, []);
 
   const loadAllPosts = async (handle: FileSystemDirectoryHandle, fileTree: FileTreeItem[]) => {
     try {
@@ -430,6 +437,11 @@ function App() {
 
   return (
     <>
+      <WelcomeWarningModal
+        isOpen={showWarningModal}
+        onAccept={() => setShowWarningModal(false)}
+      />
+      
       <Toast
         message={toast.message}
         type={toast.type}
