@@ -8,13 +8,13 @@ import { Settings } from '@/components/Settings';
 import { Sheet } from '@/components/ui/Sheet';
 import { Toast, useToast } from '@/components/ui/Toast';
 import { WelcomeWarningModal, shouldShowWarning } from '@/components/WelcomeWarningModal';
-import { selectDirectory, readDirectory, readFile, writeFile, deleteFile } from '@/lib/fileSystem';
+import { selectDirectory, readDirectory, readFile, writeFile, deleteFile, isFileSystemAccessSupported } from '@/lib/fileSystem';
 import { parseMarkdown, stringifyMarkdown, updateFrontmatter } from '@/lib/markdown';
 import { getRecentFolders, addRecentFolder, clearRecentFolders, formatTimestamp } from '@/lib/recentFolders';
 import { getSettings } from '@/lib/settings';
 import { saveDirectoryHandle, loadDirectoryHandle, saveAppState, loadAppState, clearPersistedData } from '@/lib/persistedState';
 import type { FileTreeItem, MarkdownFile } from '@/types';
-import { FolderOpen, Save, Clock, FileCode, ArrowLeft, Plus, RotateCcw, Settings as SettingsIcon, Menu, LogOut, Github } from 'lucide-react';
+import { FolderOpen, Save, Clock, FileCode, ArrowLeft, Plus, RotateCcw, Settings as SettingsIcon, Menu, LogOut, Github, AlertCircle } from 'lucide-react';
 
 type ViewMode = 'table' | 'editor' | 'settings';
 
@@ -68,6 +68,15 @@ function App() {
   };
 
   const handleSelectDirectory = async () => {
+    // Check browser support first
+    if (!isFileSystemAccessSupported()) {
+      showToast(
+        'File System Access API is not supported on this device. Please use a desktop browser (Chrome, Edge, or Safari 15.2+).',
+        'error'
+      );
+      return;
+    }
+    
     const handle = await selectDirectory();
     if (handle) {
       setDirHandle(handle);
@@ -347,6 +356,7 @@ function App() {
     }
 
     const recentFolders = getRecentFolders();
+    const isSupported = isFileSystemAccessSupported();
     
     return (
       <div className="flex h-screen items-center justify-center bg-background p-3 sm:p-4">
@@ -362,11 +372,33 @@ function App() {
                 </p>
               </div>
 
+          {/* Browser Compatibility Warning */}
+          {!isSupported && (
+            <div className="mx-auto max-w-xl">
+              <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-4">
+                <div className="flex gap-3">
+                  <AlertCircle className="h-5 w-5 text-yellow-500 shrink-0 mt-0.5" />
+                  <div className="space-y-1 text-sm">
+                    <p className="font-medium text-yellow-500">Device Not Supported</p>
+                    <p className="text-muted-foreground">
+                      Local folder access is not available on iOS or iPadOS devices. 
+                      Please use a <strong>desktop computer</strong> with <strong>Chrome</strong>, <strong>Edge</strong>, or <strong>Safari</strong> to access your local files.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      💡 <strong>Tip:</strong> Works on Android with Chrome/Edge
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Main Button */}
           <div className="flex justify-center">
             <button
               onClick={handleSelectDirectory}
-              className="inline-flex items-center gap-3 rounded-lg bg-primary px-6 sm:px-8 py-3 sm:py-4 text-base font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg hover:shadow-xl touch-target"
+              disabled={!isSupported}
+              className="inline-flex items-center gap-3 rounded-lg bg-primary px-6 sm:px-8 py-3 sm:py-4 text-base font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg hover:shadow-xl touch-target disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary disabled:hover:shadow-lg"
             >
               <FolderOpen className="h-5 w-5" />
               Select Folder
@@ -394,7 +426,8 @@ function App() {
                   <button
                     key={folder.name + folder.timestamp}
                     onClick={handleSelectDirectory}
-                    className="flex items-center justify-between p-3 sm:p-4 rounded-lg border border-border bg-card hover:bg-accent active:bg-accent/80 transition-colors text-left group touch-target"
+                    disabled={!isSupported}
+                    className="flex items-center justify-between p-3 sm:p-4 rounded-lg border border-border bg-card hover:bg-accent active:bg-accent/80 transition-colors text-left group touch-target disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-card"
                   >
                     <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                       <div className="shrink-0">

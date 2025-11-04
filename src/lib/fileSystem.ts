@@ -1,7 +1,19 @@
 import type { FileTreeItem } from '@/types';
 
+/**
+ * Check if File System Access API is supported
+ */
+export function isFileSystemAccessSupported(): boolean {
+  return 'showDirectoryPicker' in window;
+}
+
 export async function selectDirectory(): Promise<FileSystemDirectoryHandle | null> {
   try {
+    // Check if the API is supported
+    if (!isFileSystemAccessSupported()) {
+      throw new Error('File System Access API is not supported in this browser');
+    }
+    
     const dirHandle = await window.showDirectoryPicker({
       mode: 'readwrite',
     });

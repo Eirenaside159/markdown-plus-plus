@@ -1,19 +1,20 @@
 # Markdown++
 
-**A web-based content management panel for static site generators and file-driven solutions.**
+**Markdown++ is the missing web-based panel for static site generators.**
 
+[![Try it online](https://img.shields.io/badge/Try%20it%20Online-Click%20Here-blue)](https://markdown-plus-plus.pages.dev/)
 ![Version](https://img.shields.io/badge/version-0.5.0--beta-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 ## 🎬 Demo
 
-[➡️ Try it Online](https://markdown-plus-plus.pages.dev/)
+<a href="https://markdown-plus-plus.pages.dev/" style="text-decoration:none;">➡️ Try it Online</a>
 
-[![Watch the video](https://img.youtube.com/vi/IyDVN-sSOfA/maxresdefault.jpg)](https://www.youtube.com/watch?v=IyDVN-sSOfA)
+[![Watch the video](public/readme.png)](https://www.youtube.com/watch?v=IyDVN-sSOfA)
 
 ## 💡 Why?
 
-We build our landing pages using static site generators and file-based systems instead of heavy, database-driven CMS platforms. This keeps our websites fast, stable, and highly compatible, which is ideal for performance-focused projects and ad campaigns.
+We build our landing pages using static site generators instead of heavy, database-driven CMS platforms. This keeps our websites fast, stable, and highly compatible, which is ideal for performance-focused projects and ad campaigns.
 
 But managing content this way is not easy. Writing and editing Markdown files, especially in multiple languages, quickly becomes painful and time-consuming.
 
@@ -22,11 +23,11 @@ It is a lightweight editor for static sites that makes creating, editing, and ma
 
 **Markdown++ is the missing web-based panel for static site generators.**
 
-- ✅ **No backend** - Runs entirely in your browser
-- ✅ **No database** - Your data stays on your computer
-- ✅ **Zero setup** - Use it directly from the web or run locally
-- ✅ **Optional auth** - Deploy with basic auth if needed
-- ✅ **Mobile & iPad ready** - Edit from anywhere
+- **No backend** - Runs entirely in your browser
+- **No database** - Your data stays on your computer
+- **Zero setup** - Use it directly from the web or run locally
+- **Optional auth** - Deploy with basic auth if needed
+- **Android & Desktop** - Works on Android phones and desktop computers
 
 Built to be simple, practical, and work the way you do.
 
@@ -44,7 +45,7 @@ Built to be simple, practical, and work the way you do.
 ### General
 - **Privacy-first** - Zero data collection
 - **File System API** - Native browser file access
-- **iOS/Android optimized** - Touch-friendly, safe areas
+- **Mobile optimized** - Touch-friendly UI (Android supported, iOS not supported)
 - **PWA ready** - Install as native app
 
 ## 🚀 Quick Start
@@ -52,7 +53,7 @@ Built to be simple, practical, and work the way you do.
 ### Option 1: Use Online 
 Just visit the hosted version and start editing.
 
-[➡️ Try it Online](https://markdown-plus-plus.pages.dev/)
+<a href="https://markdown-plus-plus.pages.dev/" style="text-decoration:none;">➡️ Try it Online</a>
 
 ### Option 2: Run Locally
 ```bash
@@ -88,12 +89,19 @@ npm run build
 
 ## 🌐 Browser Support
 
-| Browser | Version | Status |
-|---------|---------|--------|
-| Chrome | 86+ | ✅ Full support |
-| Edge | 86+ | ✅ Full support |
-| Safari | 15.2+ | ⚠️ Limited (no File System API) |
-| Firefox | - | ❌ Not supported yet |
+| Browser | Platform | Version | Status |
+|---------|----------|---------|--------|
+| Chrome | Desktop | 86+ | ✅ Full support |
+| Chrome | Android | 86+ | ✅ Full support |
+| Chrome | iOS/iPadOS | Any | ❌ Not supported |
+| Edge | Desktop | 86+ | ✅ Full support |
+| Edge | Android | 86+ | ✅ Full support |
+| Edge | iOS/iPadOS | Any | ❌ Not supported |
+| Safari | macOS | 15.2+ | ✅ Full support |
+| Safari | iOS/iPadOS | Any | ❌ Not supported |
+| Firefox | All | - | ❌ Not supported yet |
+
+**Note:** iOS and iPadOS do not support File System Access API in any browser due to platform limitations.
 
 ## 📝 Frontmatter
 
@@ -111,10 +119,10 @@ Auto-detects fields and creates proper inputs. No config needed.
 
 ## 🔐 Privacy
 
-- ✅ All data stays on your device
-- ✅ No tracking, analytics, or telemetry
-- ✅ No server, no database
-- ✅ Optional: Deploy with auth for team access
+- All data stays on your device
+- No tracking, analytics, or telemetry
+- No server, no database
+- Optional: Deploy with auth for team access
 
 ## 💬 Feedback
 
