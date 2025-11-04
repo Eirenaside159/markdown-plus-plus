@@ -5,6 +5,12 @@
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
+## 🎬 Demo
+
+[➡️ Try it Online](https://markdown-plus-plus.pages.dev/)
+
+[![Watch the video](https://img.youtube.com/vi/IyDVN-sSOfA/maxresdefault.jpg)](https://www.youtube.com/watch?v=IyDVN-sSOfA)
+
 ## 💡 Why?
 
 We build our landing pages using static site generators and file-based systems instead of heavy, database-driven CMS platforms. This keeps our websites fast, stable, and highly compatible, which is ideal for performance-focused projects and ad campaigns.
@@ -27,24 +33,26 @@ Built to be simple, practical, and work the way you do.
 ## ✨ Features
 
 ### Content Management
-- 📁 **Local folder access** - Direct file system access via browser
-- 📊 **Table view** - Sortable, filterable list of all posts
-- ✏️ **WYSIWYG editor** - Medium-like editing with Tiptap
-- 📝 **Smart metadata** - Auto-detects and manages frontmatter
-- ➕ **Create & delete** - Full CRUD operations
-- 🔗 **Related posts** - Links posts by canonical URL
-- 💾 **Quick save** - Ctrl/Cmd + S support
+- **Local folder access** - Direct file system access via browser
+- **Table view** - Sortable, filterable list of all posts
+- **WYSIWYG editor** - Medium-like editing with Tiptap
+- **Smart metadata** - Auto-detects and manages frontmatter
+- **Create & delete** - Full CRUD operations
+- **Related posts** - Links posts by canonical URL
+- **Quick save** - Ctrl/Cmd + S support
 
-### Technical
-- 🔒 **Privacy-first** - Zero data collection
-- 📂 **File System API** - Native browser file access
-- 📱 **iOS/Android optimized** - Touch-friendly, safe areas
-- 🎯 **PWA ready** - Install as native app
+### General
+- **Privacy-first** - Zero data collection
+- **File System API** - Native browser file access
+- **iOS/Android optimized** - Touch-friendly, safe areas
+- **PWA ready** - Install as native app
 
 ## 🚀 Quick Start
 
-### Option 1: Use Online
+### Option 1: Use Online 
 Just visit the hosted version and start editing.
+
+[➡️ Try it Online](https://markdown-plus-plus.pages.dev/)
 
 ### Option 2: Run Locally
 ```bash
