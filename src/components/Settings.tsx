@@ -343,7 +343,7 @@ export function Settings({ onClose }: SettingsProps = {}) {
                         </div>
                         <button
                           onClick={() => handleRemoveMeta(key)}
-                          className="p-1 text-destructive hover:bg-destructive/10 rounded transition-colors"
+                          className="inline-flex items-center justify-center p-1 text-destructive hover:bg-destructive/10 rounded transition-colors"
                           title="Remove field"
                         >
                           <Trash2 className="h-4 w-4" />

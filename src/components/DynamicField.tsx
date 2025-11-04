@@ -126,7 +126,7 @@ export function DynamicField({ fieldKey, fieldLabel, fieldType, value, onChange,
                     {String(item)}
                     <button
                       onClick={() => handleRemoveArrayItem(index)}
-                      className="ml-1 hover:text-destructive"
+                      className="inline-flex items-center justify-center ml-1 hover:text-destructive"
                       type="button"
                     >
                       ×

@@ -136,7 +136,7 @@ export function MetaEditor({ frontmatter, onChange, allPosts }: MetaEditorProps)
             </button>
             <button
               onClick={handleCancelAddField}
-              className="px-3 py-2 text-sm rounded-md border border-input bg-background hover:bg-accent transition-colors"
+              className="inline-flex items-center justify-center px-3 py-2 text-sm rounded-md border border-input bg-background hover:bg-accent transition-colors"
             >
               <X className="h-4 w-4" />
             </button>

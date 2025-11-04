@@ -53,7 +53,7 @@ export function ColumnSettings({ columns, visibleColumns, onVisibilityChange }: 
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-md border border-input bg-background hover:bg-accent transition-colors"
+        className="inline-flex items-center justify-center p-2 rounded-md border border-input bg-background hover:bg-accent transition-colors"
         title="Column Settings"
       >
         <Settings className="h-5 w-5" />
@@ -71,7 +71,7 @@ export function ColumnSettings({ columns, visibleColumns, onVisibilityChange }: 
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="p-1 rounded hover:bg-accent transition-colors"
+              className="inline-flex items-center justify-center p-1 rounded hover:bg-accent transition-colors"
             >
               <X className="h-4 w-4" />
             </button>

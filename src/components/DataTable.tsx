@@ -208,7 +208,7 @@ export function DataTable({ posts, onEdit, onDelete }: DataTableProps) {
         </div>
         <button
           onClick={() => setShowColumnFilters(!showColumnFilters)}
-          className={`p-2 text-base rounded-md border transition-colors touch-target ${
+          className={`inline-flex items-center justify-center p-2 text-base rounded-md border transition-colors touch-target ${
             showColumnFilters || Object.values(columnFilters).some(v => v)
               ? 'border-primary bg-primary text-primary-foreground'
               : 'border-input bg-background hover:bg-accent'
@@ -317,14 +317,14 @@ export function DataTable({ posts, onEdit, onDelete }: DataTableProps) {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => onEdit(post)}
-                        className="p-2 rounded hover:bg-accent transition-colors touch-target"
+                        className="inline-flex items-center justify-center p-2 rounded hover:bg-accent transition-colors touch-target"
                         title="Edit"
                       >
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => onDelete(post)}
-                        className="p-2 rounded hover:bg-destructive/10 hover:text-destructive transition-colors touch-target"
+                        className="inline-flex items-center justify-center p-2 rounded hover:bg-destructive/10 hover:text-destructive transition-colors touch-target"
                         title="Delete"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -363,14 +363,14 @@ export function DataTable({ posts, onEdit, onDelete }: DataTableProps) {
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={() => onEdit(post)}
-                    className="p-2 rounded hover:bg-accent transition-colors touch-target"
+                    className="inline-flex items-center justify-center p-2 rounded hover:bg-accent transition-colors touch-target"
                     title="Edit"
                   >
                     <Edit className="h-5 w-5" />
                   </button>
                   <button
                     onClick={() => onDelete(post)}
-                    className="p-2 rounded hover:bg-destructive/10 hover:text-destructive transition-colors touch-target"
+                    className="inline-flex items-center justify-center p-2 rounded hover:bg-destructive/10 hover:text-destructive transition-colors touch-target"
                     title="Delete"
                   >
                     <Trash2 className="h-5 w-5" />
