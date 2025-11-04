@@ -2,7 +2,7 @@
 
 **A web-based content management panel for static site generators and file-driven solutions.**
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.5.0--beta-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 ## 🎬 Demo

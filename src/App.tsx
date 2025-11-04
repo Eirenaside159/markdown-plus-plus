@@ -337,8 +337,8 @@ function App() {
       return (
         <div className="flex h-screen items-center justify-center bg-background">
           <div className="text-center space-y-3">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 animate-pulse">
-              <FolderOpen className="h-6 w-6 text-primary" />
+            <div className="inline-flex items-center justify-center w-16 h-16 animate-pulse">
+              <img src="/logo.png" alt="Markdown++" className="w-full h-full object-contain" />
             </div>
             <p className="text-muted-foreground">Restoring workspace...</p>
           </div>
@@ -353,8 +353,8 @@ function App() {
         <div className="w-full max-w-2xl space-y-6 sm:space-y-8">
           {/* Header */}
               <div className="text-center space-y-2 sm:space-y-3">
-                <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary/10 mb-2">
-                  <FolderOpen className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+                <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 mb-2">
+                  <img src="/logo.png" alt="Markdown++" className="w-full h-full object-contain" />
                 </div>
                 <h1 className="text-3xl sm:text-4xl font-bold">Markdown++</h1>
                 <p className="text-muted-foreground text-base sm:text-lg px-4">
@@ -426,7 +426,7 @@ function App() {
                 <span>View on GitHub</span>
               </a>
               <span className="text-muted-foreground/50">•</span>
-              <span>v1.0.0</span>
+              <span>v0.5.0-beta</span>
             </div>
           </div>
 
@@ -485,8 +485,9 @@ function App() {
             ) : (
               <button 
                 onClick={() => setViewMode('table')}
-                className="text-lg sm:text-xl font-semibold hover:text-primary transition-colors cursor-pointer"
+                className="flex items-center gap-2 text-lg sm:text-xl font-semibold hover:text-primary transition-colors cursor-pointer"
               >
+                <img src="/logo.png" alt="Markdown++" className="w-7 h-7 sm:w-8 sm:h-8 object-contain" />
                 Markdown++
               </button>
             )}
