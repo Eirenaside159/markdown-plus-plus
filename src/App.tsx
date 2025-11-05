@@ -653,10 +653,10 @@ function App() {
 
             {viewMode === 'editor' && currentFile && (
               <>
-                {/* Mobile Menu Button */}
+                {/* Sidebar Menu Button */}
                 <button
                   onClick={() => setIsMobileSidebarOpen(true)}
-                  className="lg:hidden inline-flex items-center justify-center rounded-md border border-input bg-background px-2 py-2.5 hover:bg-accent hover:text-accent-foreground transition-colors touch-target"
+                  className="inline-flex items-center justify-center rounded-md border border-input bg-background px-2 py-2.5 hover:bg-accent hover:text-accent-foreground transition-colors touch-target"
                   title="Open Sidebar"
                 >
                   <Menu className="h-5 w-5" />
@@ -773,17 +773,7 @@ function App() {
             )}
           </div>
 
-          {/* Right: Sidebar with Tabs - Desktop */}
-          <div className="hidden lg:block w-96 border-l">
-            <SidebarTabs
-              currentFile={currentFile}
-              allPosts={allPosts}
-              onMetaChange={handleMetaChange}
-              onPostClick={handleEditPost}
-            />
-          </div>
-
-          {/* Mobile Sidebar Sheet */}
+          {/* Sidebar Sheet */}
           <Sheet
             isOpen={isMobileSidebarOpen}
             onClose={() => setIsMobileSidebarOpen(false)}

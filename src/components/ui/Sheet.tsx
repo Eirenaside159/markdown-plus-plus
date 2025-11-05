@@ -38,8 +38,8 @@ export function Sheet({ isOpen, onClose, children, side = 'right', title }: Shee
   if (!isOpen) return null;
 
   const sideClasses = {
-    left: 'inset-y-0 left-0 w-4/5 max-w-sm',
-    right: 'inset-y-0 right-0 w-4/5 max-w-sm',
+    left: 'inset-y-0 left-0 w-4/5 max-w-sm lg:w-96',
+    right: 'inset-y-0 right-0 w-4/5 max-w-sm lg:w-96',
     top: 'inset-x-0 top-0 h-4/5 max-h-96',
     bottom: 'inset-x-0 bottom-0 h-4/5 max-h-96',
   };
