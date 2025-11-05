@@ -36,6 +36,8 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  Link as LinkIcon,
+  Unlink,
 } from 'lucide-react';
 
 interface TiptapEditorProps {
@@ -79,6 +81,8 @@ export function TiptapEditor({ content, onChange }: TiptapEditorProps) {
       }),
       Link.configure({
         openOnClick: false,
+        autolink: true,
+        defaultProtocol: 'https',
         HTMLAttributes: {
           class: 'text-primary underline hover:text-primary/80 transition-colors cursor-pointer',
         },
@@ -144,6 +148,29 @@ export function TiptapEditor({ content, onChange }: TiptapEditorProps) {
 
   const addTable = () => {
     editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+  };
+
+  const setLink = () => {
+    const previousUrl = editor.getAttributes('link').href;
+    const url = window.prompt('Enter URL:', previousUrl);
+
+    // cancelled
+    if (url === null) {
+      return;
+    }
+
+    // empty
+    if (url === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      return;
+    }
+
+    // update link
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+  };
+
+  const removeLink = () => {
+    editor.chain().focus().unsetLink().run();
   };
 
   return (
@@ -280,6 +307,28 @@ export function TiptapEditor({ content, onChange }: TiptapEditorProps) {
             title="Align Right"
           >
             <AlignRight className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="toolbar-divider" />
+
+        {/* Links */}
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={setLink}
+            className={`toolbar-btn ${editor.isActive('link') ? 'active' : ''}`}
+            title="Add/Edit Link (Ctrl+K)"
+          >
+            <LinkIcon className="h-4 w-4" />
+          </button>
+
+          <button
+            onClick={removeLink}
+            disabled={!editor.isActive('link')}
+            className="toolbar-btn disabled:opacity-30"
+            title="Remove Link"
+          >
+            <Unlink className="h-4 w-4" />
           </button>
         </div>
 

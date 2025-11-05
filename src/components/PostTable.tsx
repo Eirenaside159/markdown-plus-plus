@@ -1,19 +1,31 @@
 import type { MarkdownFile } from '@/types';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, Loader2 } from 'lucide-react';
 
 interface PostTableProps {
   posts: MarkdownFile[];
+  isLoading?: boolean;
   onEdit: (post: MarkdownFile) => void;
   onDelete: (post: MarkdownFile) => void;
 }
 
-export function PostTable({ posts, onEdit, onDelete }: PostTableProps) {
+export function PostTable({ posts, isLoading = false, onEdit, onDelete }: PostTableProps) {
   // Sort by date (newest first)
   const sortedPosts = [...posts].sort((a, b) => {
     const dateA = a.frontmatter.date || '';
     const dateB = b.frontmatter.date || '';
     return dateB.localeCompare(dateA);
   });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading posts...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (posts.length === 0) {
     return (

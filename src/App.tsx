@@ -3,6 +3,7 @@ import { MarkdownEditor } from '@/components/MarkdownEditor';
 import { DataTable } from '@/components/DataTable';
 import { RawMarkdownModal } from '@/components/RawMarkdownModal';
 import { NewPostModal } from '@/components/NewPostModal';
+import { PublishModal } from '@/components/PublishModal';
 import { SidebarTabs } from '@/components/SidebarTabs';
 import { Settings } from '@/components/Settings';
 import { Sheet } from '@/components/ui/Sheet';
@@ -13,23 +14,28 @@ import { parseMarkdown, stringifyMarkdown, updateFrontmatter } from '@/lib/markd
 import { getRecentFolders, addRecentFolder, clearRecentFolders, formatTimestamp } from '@/lib/recentFolders';
 import { getSettings } from '@/lib/settings';
 import { saveDirectoryHandle, loadDirectoryHandle, saveAppState, loadAppState, clearPersistedData } from '@/lib/persistedState';
+import { checkGitStatus, publishFile, generateCommitMessage, type GitStatus } from '@/lib/gitOperations';
 import type { FileTreeItem, MarkdownFile } from '@/types';
-import { FolderOpen, Save, Clock, FileCode, ArrowLeft, Plus, RotateCcw, Settings as SettingsIcon, Menu, LogOut, Github, AlertCircle } from 'lucide-react';
+import { FolderOpen, Save, Clock, FileCode, ArrowLeft, Plus, RotateCcw, Settings as SettingsIcon, Menu, LogOut, Github, AlertCircle, Upload, Lightbulb } from 'lucide-react';
 
 type ViewMode = 'table' | 'editor' | 'settings';
 
 function App() {
   const [dirHandle, setDirHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [allPosts, setAllPosts] = useState<MarkdownFile[]>([]);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(false);
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
   const [currentFile, setCurrentFile] = useState<MarkdownFile | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [hasPendingPublish, setHasPendingPublish] = useState(false); // Track if user saved but hasn't published yet
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [showRawModal, setShowRawModal] = useState(false);
   const [showNewPostModal, setShowNewPostModal] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isRestoring, setIsRestoring] = useState(true);
   const [showWarningModal, setShowWarningModal] = useState(false);
+  const [gitStatus, setGitStatus] = useState<GitStatus | null>(null);
   const { toast, showToast, hideToast } = useToast();
 
   // Check if warning should be shown on mount
@@ -61,9 +67,15 @@ function App() {
         await loadFile(item);
       }
 
+      // Minimum loading time for better UX (500ms)
+      const minLoadTime = new Promise(resolve => setTimeout(resolve, 500));
+      await minLoadTime;
+
       setAllPosts(posts);
     } catch (error) {
       // Silently handle error
+    } finally {
+      setIsLoadingPosts(false);
     }
   };
 
@@ -79,6 +91,13 @@ function App() {
     
     const handle = await selectDirectory();
     if (handle) {
+      // Clear any existing toasts first
+      hideToast();
+      
+      // Clear posts and start loading immediately
+      setAllPosts([]);
+      setIsLoadingPosts(true);
+      
       setDirHandle(handle);
       addRecentFolder(handle);
       
@@ -87,6 +106,23 @@ function App() {
       
       const fileTree = await readDirectory(handle);
       await loadAllPosts(handle, fileTree);
+      
+      // Check git status
+      const status = await checkGitStatus(handle);
+      setGitStatus(status);
+      
+      // Show git status to user
+      if (!status.isGitRepo) {
+        console.warn('⚠️ Git repository not found in:', handle.name);
+        console.log('Selected folder:', handle.name);
+        console.log('Error:', status.error);
+        showToast(
+          `Folder "${handle.name}" selected. Git repository not detected - publish feature will be limited.`,
+          'info'
+        );
+      } else {
+        console.log('✓ Git repository found in:', handle.name, '| Branch:', status.currentBranch);
+      }
     }
   };
 
@@ -98,6 +134,13 @@ function App() {
         const savedHandle = await loadDirectoryHandle();
         
         if (savedHandle) {
+          // Clear any existing toasts
+          hideToast();
+          
+          // Clear posts and start loading
+          setAllPosts([]);
+          setIsLoadingPosts(true);
+          
           setDirHandle(savedHandle);
           addRecentFolder(savedHandle);
           
@@ -127,7 +170,16 @@ function App() {
             }
           }
           
-          showToast('Workspace restored', 'success');
+          // Check git status
+          const status = await checkGitStatus(savedHandle);
+          setGitStatus(status);
+          
+          if (!status.isGitRepo) {
+            console.warn('⚠️ Restored folder is not a Git repository');
+          }
+          
+          // Don't show toast on restore - it's confusing during other operations
+          // showToast('Workspace restored', 'success', 2000);
         }
       } catch (error) {
         console.error('Failed to restore state:', error);
@@ -145,6 +197,9 @@ function App() {
       return;
     }
 
+    // Clear any existing toasts
+    hideToast();
+
     // Clear persisted data from IndexedDB
     await clearPersistedData();
 
@@ -156,13 +211,13 @@ function App() {
     setHasChanges(false);
     setViewMode('table');
     
-    showToast('Logged out successfully', 'success');
+    // Don't show toast - the UI change (back to folder selection) is clear enough
   };
 
   const handleClearRecent = () => {
     if (window.confirm('Clear all recent folders?')) {
       clearRecentFolders();
-      showToast('Recent folders cleared', 'success');
+      // Don't show toast before reload - it won't be visible anyway
       window.location.reload();
     }
   };
@@ -182,6 +237,7 @@ function App() {
       
       setCurrentFile(parsed);
       setHasChanges(false);
+      setHasPendingPublish(false); // Clear publish flag when discarding
       showToast('Changes discarded', 'info');
     } catch (error) {
       showToast('Failed to discard changes. Please try again.', 'error');
@@ -195,6 +251,7 @@ function App() {
     setCurrentFile(post);
     setSelectedFilePath(post.path);
     setHasChanges(false);
+    setHasPendingPublish(false); // Reset publish flag when switching files
     setViewMode('editor');
     
     // Save state
@@ -215,7 +272,8 @@ function App() {
     try {
       await deleteFile(dirHandle, post.path);
 
-      // Refresh posts
+      // Show loading and refresh posts
+      setIsLoadingPosts(true);
       const fileTree = await readDirectory(dirHandle);
       await loadAllPosts(dirHandle, fileTree);
 
@@ -224,11 +282,13 @@ function App() {
         setCurrentFile(null);
         setSelectedFilePath(null);
         setHasChanges(false);
+        setHasPendingPublish(false);
       }
 
       showToast('Post deleted successfully', 'success');
     } catch (error) {
       showToast('Failed to delete file. Please try again.', 'error');
+      setIsLoadingPosts(false);
     }
   };
 
@@ -265,7 +325,8 @@ function App() {
       // Write to file
       await writeFile(dirHandle, filename, content);
 
-      // Refresh posts
+      // Show loading and refresh posts
+      setIsLoadingPosts(true);
       const fileTree = await readDirectory(dirHandle);
       await loadAllPosts(dirHandle, fileTree);
 
@@ -276,10 +337,12 @@ function App() {
       setCurrentFile(parsed);
       setSelectedFilePath(filename);
       setHasChanges(false);
+      setHasPendingPublish(true);
       setViewMode('editor');
       setShowNewPostModal(false);
     } catch (error) {
       showToast('Failed to create file. Please try again.', 'error');
+      setIsLoadingPosts(false);
     }
   };
 
@@ -289,7 +352,6 @@ function App() {
     try {
       const content = stringifyMarkdown(currentFile);
       await writeFile(dirHandle, selectedFilePath, content);
-      setHasChanges(false);
       
       // Update the post in allPosts
       const updatedPosts = allPosts.map(post => 
@@ -297,9 +359,48 @@ function App() {
       );
       setAllPosts(updatedPosts);
       
+      // Update states in one batch
+      setHasChanges(false);
+      setHasPendingPublish(true);
+      
       showToast('Changes saved successfully!', 'success');
     } catch (error) {
       showToast('Failed to save file. Please try again.', 'error');
+    }
+  };
+
+  const handlePublishClick = async () => {
+    if (!dirHandle || !currentFile || !selectedFilePath) return;
+    
+    // First save the file if there are changes
+    if (hasChanges) {
+      await handleSave();
+    }
+    
+    // Show publish modal
+    setShowPublishModal(true);
+  };
+
+  const handlePublish = async (commitMessage: string) => {
+    if (!dirHandle || !currentFile || !selectedFilePath) return;
+    
+    try {
+      const result = await publishFile(dirHandle, {
+        filePath: selectedFilePath,
+        commitMessage,
+        branch: gitStatus?.currentBranch || 'main',
+      });
+      
+      if (result.success) {
+        setHasPendingPublish(false);
+        // Don't show toast - success is shown in modal
+      } else {
+        // Throw error so modal can catch and show it
+        throw new Error(result.error || 'Failed to publish changes');
+      }
+    } catch (error) {
+      // Re-throw error so modal can catch it
+      throw error;
     }
   };
 
@@ -346,10 +447,10 @@ function App() {
       return (
         <div className="flex h-screen items-center justify-center bg-background">
           <div className="text-center space-y-3">
-            <div className="inline-flex items-center justify-center w-16 h-16 animate-pulse">
-              <img src="/logo.png" alt="Markdown++" className="w-full h-full object-contain" />
+            <div className="inline-flex items-center justify-center w-16 h-16">
+              <img src="/logo.png" alt="Markdown++" className="w-full h-full object-contain animate-pulse" />
             </div>
-            <p className="text-muted-foreground">Restoring workspace...</p>
+            <p className="text-muted-foreground animate-pulse">Restoring workspace...</p>
           </div>
         </div>
       );
@@ -363,9 +464,13 @@ function App() {
         <div className="w-full max-w-2xl space-y-6 sm:space-y-8">
           {/* Header */}
               <div className="text-center space-y-2 sm:space-y-3">
-                <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 mb-2">
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 mb-2 cursor-pointer hover:scale-105 transition-transform"
+                  title="Click to refresh"
+                >
                   <img src="/logo.png" alt="Markdown++" className="w-full h-full object-contain" />
-                </div>
+                </button>
                 <h1 className="text-3xl sm:text-4xl font-bold">Markdown++</h1>
                 <p className="text-muted-foreground text-base sm:text-lg px-4">
                   Select a folder to start editing your markdown files
@@ -384,8 +489,9 @@ function App() {
                       Local folder access is not available on iOS or iPadOS devices. 
                       Please use a <strong>desktop computer</strong> with <strong>Chrome</strong>, <strong>Edge</strong>, or <strong>Safari</strong> to access your local files.
                     </p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      💡 <strong>Tip:</strong> Works on Android with Chrome/Edge
+                    <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
+                      <Lightbulb className="h-3.5 w-3.5 shrink-0" />
+                      <span><strong>Tip:</strong> Works on Android with Chrome/Edge</span>
                     </p>
                   </div>
                 </div>
@@ -480,6 +586,7 @@ function App() {
         type={toast.type}
         isOpen={toast.isOpen}
         onClose={hideToast}
+        duration={toast.duration}
       />
       
       <div className="h-screen flex flex-col bg-background">
@@ -516,13 +623,10 @@ function App() {
                 </p>
               </div>
             ) : (
-              <button 
-                onClick={() => setViewMode('table')}
-                className="flex items-center gap-2 text-lg sm:text-xl font-semibold hover:text-primary transition-colors cursor-pointer"
-              >
-                <img src="/logo.png" alt="Markdown++" className="w-7 h-7 sm:w-8 sm:h-8 object-contain" />
-                Markdown++
-              </button>
+              <div className="flex items-center gap-2 text-lg sm:text-xl font-semibold opacity-40 hover:opacity-100 transition-all duration-500 ease-in-out group cursor-default">
+                <img src="/logo.png" alt="Markdown++" className="w-7 h-7 sm:w-8 sm:h-8 object-contain group-hover:scale-105 transition-transform duration-500" />
+                <span>Markdown++</span>
+              </div>
             )}
           </div>
           
@@ -588,6 +692,23 @@ function App() {
                   <Save className="h-5 w-5" />
                   <span className="hidden sm:inline">Save</span>
                 </button>
+
+                {/* Publish Button */}
+                <button
+                  onClick={handlePublishClick}
+                  disabled={hasChanges || !hasPendingPublish}
+                  className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 sm:px-4 py-2.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors touch-target disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={
+                    hasChanges 
+                      ? "Save changes before publishing" 
+                      : !hasPendingPublish 
+                        ? "No changes to publish" 
+                        : "Publish to Git"
+                  }
+                >
+                  <Upload className="h-5 w-5" />
+                  <span className="hidden lg:inline">Publish</span>
+                </button>
               </>
             )}
           </div>
@@ -622,6 +743,7 @@ function App() {
           <div className="flex-1 overflow-hidden p-3 sm:p-4">
             <DataTable
               posts={allPosts}
+              isLoading={isLoadingPosts}
               onEdit={handleEditPost}
               onDelete={handleDeletePost}
             />
@@ -686,7 +808,8 @@ function App() {
         <RawMarkdownModal
           isOpen={showRawModal}
           onClose={() => setShowRawModal(false)}
-          content={currentFile.rawContent || stringifyMarkdown(currentFile)}
+          content={stringifyMarkdown(currentFile)}
+          originalContent={currentFile.rawContent}
           filename={currentFile.path}
         />
       )}
@@ -697,6 +820,19 @@ function App() {
         onClose={() => setShowNewPostModal(false)}
         onCreate={handleCreatePost}
       />
+
+      {/* Publish Modal */}
+      {currentFile && selectedFilePath && (
+        <PublishModal
+          isOpen={showPublishModal}
+          onClose={() => setShowPublishModal(false)}
+          onPublish={handlePublish}
+          fileName={selectedFilePath}
+          gitStatus={gitStatus}
+          defaultMessage={generateCommitMessage(currentFile.name, 'update')}
+          projectPath={dirHandle?.name}
+        />
+      )}
     </div>
     </>
   );

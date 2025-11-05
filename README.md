@@ -41,6 +41,7 @@ Built to be simple, practical, and work the way you do.
 - **Create & delete** - Full CRUD operations
 - **Related posts** - Links posts by canonical URL
 - **Quick save** - Ctrl/Cmd + S support
+- **Git integration** - One-click publish with automatic commit & push
 
 ### General
 - **Privacy-first** - Zero data collection
@@ -74,9 +75,26 @@ npm run build
 2. **Select folder** - Choose your markdown files directory
 3. **Edit** - Browse, filter, and edit posts
 4. **Save** - Changes write directly to files
-5. **Refresh** - Your workspace persists
+5. **Publish** - Commit and push to Git with one click
+6. **Refresh** - Your workspace persists
 
 **That's it.** No setup, no config, no database.
+
+### 🚢 Publishing to Git
+
+Markdown++ includes built-in Git integration for seamless publishing:
+
+1. **Edit your content** - Make changes in the editor
+2. **Click Publish** - Button appears in the editor toolbar
+3. **Review commit message** - Auto-generated, fully editable
+4. **Publish** - Automatically performs:
+   - `git add <file>`
+   - `git commit -m "message"`
+   - `git push origin <branch>`
+
+The app detects Git repositories automatically. If your folder isn't a Git repo, you'll see a helpful warning with instructions.
+
+**Note:** For private repositories, you may need to configure Git credentials on your system. The app uses the browser's File System Access API to interact with Git.
 
 ## 🛠️ Tech Stack
 
@@ -86,6 +104,7 @@ npm run build
 - **Tiptap** - Editor
 - **File System API** - File access
 - **IndexedDB** - State persistence
+- **isomorphic-git** - Git operations in browser
 
 ## 🌐 Browser Support
 

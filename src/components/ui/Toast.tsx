@@ -87,17 +87,20 @@ export function useToast() {
     isOpen: boolean;
     message: string;
     type: 'success' | 'error' | 'warning' | 'info';
+    duration?: number;
   }>({
     isOpen: false,
     message: '',
     type: 'info',
+    duration: 4000,
   });
 
   const showToast = (
     message: string, 
-    type: 'success' | 'error' | 'warning' | 'info' = 'info'
+    type: 'success' | 'error' | 'warning' | 'info' = 'info',
+    duration?: number
   ) => {
-    setToast({ isOpen: true, message, type });
+    setToast({ isOpen: true, message, type, duration });
   };
 
   const hideToast = () => {

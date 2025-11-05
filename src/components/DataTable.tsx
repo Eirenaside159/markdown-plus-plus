@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Search, ArrowUp, ArrowDown, Edit, Trash2, Filter } from 'lucide-react';
+import { Search, ArrowUp, ArrowDown, Edit, Trash2, Filter, Loader2 } from 'lucide-react';
 import type { MarkdownFile } from '@/types';
 import { formatFieldLabel } from '@/lib/fieldUtils';
 import { ColumnSettings } from './ColumnSettings';
 
 interface DataTableProps {
   posts: MarkdownFile[];
+  isLoading?: boolean;
   onEdit: (post: MarkdownFile) => void;
   onDelete: (post: MarkdownFile) => void;
 }
@@ -19,7 +20,7 @@ interface SortState {
   direction: SortDirection;
 }
 
-export function DataTable({ posts, onEdit, onDelete }: DataTableProps) {
+export function DataTable({ posts, isLoading = false, onEdit, onDelete }: DataTableProps) {
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
   const [sortState, setSortState] = useState<SortState>({ column: 'date', direction: 'desc' });
@@ -280,7 +281,16 @@ export function DataTable({ posts, onEdit, onDelete }: DataTableProps) {
             </tr>
           </thead>
           <tbody>
-            {sortedPosts.length === 0 ? (
+            {isLoading ? (
+              <tr>
+                <td colSpan={displayColumns.length + 1} className="text-center py-16">
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-base text-muted-foreground">Loading posts...</p>
+                  </div>
+                </td>
+              </tr>
+            ) : sortedPosts.length === 0 ? (
               <tr>
                 <td colSpan={displayColumns.length + 1} className="text-center py-16 text-base text-muted-foreground">
                   No posts found
@@ -340,7 +350,14 @@ export function DataTable({ posts, onEdit, onDelete }: DataTableProps) {
 
       {/* Mobile: Card View */}
       <div className="md:hidden flex-1 overflow-auto space-y-3">
-        {sortedPosts.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-16">
+            <div className="flex flex-col items-center gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-base text-muted-foreground">Loading posts...</p>
+            </div>
+          </div>
+        ) : sortedPosts.length === 0 ? (
           <div className="text-center py-16 text-base text-muted-foreground">
             No posts found
           </div>

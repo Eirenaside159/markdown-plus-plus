@@ -62,8 +62,9 @@ export function WelcomeWarningModal({ isOpen, onAccept }: WelcomeWarningModalPro
               </p>
               
               <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-md p-4 space-y-2">
-                <p className="font-semibold text-yellow-700 dark:text-yellow-500">
-                  ⚠️ Please be aware:
+                <p className="font-semibold text-yellow-700 dark:text-yellow-500 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  Please be aware:
                 </p>
                 <ul className="space-y-1.5 text-yellow-800 dark:text-yellow-400 pl-4 list-disc">
                   <li>This application is in beta stage</li>

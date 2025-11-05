@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Link2, ExternalLink } from 'lucide-react';
+import { Link2, ExternalLink, Lightbulb } from 'lucide-react';
 import type { MarkdownFile } from '@/types';
 
 interface CanonicalRelatedProps {
@@ -128,9 +128,10 @@ export function CanonicalRelated({ currentPost, allPosts, onPostClick }: Canonic
 
       {/* Info */}
       <div className="p-3 bg-muted/20 rounded-md text-xs text-muted-foreground">
-        <p>
-          💡 These posts share the same canonical URL, indicating they are alternate versions, 
-          translations, or republished content of the same article.
+        <p className="flex items-start gap-1.5">
+          <Lightbulb className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+          <span>These posts share the same canonical URL, indicating they are alternate versions, 
+          translations, or republished content of the same article.</span>
         </p>
       </div>
     </div>

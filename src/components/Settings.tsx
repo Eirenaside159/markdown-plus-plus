@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings as SettingsIcon, Save, RotateCcw, X, FileText, Plus, Trash2, Download, Upload, FolderSync } from 'lucide-react';
+import { Settings as SettingsIcon, Save, RotateCcw, X, FileText, Plus, Trash2, Download, Upload, FolderSync, Lightbulb, Package, AlertTriangle } from 'lucide-react';
 import { Toast, useToast } from './ui/Toast';
 import { getSettings, saveSettings, resetSettings } from '@/lib/settings';
 import type { AppSettings } from '@/types/settings';
@@ -359,8 +359,9 @@ export function Settings({ onClose }: SettingsProps = {}) {
               )}
 
               <div className="p-3 bg-muted/30 rounded-md text-xs text-muted-foreground">
-                <p>
-                  💡 These fields will be merged with standard meta (title, date, etc.) when creating new posts.
+                <p className="flex items-center gap-1.5">
+                  <Lightbulb className="h-3.5 w-3.5 shrink-0" />
+                  <span>These fields will be merged with standard meta (title, date, etc.) when creating new posts.</span>
                 </p>
               </div>
             </div>
@@ -382,7 +383,10 @@ export function Settings({ onClose }: SettingsProps = {}) {
 
               {/* What's Included */}
               <div className="p-3 bg-muted/20 rounded-md text-xs">
-                <p className="font-medium mb-2">📦 Included in Export:</p>
+                <p className="font-medium mb-2 flex items-center gap-1.5">
+                  <Package className="h-3.5 w-3.5 shrink-0" />
+                  Included in Export:
+                </p>
                 <ul className="space-y-1 ml-4 list-disc text-muted-foreground">
                   <li>Default Meta Fields - Your custom metadata templates</li>
                   <li>Recent Folders - Recently accessed project folders</li>
@@ -432,15 +436,19 @@ export function Settings({ onClose }: SettingsProps = {}) {
                   className="hidden"
                 />
                 <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-md text-xs text-yellow-700 dark:text-yellow-500">
-                  <p>
-                    ⚠️ Importing will replace ALL your current data. Export your current config first if you want to keep a backup. The page will reload after import.
+                  <p className="flex items-start gap-1.5">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                    <span>Importing will replace ALL your current data. Export your current config first if you want to keep a backup. The page will reload after import.</span>
                   </p>
                 </div>
               </div>
 
               {/* Info Section */}
               <div className="p-3 bg-muted/30 rounded-md text-xs text-muted-foreground">
-                <p className="font-medium mb-1">💡 Tips:</p>
+                <p className="font-medium mb-1 flex items-center gap-1.5">
+                  <Lightbulb className="h-3.5 w-3.5 shrink-0" />
+                  Tips:
+                </p>
                 <ul className="space-y-1 ml-4 list-disc">
                   <li>Export files are named with the current date for easy organization</li>
                   <li>Config files include version info for compatibility checking</li>
