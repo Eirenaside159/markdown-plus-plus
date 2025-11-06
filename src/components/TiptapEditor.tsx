@@ -117,7 +117,7 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
     content,
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose-base lg:prose-lg dark:prose-invert max-w-none focus:outline-none min-h-[500px] py-6',
+        class: 'prose prose-lg dark:prose-invert max-w-none focus:outline-none min-h-[500px] py-6 px-8',
       },
     },
     onUpdate: ({ editor }) => {
@@ -460,7 +460,7 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
             onChange={(e) => onTitleChange(e.target.value || 'Untitled Post')}
             placeholder="Untitled"
             rows={1}
-            className="w-full text-5xl font-bold border-none outline-none bg-transparent placeholder:text-muted-foreground/30 focus:ring-0 p-0 leading-tight text-center resize-none overflow-hidden"
+            className="w-full text-4xl font-semibold border-none outline-none bg-transparent placeholder:text-muted-foreground/30 focus:ring-0 p-0 leading-tight text-center resize-none overflow-hidden"
           />
         </div>
       )}
@@ -505,49 +505,56 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
         /* Editor Base Styles */
         .ProseMirror {
           outline: none;
+          max-width: 42rem; /* comfortable ~70-75ch at 18px */
+          margin: 0 auto;
+          -webkit-font-smoothing: antialiased;
+          text-rendering: optimizeLegibility;
+          font-kerning: normal;
+          caret-color: hsl(var(--primary));
         }
 
         /* Placeholder */
         .ProseMirror p.is-editor-empty:first-child::before {
           content: attr(data-placeholder);
           float: left;
-          color: hsl(var(--muted-foreground));
+          color: hsl(var(--muted-foreground) / 0.6);
           pointer-events: none;
           height: 0;
         }
 
         /* Headings */
         .ProseMirror h1 {
-          font-size: 2.5rem;
+          font-size: 2.125rem; /* 34px */
           font-weight: 700;
           line-height: 1.2;
-          margin-top: 2rem;
-          margin-bottom: 1rem;
+          margin-top: 1.5em;
+          margin-bottom: 0.5em;
           letter-spacing: -0.025em;
         }
 
         .ProseMirror h2 {
-          font-size: 2rem;
+          font-size: 1.5rem; /* 24px */
           font-weight: 600;
           line-height: 1.3;
-          margin-top: 1.75rem;
-          margin-bottom: 0.875rem;
+          margin-top: 1.5em;
+          margin-bottom: 0.5em;
           letter-spacing: -0.0125em;
         }
 
         .ProseMirror h3 {
-          font-size: 1.625rem;
+          font-size: 1.25rem; /* 20px */
           font-weight: 600;
           line-height: 1.4;
-          margin-top: 1.5rem;
-          margin-bottom: 0.75rem;
+          margin-top: 1.5em;
+          margin-bottom: 0.5em;
         }
 
         /* Paragraphs */
         .ProseMirror p {
-          margin-bottom: 1rem;
-          line-height: 1.75;
-          font-size: 1.0625rem;
+          margin-bottom: 0.95em;
+          line-height: 1.68;
+          font-size: 1.125rem; /* 18px */
+          letter-spacing: normal;
           color: hsl(var(--foreground));
         }
 
@@ -569,7 +576,7 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
           padding: 0.125rem 0.375rem;
           border-radius: 0.25rem;
           font-size: 0.9em;
-          font-family: 'SF Mono', 'Roboto Mono', 'Courier New', monospace;
+          font-family: 'JetBrains Mono', 'Fira Code', 'IBM Plex Mono', 'SF Mono', 'Roboto Mono', monospace;
           color: hsl(var(--foreground));
         }
 
@@ -587,9 +594,9 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
           padding: 1rem;
           margin: 1.5rem 0;
           overflow-x: auto;
-          font-family: 'SF Mono', 'Roboto Mono', 'Courier New', monospace;
-          font-size: 0.875rem;
-          line-height: 1.7;
+          font-family: 'JetBrains Mono', 'Fira Code', 'IBM Plex Mono', 'SF Mono', 'Roboto Mono', monospace;
+          font-size: 0.9375rem; /* 15px */
+          line-height: 1.6;
         }
 
         .ProseMirror pre code {
@@ -627,7 +634,7 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
 
         .ProseMirror li {
           margin-bottom: 0.5rem;
-          line-height: 1.75;
+          line-height: 1.68;
         }
 
         .ProseMirror li p {
