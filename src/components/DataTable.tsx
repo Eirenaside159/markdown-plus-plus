@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Search, ArrowUp, ArrowDown, Edit, Trash2, Filter, Loader2 } from 'lucide-react';
+import { Search, ArrowUp, ArrowDown, Edit, Trash2, Filter, Loader2, EyeOff } from 'lucide-react';
 import type { MarkdownFile } from '@/types';
 import { formatFieldLabel } from '@/lib/fieldUtils';
 import { ColumnSettings } from './ColumnSettings';
@@ -9,6 +9,7 @@ interface DataTableProps {
   isLoading?: boolean;
   onEdit: (post: MarkdownFile) => void;
   onDelete: (post: MarkdownFile) => void;
+  onHide: (post: MarkdownFile) => void;
 }
 
 const STORAGE_KEY = 'mdplusplus-visible-columns';
@@ -20,7 +21,7 @@ interface SortState {
   direction: SortDirection;
 }
 
-export function DataTable({ posts, isLoading = false, onEdit, onDelete }: DataTableProps) {
+export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }: DataTableProps) {
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
   const [sortState, setSortState] = useState<SortState>({ column: 'date', direction: 'desc' });
@@ -204,12 +205,12 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete }: DataTa
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
             placeholder="Search..."
-            className="w-full pl-10 pr-4 py-2 text-base rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring touch-target"
+            className="w-full h-10 pl-10 pr-4 text-base rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
         <button
           onClick={() => setShowColumnFilters(!showColumnFilters)}
-          className={`inline-flex items-center justify-center p-2 text-base rounded-md border transition-colors touch-target ${
+          className={`inline-flex items-center justify-center p-2 rounded-md border transition-colors ${
             showColumnFilters || Object.values(columnFilters).some(v => v)
               ? 'border-primary bg-primary text-primary-foreground'
               : 'border-input bg-background hover:bg-accent'
@@ -228,7 +229,7 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete }: DataTa
         {hasActiveFilters && (
           <button
             onClick={handleClearFilters}
-            className="px-3 py-2 text-sm rounded-md border border-input bg-background hover:bg-accent transition-colors touch-target"
+            className="px-3 py-1.5 text-sm rounded-md border border-input bg-background hover:bg-accent transition-colors touch-target"
           >
             Clear
           </button>
@@ -244,12 +245,12 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete }: DataTa
           <thead className="bg-muted/50 sticky top-0 z-10">
             <tr>
               {displayColumns.map(column => (
-                <th key={column} className="text-left px-4 py-3 border-b">
+                <th key={column} className="text-left px-4 py-1.5 border-b">
                   <div className="space-y-2">
                     {/* Column Header with Sort */}
                     <button
                       onClick={() => handleSort(column)}
-                      className="flex items-center gap-2 text-sm font-semibold hover:text-primary transition-colors w-full touch-target"
+                      className="flex items-center gap-2 text-base font-semibold hover:text-primary transition-colors w-full touch-target"
                     >
                       <span className="truncate">{formatFieldLabel(column)}</span>
                       {sortState.column === column && (
@@ -275,8 +276,8 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete }: DataTa
                   </div>
                 </th>
               ))}
-              <th className="text-left px-4 py-3 border-b sticky right-0 bg-muted/50">
-                <span className="text-sm font-semibold">Actions</span>
+              <th className="text-left px-4 py-1.5 border-b sticky right-0 bg-muted/50">
+                <span className="text-base font-semibold">Actions</span>
               </th>
             </tr>
           </thead>
@@ -331,6 +332,13 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete }: DataTa
                         title="Edit"
                       >
                         <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => onHide(post)}
+                        className="inline-flex items-center justify-center p-2 rounded hover:bg-accent transition-colors touch-target"
+                        title="Hide file"
+                      >
+                        <EyeOff className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => onDelete(post)}
@@ -411,6 +419,18 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete }: DataTa
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Mobile Actions */}
+              <div className="flex items-center gap-2 pt-2 border-t">
+                <button
+                  onClick={() => onHide(post)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded hover:bg-accent transition-colors"
+                  title="Hide file"
+                >
+                  <EyeOff className="h-4 w-4" />
+                  <span>Hide</span>
+                </button>
               </div>
             </div>
           ))

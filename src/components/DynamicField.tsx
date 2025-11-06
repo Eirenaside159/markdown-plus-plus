@@ -177,7 +177,7 @@ export function DynamicField({ fieldKey, fieldLabel, fieldType, value, onChange,
                           onChange(fieldKey, newArray);
                           setArrayInput('');
                         }}
-                        className="w-full text-left px-3 py-2 hover:bg-accent text-sm"
+                        className="w-full text-left px-3 py-1.5 hover:bg-accent text-sm"
                       >
                         {String(suggestion)}
                       </button>
@@ -251,7 +251,7 @@ export function DynamicField({ fieldKey, fieldLabel, fieldType, value, onChange,
                     key={index}
                     type="button"
                     onClick={() => onChange(fieldKey, suggestion)}
-                    className="w-full text-left px-3 py-2 hover:bg-accent text-sm"
+                    className="w-full text-left px-3 py-1.5 hover:bg-accent text-sm"
                   >
                     {String(suggestion)}
                   </button>

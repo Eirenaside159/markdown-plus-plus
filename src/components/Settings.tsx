@@ -1,21 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings as SettingsIcon, Save, RotateCcw, X, FileText, Plus, Trash2, Download, Upload, FolderSync, Lightbulb, Package, AlertTriangle } from 'lucide-react';
+import { Settings as SettingsIcon, X, FileText, Trash2, Download, Upload, FolderSync, Lightbulb, Package, AlertTriangle, LogOut, EyeOff, Eye, Save } from 'lucide-react';
 import { Toast, useToast } from './ui/Toast';
-import { getSettings, saveSettings, resetSettings } from '@/lib/settings';
+import { getSettings, saveSettings } from '@/lib/settings';
+import { getHiddenFiles, unhideFile, clearHiddenFiles } from '@/lib/hiddenFiles';
 import type { AppSettings } from '@/types/settings';
 
 interface SettingsProps {
   onClose?: () => void;
+  onLogout?: () => void;
+  directoryName?: string;
 }
 
-type SettingsTab = 'defaults' | 'import-export';
+type SettingsTab = 'general' | 'defaults' | 'import-export' | 'hidden-files';
 
-export function Settings({ onClose }: SettingsProps = {}) {
+export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {}) {
   const [settings, setSettings] = useState<AppSettings>(getSettings());
-  const [hasChanges, setHasChanges] = useState(false);
-  const [activeTab, setActiveTab] = useState<SettingsTab>('defaults');
+  const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [newMetaKey, setNewMetaKey] = useState('');
   const [newMetaValue, setNewMetaValue] = useState('');
+  const [hiddenFiles, setHiddenFiles] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast, showToast, hideToast } = useToast();
 
@@ -24,63 +27,60 @@ export function Settings({ onClose }: SettingsProps = {}) {
     setSettings(saved);
   }, []);
 
+  useEffect(() => {
+    if (directoryName) {
+      const hidden = getHiddenFiles(directoryName);
+      setHiddenFiles(hidden);
+    }
+  }, [directoryName]);
+
   const handleAddMeta = () => {
     if (!newMetaKey.trim()) {
       showToast('Please enter a meta key', 'warning');
       return;
     }
     
-    setSettings(prev => ({
-      ...prev,
+    const updatedSettings = {
+      ...settings,
       defaultMeta: {
-        ...prev.defaultMeta,
+        ...settings.defaultMeta,
         [newMetaKey.trim()]: newMetaValue.trim(),
       },
-    }));
+    };
+    
+    setSettings(updatedSettings);
+    saveSettings(updatedSettings);
     setNewMetaKey('');
     setNewMetaValue('');
-    setHasChanges(true);
     showToast('Meta field added', 'success');
   };
 
   const handleRemoveMeta = (key: string) => {
-    setSettings(prev => {
-      const newMeta = { ...prev.defaultMeta };
-      delete newMeta[key];
-      return {
-        ...prev,
-        defaultMeta: newMeta,
-      };
-    });
-    setHasChanges(true);
+    const newMeta = { ...settings.defaultMeta };
+    delete newMeta[key];
+    const updatedSettings = {
+      ...settings,
+      defaultMeta: newMeta,
+    };
+    
+    setSettings(updatedSettings);
+    saveSettings(updatedSettings);
+    showToast('Meta field removed', 'success');
   };
 
   const handleUpdateMeta = (key: string, value: string) => {
-    setSettings(prev => ({
-      ...prev,
+    const updatedSettings = {
+      ...settings,
       defaultMeta: {
-        ...prev.defaultMeta,
+        ...settings.defaultMeta,
         [key]: value,
       },
-    }));
-    setHasChanges(true);
+    };
+    
+    setSettings(updatedSettings);
+    saveSettings(updatedSettings);
   };
 
-  const handleSave = () => {
-    saveSettings(settings);
-    setHasChanges(false);
-    showToast('Settings saved successfully!', 'success');
-  };
-
-  const handleReset = () => {
-    if (window.confirm('Reset all settings to default? This cannot be undone.')) {
-      resetSettings();
-      const defaults = getSettings();
-      setSettings(defaults);
-      setHasChanges(false);
-      showToast('Settings reset to default', 'success');
-    }
-  };
 
   const handleExport = () => {
     try {
@@ -92,6 +92,7 @@ export function Settings({ onClose }: SettingsProps = {}) {
         'mdplusplus-settings',
         'mdplusplus_recent_folders',
         'mdplusplus-visible-columns',
+        'mdplusplus-hidden-files',
       ];
       
       keys.forEach(key => {
@@ -173,7 +174,6 @@ export function Settings({ onClose }: SettingsProps = {}) {
         // Reload settings from localStorage
         const newSettings = getSettings();
         setSettings(newSettings);
-        setHasChanges(false);
         
         showToast(`Successfully imported ${importedCount} setting(s)! Reloading...`, 'success');
         
@@ -193,11 +193,40 @@ export function Settings({ onClose }: SettingsProps = {}) {
     }
   };
 
+  const handleUnhideFile = (filePath: string) => {
+    if (!directoryName) return;
+    
+    unhideFile(directoryName, filePath);
+    setHiddenFiles(prev => prev.filter(path => path !== filePath));
+    showToast('File unhidden successfully', 'success');
+  };
+
+  const handleClearAllHidden = () => {
+    if (!directoryName) return;
+    
+    if (window.confirm('Unhide all files? They will appear in the table again.')) {
+      clearHiddenFiles(directoryName);
+      setHiddenFiles([]);
+      showToast('All files unhidden', 'success');
+    }
+  };
+
   const tabs = [
     {
+      id: 'general' as const,
+      label: 'General',
+      icon: SettingsIcon,
+    },
+    {
       id: 'defaults' as const,
-      label: 'Default Meta',
+      label: 'Defaults',
       icon: FileText,
+    },
+    {
+      id: 'hidden-files' as const,
+      label: 'Hidden Files',
+      icon: EyeOff,
+      badge: hiddenFiles.length > 0 ? hiddenFiles.length : undefined,
     },
     {
       id: 'import-export' as const,
@@ -219,14 +248,8 @@ export function Settings({ onClose }: SettingsProps = {}) {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          <SettingsIcon className="h-5 w-5 text-muted-foreground" />
-          <h2 className="text-base sm:text-lg font-semibold">Settings</h2>
-          {hasChanges && (
-            <span className="flex items-center gap-1 text-xs text-yellow-600 dark:text-yellow-500">
-              <span className="h-2 w-2 rounded-full bg-yellow-600 dark:bg-yellow-500" />
-              <span className="hidden sm:inline">Unsaved</span>
-            </span>
-          )}
+          <SettingsIcon className="h-6 w-6 text-muted-foreground" />
+          <h2 className="text-xl sm:text-2xl font-semibold">Settings</h2>
         </div>
         {onClose && (
           <button
@@ -252,7 +275,7 @@ export function Settings({ onClose }: SettingsProps = {}) {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
-                  flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium transition-colors border-b-2 -mb-[1px] touch-target whitespace-nowrap
+                  flex items-center gap-2 px-3 sm:px-4 py-2 text-base font-medium transition-colors border-b-2 -mb-[1px] touch-target whitespace-nowrap relative
                   ${isActive 
                     ? 'text-foreground border-primary' 
                     : 'text-muted-foreground border-transparent hover:text-foreground hover:bg-accent/50'
@@ -262,6 +285,11 @@ export function Settings({ onClose }: SettingsProps = {}) {
                 <Icon className="h-4 w-4" />
                 <span className="hidden sm:inline">{tab.label}</span>
                 <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+                {tab.badge !== undefined && tab.badge > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold rounded-full bg-primary text-primary-foreground">
+                    {tab.badge}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -270,98 +298,191 @@ export function Settings({ onClose }: SettingsProps = {}) {
 
       {/* Tab Content */}
       <div className="space-y-6">
+        {/* General Tab */}
+        {activeTab === 'general' && (
+          <section className="space-y-4">
+              {/* App Info */}
+              <div className="p-4 bg-muted/30 rounded-lg space-y-2">
+                <div className="text-lg font-semibold">Application Info</div>
+                <div className="text-base text-muted-foreground space-y-1">
+                  <div className="flex justify-between">
+                    <span>Version:</span>
+                    <span className="font-medium">v0.5.0-beta</span>
+                  </div>
+                  {directoryName && (
+                    <div className="flex justify-between">
+                      <span>Current Workspace:</span>
+                      <span className="font-medium">{directoryName}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Logout Section */}
+              {onLogout && (
+                <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg space-y-3">
+                  <div className="flex items-center gap-2">
+                    <LogOut className="h-5 w-5 text-destructive" />
+                    <div className="text-lg font-semibold text-destructive">Logout</div>
+                  </div>
+                  <p className="text-base text-muted-foreground">
+                    Close the current workspace and return to folder selection. Make sure you've saved all your changes.
+                  </p>
+                  <button
+                    onClick={onLogout}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-base font-medium rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Logout from Workspace
+                  </button>
+                </div>
+              )}
+          </section>
+        )}
+
         {/* Default Meta Tab */}
         {activeTab === 'defaults' && (
           <section className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-semibold">Default Meta Fields</h3>
-            </div>
+            <p className="text-base text-muted-foreground">
+              These meta fields will be automatically added to new posts when created.
+            </p>
 
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                These meta fields will be automatically added to new posts when created.
-              </p>
+            <div className="space-y-2">
+              {/* Existing meta fields */}
+              {Object.entries(settings.defaultMeta).map(([key, value]) => (
+                <div key={key} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={key}
+                    disabled
+                    className="flex-1 px-3 py-2 text-base rounded-md border border-input bg-muted cursor-not-allowed"
+                  />
+                  <input
+                    type="text"
+                    value={typeof value === 'string' ? value : JSON.stringify(value)}
+                    onChange={(e) => handleUpdateMeta(key, e.target.value)}
+                    placeholder="Default value"
+                    className="flex-1 px-3 py-2 text-base rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring touch-target"
+                  />
+                  <button
+                    onClick={() => handleRemoveMeta(key)}
+                    className="inline-flex items-center justify-center px-3 py-2 rounded-md text-destructive hover:bg-destructive/10 transition-colors touch-target shrink-0"
+                    title="Remove field"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
+                </div>
+              ))}
 
               {/* Add new meta field */}
-              <div className="p-3 sm:p-4 bg-muted/30 rounded-lg space-y-3">
-                <div className="text-sm font-medium">Add New Field</div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    value={newMetaKey}
-                    onChange={(e) => setNewMetaKey(e.target.value)}
-                    placeholder="Field name (e.g., author)"
-                    className="px-3 py-2 text-base rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring touch-target"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddMeta();
-                      }
-                    }}
-                  />
-                  <input
-                    type="text"
-                    value={newMetaValue}
-                    onChange={(e) => setNewMetaValue(e.target.value)}
-                    placeholder="Default value"
-                    className="px-3 py-2 text-base rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring touch-target"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddMeta();
-                      }
-                    }}
-                  />
-                </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newMetaKey}
+                  onChange={(e) => setNewMetaKey(e.target.value)}
+                  placeholder="Field name (e.g., author)"
+                  className="flex-1 px-3 py-2 text-base rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring touch-target"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const nextInput = e.currentTarget.nextElementSibling as HTMLInputElement;
+                      if (nextInput) nextInput.focus();
+                    }
+                  }}
+                />
+                <input
+                  type="text"
+                  value={newMetaValue}
+                  onChange={(e) => setNewMetaValue(e.target.value)}
+                  placeholder="Default value"
+                  className="flex-1 px-3 py-2 text-base rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring touch-target"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddMeta();
+                    }
+                  }}
+                />
                 <button
                   onClick={handleAddMeta}
-                  className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors touch-target"
+                  className="inline-flex items-center justify-center px-3 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors touch-target shrink-0"
+                  title="Save field"
                 >
-                  <Plus className="h-4 w-4" />
-                  Add Field
+                  <Save className="h-5 w-5" />
                 </button>
               </div>
+            </div>
 
-              {/* Existing meta fields */}
-              {Object.keys(settings.defaultMeta).length > 0 ? (
+            <div className="p-3 bg-muted/30 rounded-md text-sm text-muted-foreground">
+              <p className="flex items-center gap-1.5">
+                <Lightbulb className="h-4 w-4 shrink-0" />
+                <span>These fields will be merged with standard meta (title, date, etc.) when creating new posts.</span>
+              </p>
+            </div>
+          </section>
+        )}
+
+        {/* Hidden Files Tab */}
+        {activeTab === 'hidden-files' && (
+          <section className="space-y-4">
+            {hiddenFiles.length > 0 && (
+              <div className="flex justify-end">
+                <button
+                  onClick={handleClearAllHidden}
+                  className="text-sm text-primary hover:text-primary/80 transition-colors"
+                >
+                  Unhide All
+                </button>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <p className="text-base text-muted-foreground">
+                Files you've hidden from the table view. Click to unhide them.
+              </p>
+
+              {hiddenFiles.length > 0 ? (
                 <div className="space-y-2">
-                  <div className="text-sm font-medium">Current Default Fields</div>
-                  <div className="space-y-2">
-                    {Object.entries(settings.defaultMeta).map(([key, value]) => (
-                      <div key={key} className="flex items-center gap-2 p-3 rounded-md border border-input bg-background">
-                        <div className="flex-1 grid grid-cols-2 gap-2">
-                          <div className="text-sm font-medium text-muted-foreground">
-                            {key}
-                          </div>
-                          <input
-                            type="text"
-                            value={typeof value === 'string' ? value : JSON.stringify(value)}
-                            onChange={(e) => handleUpdateMeta(key, e.target.value)}
-                            className="px-2 py-1 text-sm rounded border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                          />
-                        </div>
-                        <button
-                          onClick={() => handleRemoveMeta(key)}
-                          className="inline-flex items-center justify-center p-1 text-destructive hover:bg-destructive/10 rounded transition-colors"
-                          title="Remove field"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                  {hiddenFiles.map((filePath) => (
+                    <div 
+                      key={filePath} 
+                      className="flex items-center justify-between p-3 rounded-md border border-input bg-background hover:bg-accent/50 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <EyeOff className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <span className="text-base truncate" title={filePath}>
+                          {filePath}
+                        </span>
                       </div>
-                    ))}
-                  </div>
+                      <button
+                        onClick={() => handleUnhideFile(filePath)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0 opacity-0 group-hover:opacity-100"
+                        title="Unhide file"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        <span>Unhide</span>
+                      </button>
+                    </div>
+                  ))}
                 </div>
               ) : (
-                <div className="p-4 text-center text-sm text-muted-foreground">
-                  No default fields configured. Add some above!
+                <div className="p-8 text-center space-y-2">
+                  <div className="flex justify-center">
+                    <Eye className="h-8 w-8 text-muted-foreground/50" />
+                  </div>
+                  <p className="text-base text-muted-foreground">
+                    No hidden files
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Use the hide button in the table to hide files you don't want to see
+                  </p>
                 </div>
               )}
 
-              <div className="p-3 bg-muted/30 rounded-md text-xs text-muted-foreground">
+              <div className="p-3 bg-muted/30 rounded-md text-sm text-muted-foreground">
                 <p className="flex items-center gap-1.5">
-                  <Lightbulb className="h-3.5 w-3.5 shrink-0" />
-                  <span>These fields will be merged with standard meta (title, date, etc.) when creating new posts.</span>
+                  <Lightbulb className="h-4 w-4 shrink-0" />
+                  <span>Hidden files are stored per workspace. They remain hidden even after closing the app.</span>
                 </p>
               </div>
             </div>
@@ -371,118 +492,90 @@ export function Settings({ onClose }: SettingsProps = {}) {
         {/* Import/Export Tab */}
         {activeTab === 'import-export' && (
           <section className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <FolderSync className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-semibold">Import / Export Settings</h3>
-            </div>
+            <p className="text-base text-muted-foreground">
+              Backup all your application data or restore from a previously saved configuration file.
+            </p>
 
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Backup all your application data or restore from a previously saved configuration file.
-              </p>
-
-              {/* What's Included */}
-              <div className="p-3 bg-muted/20 rounded-md text-xs">
+            {/* What's Included */}
+            <div className="p-3 bg-muted/20 rounded-md text-sm">
                 <p className="font-medium mb-2 flex items-center gap-1.5">
-                  <Package className="h-3.5 w-3.5 shrink-0" />
+                  <Package className="h-4 w-4 shrink-0" />
                   Included in Export:
                 </p>
-                <ul className="space-y-1 ml-4 list-disc text-muted-foreground">
-                  <li>Default Meta Fields - Your custom metadata templates</li>
-                  <li>Recent Folders - Recently accessed project folders</li>
-                  <li>Column Settings - Table column visibility preferences</li>
-                </ul>
-              </div>
+              <ul className="space-y-1 ml-4 list-disc text-muted-foreground">
+                <li>Default Meta Fields - Your custom metadata templates</li>
+                <li>Recent Folders - Recently accessed project folders</li>
+                <li>Column Settings - Table column visibility preferences</li>
+                <li>Hidden Files - Files you've hidden from the table view</li>
+              </ul>
+            </div>
 
-              {/* Export Section */}
-              <div className="p-4 bg-muted/30 rounded-lg space-y-3">
-                <div className="flex items-center gap-2">
-                  <Download className="h-4 w-4 text-muted-foreground" />
-                  <div className="text-sm font-medium">Export Configuration</div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Download all your application data as a JSON file. This includes settings, recent folders, and column preferences.
-                </p>
-                <button
-                  onClick={handleExport}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                >
-                  <Download className="h-4 w-4" />
-                  Export All Data
-                </button>
+            {/* Export Section */}
+            <div className="p-4 bg-muted/30 rounded-lg space-y-3">
+              <div className="flex items-center gap-2">
+                <Download className="h-5 w-5 text-muted-foreground" />
+                <div className="text-lg font-semibold">Export Configuration</div>
               </div>
+              <p className="text-base text-muted-foreground">
+                Download all your application data as a JSON file. This includes settings, recent folders, and column preferences.
+              </p>
+              <button
+                onClick={handleExport}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-base font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                <Download className="h-4 w-4" />
+                Export All Data
+              </button>
+            </div>
 
-              {/* Import Section */}
-              <div className="p-4 bg-muted/30 rounded-lg space-y-3">
-                <div className="flex items-center gap-2">
-                  <Upload className="h-4 w-4 text-muted-foreground" />
-                  <div className="text-sm font-medium">Import Configuration</div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Select a previously exported JSON file to restore all your data. This will replace your current settings and preferences.
-                </p>
-                <button
-                  onClick={handleImport}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent transition-colors"
-                >
-                  <Upload className="h-4 w-4" />
-                  Import Config File
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".json,application/json"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-md text-xs text-yellow-700 dark:text-yellow-500">
-                  <p className="flex items-start gap-1.5">
-                    <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                    <span>Importing will replace ALL your current data. Export your current config first if you want to keep a backup. The page will reload after import.</span>
-                  </p>
-                </div>
+            {/* Import Section */}
+            <div className="p-4 bg-muted/30 rounded-lg space-y-3">
+              <div className="flex items-center gap-2">
+                <Upload className="h-5 w-5 text-muted-foreground" />
+                <div className="text-lg font-semibold">Import Configuration</div>
               </div>
+              <p className="text-base text-muted-foreground">
+                Select a previously exported JSON file to restore all your data. This will replace your current settings and preferences.
+              </p>
+              <button
+                onClick={handleImport}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-base font-medium rounded-md border border-input bg-background hover:bg-accent transition-colors"
+              >
+                <Upload className="h-4 w-4" />
+                Import Config File
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json,application/json"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-md text-sm text-yellow-700 dark:text-yellow-500">
+                <p className="flex items-start gap-1.5">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span>Importing will replace ALL your current data. Export your current config first if you want to keep a backup. The page will reload after import.</span>
+                </p>
+              </div>
+            </div>
 
-              {/* Info Section */}
-              <div className="p-3 bg-muted/30 rounded-md text-xs text-muted-foreground">
-                <p className="font-medium mb-1 flex items-center gap-1.5">
-                  <Lightbulb className="h-3.5 w-3.5 shrink-0" />
-                  Tips:
-                </p>
-                <ul className="space-y-1 ml-4 list-disc">
-                  <li>Export files are named with the current date for easy organization</li>
-                  <li>Config files include version info for compatibility checking</li>
-                  <li>You can manually edit the JSON file if needed (advanced users)</li>
-                  <li>Keep backups in a safe location (cloud storage, USB drive, etc.)</li>
-                  <li>Import automatically applies changes and reloads the page</li>
-                  <li>Compatible with both old (settings-only) and new (full) formats</li>
-                </ul>
-              </div>
+            {/* Info Section */}
+            <div className="p-3 bg-muted/30 rounded-md text-sm text-muted-foreground">
+              <p className="font-medium mb-1 flex items-center gap-1.5">
+                <Lightbulb className="h-4 w-4 shrink-0" />
+                Tips:
+              </p>
+              <ul className="space-y-1 ml-4 list-disc">
+                <li>Export files are named with the current date for easy organization</li>
+                <li>Config files include version info for compatibility checking</li>
+                <li>You can manually edit the JSON file if needed (advanced users)</li>
+                <li>Keep backups in a safe location (cloud storage, USB drive, etc.)</li>
+                <li>Import automatically applies changes and reloads the page</li>
+                <li>Compatible with both old (settings-only) and new (full) formats</li>
+              </ul>
             </div>
           </section>
         )}
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center justify-between pt-4 border-t gap-2 flex-wrap">
-        <button
-          onClick={handleReset}
-          className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 text-sm rounded-md border border-input bg-background hover:bg-accent transition-colors touch-target"
-        >
-          <RotateCcw className="h-4 w-4" />
-          <span className="hidden sm:inline">Reset to Default</span>
-          <span className="sm:hidden">Reset</span>
-        </button>
-
-        <button
-          onClick={handleSave}
-          disabled={!hasChanges}
-          className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors touch-target"
-        >
-          <Save className="h-4 w-4" />
-          <span className="hidden sm:inline">Save Settings</span>
-          <span className="sm:hidden">Save</span>
-        </button>
       </div>
     </div>
     </>

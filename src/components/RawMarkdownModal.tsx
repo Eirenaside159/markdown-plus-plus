@@ -114,7 +114,7 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
             {!showComparison && (
               <button
                 onClick={handleCopy}
-                className="inline-flex items-center gap-2 px-2 sm:px-3 py-2 text-sm rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors touch-target"
+                className="inline-flex items-center gap-2 px-2 sm:px-3 py-1.5 text-sm rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors touch-target"
                 title="Copy to clipboard"
               >
                 {copied ? (
@@ -351,7 +351,7 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
           )}
           <button
             onClick={onClose}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors touch-target"
+            className="inline-flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors touch-target"
           >
             Close
           </button>

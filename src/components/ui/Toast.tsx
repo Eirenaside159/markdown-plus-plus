@@ -58,7 +58,7 @@ export function Toast({
 
   return (
     <div 
-      className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] max-w-lg animate-in slide-in-from-top-2 duration-300"
+      className="fixed bottom-4 right-4 z-[100] w-[calc(100%-2rem)] sm:w-auto max-w-lg animate-in slide-in-from-bottom-2 duration-300"
       role="alert"
       aria-live="assertive"
     >

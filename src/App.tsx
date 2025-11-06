@@ -15,8 +15,9 @@ import { getRecentFolders, addRecentFolder, clearRecentFolders, formatTimestamp 
 import { getSettings } from '@/lib/settings';
 import { saveDirectoryHandle, loadDirectoryHandle, saveAppState, loadAppState, clearPersistedData } from '@/lib/persistedState';
 import { checkGitStatus, publishFile, generateCommitMessage, type GitStatus } from '@/lib/gitOperations';
+import { hideFile, getHiddenFiles } from '@/lib/hiddenFiles';
 import type { FileTreeItem, MarkdownFile } from '@/types';
-import { FolderOpen, Save, Clock, FileCode, ArrowLeft, Plus, RotateCcw, Settings as SettingsIcon, Menu, LogOut, Github, AlertCircle, Upload, Lightbulb } from 'lucide-react';
+import { FolderOpen, Save, Clock, FileCode, ArrowLeft, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen } from 'lucide-react';
 
 type ViewMode = 'table' | 'editor' | 'settings';
 
@@ -36,12 +37,26 @@ function App() {
   const [isRestoring, setIsRestoring] = useState(true);
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [gitStatus, setGitStatus] = useState<GitStatus | null>(null);
+  const [showActionsDropdown, setShowActionsDropdown] = useState(false);
+  const [showTitleInHeader, setShowTitleInHeader] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
   // Check if warning should be shown on mount
   useEffect(() => {
     setShowWarningModal(shouldShowWarning());
   }, []);
+
+  // Update page title based on changes
+  useEffect(() => {
+    if (viewMode === 'editor' && currentFile) {
+      const baseTitle = currentFile.frontmatter.title || currentFile.name || 'Untitled';
+      document.title = hasChanges ? `🟠 ${baseTitle} - Markdown++` : `${baseTitle} - Markdown++`;
+    } else if (viewMode === 'table' && dirHandle) {
+      document.title = `${dirHandle.name} - Markdown++`;
+    } else {
+      document.title = 'Markdown++';
+    }
+  }, [viewMode, currentFile, hasChanges, dirHandle]);
 
   const loadAllPosts = async (handle: FileSystemDirectoryHandle, fileTree: FileTreeItem[]) => {
     try {
@@ -292,6 +307,13 @@ function App() {
     }
   };
 
+  const handleHidePost = (post: MarkdownFile) => {
+    if (!dirHandle) return;
+
+    hideFile(dirHandle.name, post.path);
+    showToast(`"${post.frontmatter.title || post.name}" hidden`, 'info');
+  };
+
   const handleCreatePost = async (filename: string, title: string) => {
     if (!dirHandle) return;
 
@@ -419,6 +441,17 @@ function App() {
     }
   };
 
+  const handleTitleChange = (title: string) => {
+    if (currentFile) {
+      const updated = updateFrontmatter(currentFile, {
+        ...currentFile.frontmatter,
+        title,
+      });
+      setCurrentFile(updated);
+      setHasChanges(true);
+    }
+  };
+
   // Save view mode changes
   useEffect(() => {
     if (!isRestoring && dirHandle) {
@@ -436,10 +469,46 @@ function App() {
         e.preventDefault();
         if (hasChanges) handleSave();
       }
+      if (e.key === 'Escape' && showActionsDropdown) {
+        setShowActionsDropdown(false);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [hasChanges, currentFile, selectedFilePath]);
+  }, [hasChanges, currentFile, selectedFilePath, showActionsDropdown]);
+
+  // Track scroll to show/hide title in header (only in editor mode)
+  useEffect(() => {
+    if (viewMode !== 'editor' || !currentFile) {
+      setShowTitleInHeader(false);
+      return;
+    }
+
+    const handleScroll = () => {
+      const scrollContainer = document.querySelector('.flex-1.overflow-auto');
+      if (scrollContainer) {
+        // Show title in header when scrolled more than 100px
+        setShowTitleInHeader(scrollContainer.scrollTop > 100);
+      }
+    };
+
+    const scrollContainer = document.querySelector('.flex-1.overflow-auto');
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScroll);
+      handleScroll(); // Initial check
+      return () => scrollContainer.removeEventListener('scroll', handleScroll);
+    }
+  }, [viewMode, currentFile]);
+
+  const scrollToTop = () => {
+    const scrollContainer = document.querySelector('.flex-1.overflow-auto');
+    if (scrollContainer) {
+      scrollContainer.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   if (!dirHandle) {
     // Show loading while restoring
@@ -559,7 +628,7 @@ function App() {
                 href="https://github.com/emir/markdown-plus-plus"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 hover:text-foreground transition-colors touch-target py-2 px-3 rounded-md hover:bg-accent"
+                className="inline-flex items-center gap-2 hover:text-foreground transition-colors touch-target py-1.5 px-3 rounded-md hover:bg-accent"
               >
                 <Github className="h-4 w-4" />
                 <span>View on GitHub</span>
@@ -592,123 +661,183 @@ function App() {
       <div className="h-screen flex flex-col bg-background">
       {/* Header */}
       <div className="border-b">
-        <div className="flex items-center px-2 sm:px-4 gap-2 sm:gap-4 min-h-14 py-2">
-          {/* Back Button (only in editor mode) */}
-          {viewMode === 'editor' && (
-            <button
-              onClick={() => setViewMode('table')}
-              className="inline-flex items-center justify-center rounded-md border border-input bg-background px-2 sm:px-3 py-2.5 hover:bg-accent hover:text-accent-foreground transition-colors shrink-0 touch-target"
-              title="Back to posts"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
+        <div className="relative flex items-center px-2 sm:px-4 gap-2 sm:gap-4 h-14">
+          {/* Logo and Title */}
+          <button
+            onClick={async () => {
+              if (hasChanges && !window.confirm('You have unsaved changes. Discard them?')) {
+                return;
+              }
+              // If in editor mode, go to table view
+              if (viewMode === 'editor') {
+                setViewMode('table');
+                setCurrentFile(null);
+                setSelectedFilePath(null);
+                setHasChanges(false);
+                setHasPendingPublish(false);
+              } else if (viewMode === 'settings') {
+                // If in settings, go to table view
+                setViewMode('table');
+              } else if (viewMode === 'table' && dirHandle) {
+                // If in table view, refresh posts
+                setIsLoadingPosts(true);
+                const fileTree = await readDirectory(dirHandle);
+                await loadAllPosts(dirHandle, fileTree);
+                showToast('Posts refreshed', 'success', 2000);
+              }
+            }}
+            className="flex items-center gap-1.5 text-base sm:text-lg font-semibold opacity-40 hover:opacity-100 transition-all duration-500 ease-in-out group cursor-pointer relative z-10"
+          >
+            <img src="/logo.png" alt="Markdown++" className="w-6 h-6 sm:w-7 sm:h-7 object-contain group-hover:scale-105 transition-transform duration-500" />
+            <span>Markdown++</span>
+          </button>
+          
+          {/* Unsaved Changes Indicator */}
+          {viewMode === 'editor' && hasChanges && (
+            <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse -ml-1 relative z-10" title="Unsaved changes" />
+          )}
+
+          {/* Title in Header (when scrolled in editor) - Absolutely positioned to center */}
+          {showTitleInHeader && viewMode === 'editor' && currentFile && (
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto">
+              <div className="w-[720px] px-4">
+                <div 
+                  onClick={scrollToTop}
+                  className={`font-bold text-center leading-tight truncate cursor-pointer hover:opacity-80 transition-opacity ${
+                    (() => {
+                      const title = currentFile.frontmatter.title || 'Untitled';
+                      const length = title.length;
+                      if (length > 60) return 'text-sm';
+                      if (length > 40) return 'text-base';
+                      if (length > 25) return 'text-lg';
+                      return 'text-xl';
+                    })()
+                  }`}
+                  title={currentFile.frontmatter.title || 'Untitled'}
+                >
+                  {currentFile.frontmatter.title || 'Untitled'}
+                </div>
+              </div>
+            </div>
           )}
           
-          <div className="flex-1 min-w-0">
-            {viewMode === 'editor' && currentFile ? (
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <h2 className="font-semibold text-base sm:text-xl truncate">
-                    {currentFile.frontmatter.title || currentFile.name}
-                  </h2>
-                  {hasChanges && (
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-                      <span className="h-2 w-2 rounded-full bg-yellow-500" />
-                      <span className="hidden sm:inline">Unsaved</span>
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground truncate hidden sm:block">
-                  {currentFile.path}
-                </p>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-lg sm:text-xl font-semibold opacity-40 hover:opacity-100 transition-all duration-500 ease-in-out group cursor-default">
-                <img src="/logo.png" alt="Markdown++" className="w-7 h-7 sm:w-8 sm:h-8 object-contain group-hover:scale-105 transition-transform duration-500" />
-                <span>Markdown++</span>
-              </div>
-            )}
-          </div>
+          <div className="flex-1 min-w-0"></div>
           
-          <div className="ml-auto flex items-center gap-1 sm:gap-2">
+          <div className="ml-auto flex items-center gap-2 relative z-10">
             {viewMode !== 'editor' && (
               <>
                 <button
+                  onClick={() => setShowNewPostModal(true)}
+                  className="inline-flex items-center gap-2 rounded-md bg-primary pl-2 pr-2 sm:pr-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">New Post</span>
+                </button>
+
+                <button
                   onClick={() => setViewMode('settings')}
-                  className="inline-flex items-center justify-center rounded-md border border-input bg-background px-2 sm:px-4 py-2.5 hover:bg-accent hover:text-accent-foreground transition-colors touch-target"
+                  className="inline-flex items-center justify-center rounded-md bg-white dark:bg-white/10 px-2 py-1.5 hover:bg-white/90 dark:hover:bg-white/20 transition-colors shadow-sm"
                   title="Settings"
                 >
                   <SettingsIcon className="h-5 w-5" />
-                </button>
-                
-                <button
-                  onClick={handleLogout}
-                  className="inline-flex items-center justify-center rounded-md border border-input bg-background px-2 sm:px-4 py-2.5 hover:bg-destructive/10 hover:text-destructive transition-colors touch-target"
-                  title="Logout"
-                >
-                  <LogOut className="h-5 w-5" />
                 </button>
               </>
             )}
 
             {viewMode === 'editor' && currentFile && (
               <>
-                {/* Sidebar Menu Button */}
-                <button
-                  onClick={() => setIsMobileSidebarOpen(true)}
-                  className="inline-flex items-center justify-center rounded-md border border-input bg-background px-2 py-2.5 hover:bg-accent hover:text-accent-foreground transition-colors touch-target"
-                  title="Open Sidebar"
-                >
-                  <Menu className="h-5 w-5" />
-                </button>
+                {/* Actions Button Group */}
+                <div className="relative flex items-stretch">
+                  {/* Open Sidebar Button */}
+                  <button
+                    onClick={() => setIsMobileSidebarOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-l-md bg-primary pl-2 pr-2 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                    title="Open Sidebar"
+                  >
+                    <PanelRightOpen className="h-4 w-4" />
+                    <span>Sidebar</span>
+                  </button>
+                  
+                  {/* Dropdown Toggle */}
+                  <button
+                    onClick={() => setShowActionsDropdown(!showActionsDropdown)}
+                    className="inline-flex items-center justify-center rounded-r-md bg-primary px-1.5 py-1.5 text-primary-foreground hover:bg-primary/90 transition-colors border-l border-primary-foreground/20"
+                    title="More actions"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
 
-                {/* Raw Button - Hidden on small mobile */}
-                <button
-                  onClick={() => setShowRawModal(true)}
-                  className="hidden sm:inline-flex items-center gap-2 rounded-md border border-input bg-background px-2 lg:px-4 py-2.5 text-sm hover:bg-accent hover:text-accent-foreground transition-colors touch-target"
-                  title="View Raw Markdown"
-                >
-                  <FileCode className="h-5 w-5" />
-                  <span className="hidden lg:inline">Raw</span>
-                </button>
-
-                {/* Discard Button - Hidden on small mobile */}
-                <button
-                  onClick={handleDiscardChanges}
-                  disabled={!hasChanges}
-                  className="hidden sm:inline-flex items-center gap-2 rounded-md border border-input bg-background px-2 lg:px-4 py-2.5 text-sm hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 disabled:pointer-events-none transition-colors touch-target"
-                  title="Discard Changes"
-                >
-                  <RotateCcw className="h-5 w-5" />
-                  <span className="hidden lg:inline">Discard</span>
-                </button>
-
-                {/* Save Button - Always visible */}
-                <button
-                  onClick={handleSave}
-                  disabled={!hasChanges}
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-3 sm:px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none transition-colors touch-target"
-                >
-                  <Save className="h-5 w-5" />
-                  <span className="hidden sm:inline">Save</span>
-                </button>
-
-                {/* Publish Button */}
-                <button
-                  onClick={handlePublishClick}
-                  disabled={hasChanges || !hasPendingPublish}
-                  className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 sm:px-4 py-2.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors touch-target disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={
-                    hasChanges 
-                      ? "Save changes before publishing" 
-                      : !hasPendingPublish 
-                        ? "No changes to publish" 
-                        : "Publish to Git"
-                  }
-                >
-                  <Upload className="h-5 w-5" />
-                  <span className="hidden lg:inline">Publish</span>
-                </button>
+                  {/* Dropdown Menu */}
+                  {showActionsDropdown && (
+                    <>
+                      {/* Backdrop to close dropdown */}
+                      <div 
+                        className="fixed inset-0 z-10" 
+                        onClick={() => setShowActionsDropdown(false)}
+                      />
+                      
+                      <div className="absolute right-0 top-full mt-1 z-20 w-48 rounded-md border border-border bg-background shadow-lg">
+                        <div className="py-1">
+                          <button
+                            onClick={() => {
+                              handleDiscardChanges();
+                              setShowActionsDropdown(false);
+                            }}
+                            disabled={!hasChanges}
+                            className="flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                            <span>Discard Changes</span>
+                          </button>
+                          
+                          <button
+                            onClick={() => {
+                              setShowRawModal(true);
+                              setShowActionsDropdown(false);
+                            }}
+                            className="flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-accent transition-colors text-left"
+                          >
+                            <FileCode className="h-4 w-4" />
+                            <span>View Raw Markdown</span>
+                          </button>
+                          
+                          <div className="h-px bg-border my-1" />
+                          
+                          <button
+                            onClick={() => {
+                              handleSave();
+                              setShowActionsDropdown(false);
+                            }}
+                            disabled={!hasChanges}
+                            className="flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
+                          >
+                            <Save className="h-4 w-4" />
+                            <span>Save Changes</span>
+                          </button>
+                          
+                          <button
+                            onClick={() => {
+                              handlePublishClick();
+                              setShowActionsDropdown(false);
+                            }}
+                            disabled={hasChanges || !hasPendingPublish}
+                            className="flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
+                            title={
+                              hasChanges 
+                                ? "Save changes before publishing" 
+                                : !hasPendingPublish 
+                                  ? "No changes to publish" 
+                                  : "Publish to Git"
+                            }
+                          >
+                            <Upload className="h-4 w-4" />
+                            <span>Publish</span>
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               </>
             )}
           </div>
@@ -719,47 +848,51 @@ function App() {
       {viewMode === 'settings' ? (
         <div className="flex-1 overflow-auto">
           <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
-            <Settings onClose={() => setViewMode('table')} />
+            <Settings 
+              onClose={() => setViewMode('table')} 
+              onLogout={handleLogout}
+              directoryName={dirHandle?.name}
+            />
           </div>
         </div>
       ) : viewMode === 'table' ? (
         <div className="flex-1 overflow-hidden flex flex-col">
-          <div className="p-3 sm:p-4 border-b flex items-center justify-between gap-2 flex-wrap">
+          <div className="p-3 sm:p-4 border-b">
             <div className="flex items-center gap-2">
               <h2 className="font-semibold text-base sm:text-lg">All Posts</h2>
               <span className="text-xs sm:text-sm text-muted-foreground">
                 ({allPosts.length} {allPosts.length === 1 ? 'post' : 'posts'})
               </span>
             </div>
-            <button
-              onClick={() => setShowNewPostModal(true)}
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-3 sm:px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors touch-target"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">New Post</span>
-              <span className="sm:hidden">New</span>
-            </button>
           </div>
           <div className="flex-1 overflow-hidden p-3 sm:p-4">
             <DataTable
-              posts={allPosts}
+              posts={allPosts.filter(post => {
+                if (!dirHandle) return true;
+                const hiddenFiles = getHiddenFiles(dirHandle.name);
+                return !hiddenFiles.includes(post.path);
+              })}
               isLoading={isLoadingPosts}
               onEdit={handleEditPost}
               onDelete={handleDeletePost}
+              onHide={handleHidePost}
             />
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex overflow-hidden">
-          {/* Left: Editor */}
-          <div className="flex-1 p-2 sm:p-4 overflow-auto">
+        <div className="flex-1 overflow-auto">
+          <div className="min-h-full flex justify-center">
             {currentFile ? (
-              <MarkdownEditor
-                content={currentFile.content}
-                onChange={handleContentChange}
-              />
+              <div className="w-full max-w-[720px]">
+                <MarkdownEditor
+                  content={currentFile.content}
+                  onChange={handleContentChange}
+                  title={currentFile.frontmatter.title || ''}
+                  onTitleChange={handleTitleChange}
+                />
+              </div>
             ) : (
-              <div className="flex h-full items-center justify-center text-muted-foreground">
+              <div className="flex items-center justify-center text-muted-foreground w-full">
                 <div className="text-center space-y-2">
                   <p>No file selected</p>
                   <button
@@ -772,25 +905,26 @@ function App() {
               </div>
             )}
           </div>
-
-          {/* Sidebar Sheet */}
-          <Sheet
-            isOpen={isMobileSidebarOpen}
-            onClose={() => setIsMobileSidebarOpen(false)}
-            side="right"
-            title="Post Details"
-          >
-            <SidebarTabs
-              currentFile={currentFile}
-              allPosts={allPosts}
-              onMetaChange={handleMetaChange}
-              onPostClick={(post) => {
-                handleEditPost(post);
-                setIsMobileSidebarOpen(false);
-              }}
-            />
-          </Sheet>
         </div>
+      )}
+
+      {/* Sidebar Sheet */}
+      {viewMode === 'editor' && (
+        <Sheet
+          isOpen={isMobileSidebarOpen}
+          onClose={() => setIsMobileSidebarOpen(false)}
+          side="right"
+        >
+          <SidebarTabs
+            currentFile={currentFile}
+            allPosts={allPosts}
+            onMetaChange={handleMetaChange}
+            onPostClick={(post) => {
+              handleEditPost(post);
+              setIsMobileSidebarOpen(false);
+            }}
+          />
+        </Sheet>
       )}
 
       {/* Raw Markdown Modal */}

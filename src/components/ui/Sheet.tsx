@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
 
 interface SheetProps {
   isOpen: boolean;
@@ -70,15 +69,8 @@ export function Sheet({ isOpen, onClose, children, side = 'right', title }: Shee
       >
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between p-4 border-b shrink-0">
+          <div className="flex items-center justify-between shrink-0 p-4 border-b">
             <h2 className="text-lg font-semibold">{title}</h2>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-md hover:bg-accent transition-colors touch-target inline-flex items-center justify-center"
-              aria-label="Close"
-            >
-              <X className="h-5 w-5" />
-            </button>
           </div>
         )}
 

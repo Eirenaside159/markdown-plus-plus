@@ -6,6 +6,8 @@ import TurndownService from 'turndown';
 interface MarkdownEditorProps {
   content: string;
   onChange: (content: string) => void;
+  title: string;
+  onTitleChange: (title: string) => void;
 }
 
 // Configure marked for parsing markdown to HTML
@@ -20,7 +22,7 @@ const turndownService = new TurndownService({
   codeBlockStyle: 'fenced',
 });
 
-export function MarkdownEditor({ content, onChange }: MarkdownEditorProps) {
+export function MarkdownEditor({ content, onChange, title, onTitleChange }: MarkdownEditorProps) {
   const [htmlContent, setHtmlContent] = useState('');
   const isInitialMount = useRef(true);
   const lastContent = useRef(content);
@@ -62,6 +64,8 @@ export function MarkdownEditor({ content, onChange }: MarkdownEditorProps) {
     <TiptapEditor 
       content={htmlContent} 
       onChange={handleChange}
+      title={title}
+      onTitleChange={onTitleChange}
     />
   );
 }

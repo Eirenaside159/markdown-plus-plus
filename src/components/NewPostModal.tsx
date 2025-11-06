@@ -244,13 +244,13 @@ export function NewPostModal({ isOpen, onClose, onCreate }: NewPostModalProps) {
               <button
                 type="button"
                 onClick={handleClose}
-                className="sm:flex-1 order-2 sm:order-1 px-4 py-3 rounded-lg border-2 border-input bg-background hover:bg-accent hover:text-accent-foreground active:bg-accent/80 transition-colors touch-target text-base font-medium"
+                className="sm:flex-1 order-2 sm:order-1 px-4 py-1.5 rounded-lg border-2 border-input bg-background hover:bg-accent hover:text-accent-foreground active:bg-accent/80 transition-colors touch-target text-base font-medium"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="sm:flex-1 order-1 sm:order-2 px-4 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 transition-colors touch-target text-base font-semibold shadow-lg shadow-primary/20"
+                className="sm:flex-1 order-1 sm:order-2 px-4 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 transition-colors touch-target text-base font-semibold shadow-lg shadow-primary/20"
               >
                 Create Post
               </button>

@@ -390,7 +390,7 @@ export function PublishModal({
               <div className="flex items-center justify-end">
                 <button
                   onClick={handleClose}
-                  className="px-6 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium"
+                  className="px-6 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium"
                 >
                   Close
                 </button>
@@ -439,7 +439,7 @@ export function PublishModal({
               <button
                 onClick={onClose}
                 disabled={isPublishing}
-                className="px-4 py-2 rounded-md border border-input bg-background hover:bg-accent transition-colors text-sm font-medium disabled:opacity-50"
+                className="px-4 py-1.5 rounded-md border border-input bg-background hover:bg-accent transition-colors text-sm font-medium disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -449,7 +449,7 @@ export function PublishModal({
                   <button
                     onClick={handleCopyAndShowInstructions}
                     disabled={isPublishing || !commitMessage.trim()}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-md border-2 border-primary bg-background hover:bg-primary/10 transition-colors text-sm font-medium disabled:opacity-50 disabled:pointer-events-none text-primary"
+                    className="inline-flex items-center gap-2 px-4 py-1.5 rounded-md border-2 border-primary bg-background hover:bg-primary/10 transition-colors text-sm font-medium disabled:opacity-50 disabled:pointer-events-none text-primary"
                     title="Open iTerm2 with command"
                   >
                     <Terminal className="h-4 w-4" />
@@ -461,7 +461,7 @@ export function PublishModal({
                 <button
                   onClick={handlePublish}
                   disabled={!commitMessage.trim() || isPublishing || !gitStatus?.isGitRepo}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50 disabled:pointer-events-none"
+                  className="inline-flex items-center gap-2 px-4 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50 disabled:pointer-events-none"
                 >
                   {isPublishing ? (
                     <>

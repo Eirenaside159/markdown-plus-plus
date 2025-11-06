@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, X } from 'lucide-react';
+import { Columns, X } from 'lucide-react';
 import { formatFieldLabel } from '@/lib/fieldUtils';
 
 interface ColumnSettingsProps {
@@ -56,7 +56,7 @@ export function ColumnSettings({ columns, visibleColumns, onVisibilityChange }: 
         className="inline-flex items-center justify-center p-2 rounded-md border border-input bg-background hover:bg-accent transition-colors"
         title="Column Settings"
       >
-        <Settings className="h-5 w-5" />
+        <Columns className="h-5 w-5" />
       </button>
 
       {isOpen && (

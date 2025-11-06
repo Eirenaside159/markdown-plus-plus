@@ -15,7 +15,7 @@ import TextAlign from '@tiptap/extension-text-align';
 import Highlight from '@tiptap/extension-highlight';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { common, createLowlight } from 'lowlight';
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   Bold,
   Italic,
@@ -38,17 +38,27 @@ import {
   AlignRight,
   Link as LinkIcon,
   Unlink,
+  MoreHorizontal,
+  ChevronDown,
 } from 'lucide-react';
 
 interface TiptapEditorProps {
   content: string;
   onChange: (content: string) => void;
+  title?: string;
+  onTitleChange?: (title: string) => void;
 }
 
 // Create lowlight instance with common languages
 const lowlight = createLowlight(common);
 
-export function TiptapEditor({ content, onChange }: TiptapEditorProps) {
+export function TiptapEditor({ content, onChange, title, onTitleChange }: TiptapEditorProps) {
+  const [showMoreTools, setShowMoreTools] = useState(false);
+  const [showHeadingMenu, setShowHeadingMenu] = useState(false);
+  const moreToolsRef = useRef<HTMLDivElement>(null);
+  const headingMenuRef = useRef<HTMLDivElement>(null);
+  const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -112,7 +122,7 @@ export function TiptapEditor({ content, onChange }: TiptapEditorProps) {
     content,
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose-base lg:prose-lg dark:prose-invert max-w-none focus:outline-none min-h-[500px] px-8 py-6',
+        class: 'prose prose-sm sm:prose-base lg:prose-lg dark:prose-invert max-w-none focus:outline-none min-h-[500px] py-6',
       },
     },
     onUpdate: ({ editor }) => {
@@ -134,6 +144,29 @@ export function TiptapEditor({ content, onChange }: TiptapEditorProps) {
       }
     }
   }, [content, editor]);
+
+  // Close dropdowns on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (moreToolsRef.current && !moreToolsRef.current.contains(event.target as Node)) {
+        setShowMoreTools(false);
+      }
+      if (headingMenuRef.current && !headingMenuRef.current.contains(event.target as Node)) {
+        setShowHeadingMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Auto-resize title textarea
+  useEffect(() => {
+    if (titleTextareaRef.current) {
+      titleTextareaRef.current.style.height = 'auto';
+      titleTextareaRef.current.style.height = titleTextareaRef.current.scrollHeight + 'px';
+    }
+  }, [title]);
 
   if (!editor) {
     return null;
@@ -173,209 +206,259 @@ export function TiptapEditor({ content, onChange }: TiptapEditorProps) {
     editor.chain().focus().unsetLink().run();
   };
 
+  const getCurrentHeading = () => {
+    if (editor.isActive('heading', { level: 1 })) return 'H1';
+    if (editor.isActive('heading', { level: 2 })) return 'H2';
+    if (editor.isActive('heading', { level: 3 })) return 'H3';
+    return 'Normal';
+  };
+
   return (
     <div className="tiptap-editor-wrapper flex flex-col h-full bg-background">
       {/* Toolbar */}
-      <div className="toolbar sticky top-0 z-10 flex items-center gap-1 p-3 bg-background/95 backdrop-blur border-b flex-wrap">
-        {/* Text Formatting */}
-        <div className="flex items-center gap-0.5">
+      <div className="toolbar sticky top-0 z-10 bg-background border-b">
+        {/* Tools */}
+        <div className="flex items-center justify-center gap-2 px-4 py-4">
+          {/* Essential Tools */}
+          <div className="flex items-center gap-1">
+          {/* Bold */}
           <button
             onClick={() => editor.chain().focus().toggleBold().run()}
-            disabled={!editor.can().chain().focus().toggleBold().run()}
             className={`toolbar-btn ${editor.isActive('bold') ? 'active' : ''}`}
-            title="Bold (Ctrl+B)"
+            title="Bold"
           >
-            <Bold className="h-4 w-4" />
+            <Bold className="h-5 w-5" />
           </button>
 
+          {/* Italic */}
           <button
             onClick={() => editor.chain().focus().toggleItalic().run()}
-            disabled={!editor.can().chain().focus().toggleItalic().run()}
             className={`toolbar-btn ${editor.isActive('italic') ? 'active' : ''}`}
-            title="Italic (Ctrl+I)"
+            title="Italic"
           >
-            <Italic className="h-4 w-4" />
+            <Italic className="h-5 w-5" />
           </button>
 
-          <button
-            onClick={() => editor.chain().focus().toggleUnderline().run()}
-            className={`toolbar-btn ${editor.isActive('underline') ? 'active' : ''}`}
-            title="Underline (Ctrl+U)"
-          >
-            <UnderlineIcon className="h-4 w-4" />
-          </button>
+          {/* Heading Dropdown */}
+          <div className="relative" ref={headingMenuRef}>
+            <button
+              onClick={() => setShowHeadingMenu(!showHeadingMenu)}
+              className="toolbar-btn flex items-center gap-1"
+              title="Heading"
+            >
+              <span className="text-sm font-medium">{getCurrentHeading()}</span>
+              <ChevronDown className="h-3 w-3" />
+            </button>
+            
+            {showHeadingMenu && (
+              <div className="absolute top-full left-0 mt-1 bg-popover border border-border rounded-md shadow-lg py-1 z-20 min-w-[120px]">
+                <button
+                  onClick={() => {
+                    editor.chain().focus().setParagraph().run();
+                    setShowHeadingMenu(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent transition-colors"
+                >
+                  Normal
+                </button>
+                <button
+                  onClick={() => {
+                    editor.chain().focus().toggleHeading({ level: 1 }).run();
+                    setShowHeadingMenu(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-xl font-bold hover:bg-accent transition-colors"
+                >
+                  Heading 1
+                </button>
+                <button
+                  onClick={() => {
+                    editor.chain().focus().toggleHeading({ level: 2 }).run();
+                    setShowHeadingMenu(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-lg font-bold hover:bg-accent transition-colors"
+                >
+                  Heading 2
+                </button>
+                <button
+                  onClick={() => {
+                    editor.chain().focus().toggleHeading({ level: 3 }).run();
+                    setShowHeadingMenu(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-base font-bold hover:bg-accent transition-colors"
+                >
+                  Heading 3
+                </button>
+              </div>
+            )}
+          </div>
 
-          <button
-            onClick={() => editor.chain().focus().toggleCode().run()}
-            disabled={!editor.can().chain().focus().toggleCode().run()}
-            className={`toolbar-btn ${editor.isActive('code') ? 'active' : ''}`}
-            title="Inline Code"
-          >
-            <Code className="h-4 w-4" />
-          </button>
+          <div className="toolbar-divider" />
 
-          <button
-            onClick={() => editor.chain().focus().toggleHighlight().run()}
-            className={`toolbar-btn ${editor.isActive('highlight') ? 'active' : ''}`}
-            title="Highlight"
-          >
-            <Highlighter className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="toolbar-divider" />
-
-        {/* Headings */}
-        <div className="flex items-center gap-0.5">
-          <button
-            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-            className={`toolbar-btn ${editor.isActive('heading', { level: 1 }) ? 'active' : ''}`}
-            title="Heading 1"
-          >
-            <Heading1 className="h-4 w-4" />
-          </button>
-
-          <button
-            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-            className={`toolbar-btn ${editor.isActive('heading', { level: 2 }) ? 'active' : ''}`}
-            title="Heading 2"
-          >
-            <Heading2 className="h-4 w-4" />
-          </button>
-
-          <button
-            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-            className={`toolbar-btn ${editor.isActive('heading', { level: 3 }) ? 'active' : ''}`}
-            title="Heading 3"
-          >
-            <Heading3 className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="toolbar-divider" />
-
-        {/* Lists */}
-        <div className="flex items-center gap-0.5">
+          {/* List */}
           <button
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             className={`toolbar-btn ${editor.isActive('bulletList') ? 'active' : ''}`}
             title="Bullet List"
           >
-            <List className="h-4 w-4" />
+            <List className="h-5 w-5" />
           </button>
 
+          {/* Ordered List */}
           <button
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             className={`toolbar-btn ${editor.isActive('orderedList') ? 'active' : ''}`}
             title="Numbered List"
           >
-            <ListOrdered className="h-4 w-4" />
+            <ListOrdered className="h-5 w-5" />
           </button>
 
-          <button
-            onClick={() => editor.chain().focus().toggleBlockquote().run()}
-            className={`toolbar-btn ${editor.isActive('blockquote') ? 'active' : ''}`}
-            title="Quote"
-          >
-            <Quote className="h-4 w-4" />
-          </button>
-        </div>
+          <div className="toolbar-divider" />
 
-        <div className="toolbar-divider" />
-
-        {/* Alignment */}
-        <div className="flex items-center gap-0.5">
-          <button
-            onClick={() => editor.chain().focus().setTextAlign('left').run()}
-            className={`toolbar-btn ${editor.isActive({ textAlign: 'left' }) ? 'active' : ''}`}
-            title="Align Left"
-          >
-            <AlignLeft className="h-4 w-4" />
-          </button>
-
-          <button
-            onClick={() => editor.chain().focus().setTextAlign('center').run()}
-            className={`toolbar-btn ${editor.isActive({ textAlign: 'center' }) ? 'active' : ''}`}
-            title="Align Center"
-          >
-            <AlignCenter className="h-4 w-4" />
-          </button>
-
-          <button
-            onClick={() => editor.chain().focus().setTextAlign('right').run()}
-            className={`toolbar-btn ${editor.isActive({ textAlign: 'right' }) ? 'active' : ''}`}
-            title="Align Right"
-          >
-            <AlignRight className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="toolbar-divider" />
-
-        {/* Links */}
-        <div className="flex items-center gap-0.5">
+          {/* Link */}
           <button
             onClick={setLink}
             className={`toolbar-btn ${editor.isActive('link') ? 'active' : ''}`}
-            title="Add/Edit Link (Ctrl+K)"
+            title="Link"
           >
-            <LinkIcon className="h-4 w-4" />
+            <LinkIcon className="h-5 w-5" />
           </button>
 
-          <button
-            onClick={removeLink}
-            disabled={!editor.isActive('link')}
-            className="toolbar-btn disabled:opacity-30"
-            title="Remove Link"
-          >
-            <Unlink className="h-4 w-4" />
-          </button>
-        </div>
+          <div className="toolbar-divider" />
 
-        <div className="toolbar-divider" />
+          {/* More Tools Dropdown */}
+          <div className="relative" ref={moreToolsRef}>
+            <button
+              onClick={() => setShowMoreTools(!showMoreTools)}
+              className="toolbar-btn"
+              title="More tools"
+            >
+              <MoreHorizontal className="h-5 w-5" />
+            </button>
 
-        {/* Insert */}
-        <div className="flex items-center gap-0.5">
-          <button onClick={addImage} className="toolbar-btn" title="Add Image">
-            <ImageIcon className="h-4 w-4" />
-          </button>
-
-          <button onClick={addTable} className="toolbar-btn" title="Insert Table">
-            <TableIcon className="h-4 w-4" />
-          </button>
-
-          <button
-            onClick={() => editor.chain().focus().setHorizontalRule().run()}
-            className="toolbar-btn"
-            title="Horizontal Rule"
-          >
-            <Minus className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="toolbar-divider" />
-
-        {/* History */}
-        <div className="flex items-center gap-0.5">
-          <button
-            onClick={() => editor.chain().focus().undo().run()}
-            disabled={!editor.can().chain().focus().undo().run()}
-            className="toolbar-btn disabled:opacity-30"
-            title="Undo (Ctrl+Z)"
-          >
-            <Undo className="h-4 w-4" />
-          </button>
-
-          <button
-            onClick={() => editor.chain().focus().redo().run()}
-            disabled={!editor.can().chain().focus().redo().run()}
-            className="toolbar-btn disabled:opacity-30"
-            title="Redo (Ctrl+Y)"
-          >
-            <Redo className="h-4 w-4" />
-          </button>
+            {showMoreTools && (
+              <div className="absolute top-full right-0 mt-1 bg-popover border border-border rounded-md shadow-lg py-1 z-20 min-w-[200px]">
+                <button
+                  onClick={() => {
+                    editor.chain().focus().toggleCode().run();
+                    setShowMoreTools(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent transition-colors flex items-center gap-2"
+                >
+                  <Code className="h-4 w-4" />
+                  Inline Code
+                </button>
+                <button
+                  onClick={() => {
+                    editor.chain().focus().toggleBlockquote().run();
+                    setShowMoreTools(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent transition-colors flex items-center gap-2"
+                >
+                  <Quote className="h-4 w-4" />
+                  Quote
+                </button>
+                <button
+                  onClick={() => {
+                    editor.chain().focus().toggleUnderline().run();
+                    setShowMoreTools(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent transition-colors flex items-center gap-2"
+                >
+                  <UnderlineIcon className="h-4 w-4" />
+                  Underline
+                </button>
+                <button
+                  onClick={() => {
+                    editor.chain().focus().toggleHighlight().run();
+                    setShowMoreTools(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent transition-colors flex items-center gap-2"
+                >
+                  <Highlighter className="h-4 w-4" />
+                  Highlight
+                </button>
+                <div className="h-px bg-border my-1" />
+                <button
+                  onClick={() => {
+                    addImage();
+                    setShowMoreTools(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent transition-colors flex items-center gap-2"
+                >
+                  <ImageIcon className="h-4 w-4" />
+                  Image
+                </button>
+                <button
+                  onClick={() => {
+                    addTable();
+                    setShowMoreTools(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent transition-colors flex items-center gap-2"
+                >
+                  <TableIcon className="h-4 w-4" />
+                  Table
+                </button>
+                <button
+                  onClick={() => {
+                    editor.chain().focus().setHorizontalRule().run();
+                    setShowMoreTools(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent transition-colors flex items-center gap-2"
+                >
+                  <Minus className="h-4 w-4" />
+                  Divider
+                </button>
+                <div className="h-px bg-border my-1" />
+                <button
+                  onClick={() => {
+                    editor.chain().focus().setTextAlign('left').run();
+                    setShowMoreTools(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent transition-colors flex items-center gap-2"
+                >
+                  <AlignLeft className="h-4 w-4" />
+                  Align Left
+                </button>
+                <button
+                  onClick={() => {
+                    editor.chain().focus().setTextAlign('center').run();
+                    setShowMoreTools(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent transition-colors flex items-center gap-2"
+                >
+                  <AlignCenter className="h-4 w-4" />
+                  Align Center
+                </button>
+                <button
+                  onClick={() => {
+                    editor.chain().focus().setTextAlign('right').run();
+                    setShowMoreTools(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent transition-colors flex items-center gap-2"
+                >
+                  <AlignRight className="h-4 w-4" />
+                  Align Right
+                </button>
+              </div>
+            )}
+          </div>
+          </div>
         </div>
       </div>
+
+      {/* Title Input (if provided) */}
+      {title !== undefined && onTitleChange && (
+        <div className="px-8 pt-6 -mb-2">
+          <textarea
+            ref={titleTextareaRef}
+            value={title}
+            onChange={(e) => onTitleChange(e.target.value)}
+            placeholder="Untitled"
+            rows={1}
+            className="w-full text-5xl font-bold border-none outline-none bg-transparent placeholder:text-muted-foreground/30 focus:ring-0 p-0 leading-tight text-center resize-none overflow-hidden"
+          />
+        </div>
+      )}
 
       {/* Editor Content */}
       <div className="flex-1 overflow-auto editor-content-wrapper">
@@ -386,7 +469,7 @@ export function TiptapEditor({ content, onChange }: TiptapEditorProps) {
       <style>{`
         /* Toolbar Styles */
         .toolbar-btn {
-          padding: 0.5rem;
+          padding: 0.5rem 0.625rem;
           border-radius: 0.375rem;
           transition: all 150ms ease;
           display: flex;
