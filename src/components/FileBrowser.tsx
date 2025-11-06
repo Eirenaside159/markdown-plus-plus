@@ -25,24 +25,34 @@ function FileTreeNode({
   if (item.isDirectory) {
     return (
       <div>
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex w-full items-center gap-1 rounded-md py-1.5 text-sm hover:bg-accent"
-          style={{ paddingLeft: `${level * 12}px` }}
-        >
-          <ChevronRight
+        <div className="flex w-full items-center">
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="flex items-center justify-center p-1 hover:bg-accent rounded"
+            style={{ marginLeft: `${level * 12}px` }}
+          >
+            <ChevronRight
+              className={cn(
+                'h-4 w-4 shrink-0 transition-transform',
+                isOpen && 'rotate-90'
+              )}
+            />
+          </button>
+          <button
+            onClick={() => onFileSelect(item.path)}
             className={cn(
-              'h-4 w-4 shrink-0 transition-transform',
-              isOpen && 'rotate-90'
+              'flex flex-1 items-center gap-1 rounded-md py-1.5 px-1 text-sm hover:bg-accent',
+              selectedFile === item.path && 'bg-accent font-medium'
             )}
-          />
-          {isOpen ? (
-            <FolderOpen className="h-4 w-4 shrink-0" />
-          ) : (
-            <Folder className="h-4 w-4 shrink-0" />
-          )}
-          <span className="truncate">{item.name}</span>
-        </button>
+          >
+            {isOpen ? (
+              <FolderOpen className="h-4 w-4 shrink-0" />
+            ) : (
+              <Folder className="h-4 w-4 shrink-0" />
+            )}
+            <span className="truncate">{item.name}</span>
+          </button>
+        </div>
         {isOpen && item.children && (
           <div>
             {item.children.map((child) => (

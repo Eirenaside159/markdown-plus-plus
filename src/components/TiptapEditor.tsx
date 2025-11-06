@@ -21,14 +21,9 @@ import {
   Italic,
   List,
   ListOrdered,
-  Heading1,
-  Heading2,
-  Heading3,
   Quote,
   Code,
   Minus,
-  Undo,
-  Redo,
   Table as TableIcon,
   Image as ImageIcon,
   Underline as UnderlineIcon,
@@ -37,7 +32,6 @@ import {
   AlignCenter,
   AlignRight,
   Link as LinkIcon,
-  Unlink,
   MoreHorizontal,
   ChevronDown,
 } from 'lucide-react';
@@ -202,9 +196,9 @@ export function TiptapEditor({ content, onChange, title, onTitleChange }: Tiptap
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   };
 
-  const removeLink = () => {
-    editor.chain().focus().unsetLink().run();
-  };
+  // const removeLink = () => {
+  //   editor.chain().focus().unsetLink().run();
+  // };
 
   const getCurrentHeading = () => {
     if (editor.isActive('heading', { level: 1 })) return 'H1';

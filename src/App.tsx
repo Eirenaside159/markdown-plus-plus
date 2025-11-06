@@ -9,6 +9,7 @@ import { Settings } from '@/components/Settings';
 import { Sheet } from '@/components/ui/Sheet';
 import { Toast, useToast } from '@/components/ui/Toast';
 import { WelcomeWarningModal, shouldShowWarning } from '@/components/WelcomeWarningModal';
+import { FileBrowser } from '@/components/FileBrowser';
 import { selectDirectory, readDirectory, readFile, writeFile, deleteFile, isFileSystemAccessSupported } from '@/lib/fileSystem';
 import { parseMarkdown, stringifyMarkdown, updateFrontmatter } from '@/lib/markdown';
 import { getRecentFolders, addRecentFolder, clearRecentFolders, formatTimestamp } from '@/lib/recentFolders';
@@ -17,7 +18,7 @@ import { saveDirectoryHandle, loadDirectoryHandle, saveAppState, loadAppState, c
 import { checkGitStatus, publishFile, generateCommitMessage, type GitStatus } from '@/lib/gitOperations';
 import { hideFile, getHiddenFiles } from '@/lib/hiddenFiles';
 import type { FileTreeItem, MarkdownFile } from '@/types';
-import { FolderOpen, Save, Clock, FileCode, ArrowLeft, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen } from 'lucide-react';
+import { FolderOpen, Save, Clock, FileCode, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen, PanelLeftClose, PanelLeft } from 'lucide-react';
 
 type ViewMode = 'table' | 'editor' | 'settings';
 
@@ -39,6 +40,9 @@ function App() {
   const [gitStatus, setGitStatus] = useState<GitStatus | null>(null);
   const [showActionsDropdown, setShowActionsDropdown] = useState(false);
   const [showTitleInHeader, setShowTitleInHeader] = useState(false);
+  const [fileTree, setFileTree] = useState<FileTreeItem[]>([]);
+  const [selectedFolderPath, setSelectedFolderPath] = useState<string | null>(null);
+  const [isFileTreeVisible, setIsFileTreeVisible] = useState(true);
   const { toast, showToast, hideToast } = useToast();
 
   // Check if warning should be shown on mount
@@ -120,6 +124,7 @@ function App() {
       await saveDirectoryHandle(handle);
       
       const fileTree = await readDirectory(handle);
+      setFileTree(fileTree);
       await loadAllPosts(handle, fileTree);
       
       // Check git status
@@ -161,6 +166,7 @@ function App() {
           
           // Load posts
           const fileTree = await readDirectory(savedHandle);
+          setFileTree(fileTree);
           await loadAllPosts(savedHandle, fileTree);
           
           // Load app state
@@ -290,6 +296,7 @@ function App() {
       // Show loading and refresh posts
       setIsLoadingPosts(true);
       const fileTree = await readDirectory(dirHandle);
+      setFileTree(fileTree);
       await loadAllPosts(dirHandle, fileTree);
 
       // Clear current file if it was deleted
@@ -350,6 +357,7 @@ function App() {
       // Show loading and refresh posts
       setIsLoadingPosts(true);
       const fileTree = await readDirectory(dirHandle);
+      setFileTree(fileTree);
       await loadAllPosts(dirHandle, fileTree);
 
       // Load the new file
@@ -682,6 +690,7 @@ function App() {
                 // If in table view, refresh posts
                 setIsLoadingPosts(true);
                 const fileTree = await readDirectory(dirHandle);
+                setFileTree(fileTree);
                 await loadAllPosts(dirHandle, fileTree);
                 showToast('Posts refreshed', 'success', 2000);
               }
@@ -857,26 +866,111 @@ function App() {
         </div>
       ) : viewMode === 'table' ? (
         <div className="flex-1 overflow-hidden flex flex-col">
+          {/* Header with toggle button */}
           <div className="p-3 sm:p-4 border-b">
             <div className="flex items-center gap-2">
-              <h2 className="font-semibold text-base sm:text-lg">All Posts</h2>
+              <button
+                onClick={() => setIsFileTreeVisible(!isFileTreeVisible)}
+                className="inline-flex items-center justify-center p-2 rounded-md hover:bg-accent transition-colors"
+                title={isFileTreeVisible ? 'Hide file tree' : 'Show file tree'}
+              >
+                {isFileTreeVisible ? (
+                  <PanelLeftClose className="h-5 w-5" />
+                ) : (
+                  <PanelLeft className="h-5 w-5" />
+                )}
+              </button>
+              <div className="h-4 w-px bg-border" />
+              <h2 className="font-semibold text-base sm:text-lg">
+                {selectedFolderPath ? selectedFolderPath : 'All Posts'}
+              </h2>
               <span className="text-xs sm:text-sm text-muted-foreground">
-                ({allPosts.length} {allPosts.length === 1 ? 'post' : 'posts'})
+                ({(() => {
+                  const filteredPosts = allPosts.filter(post => {
+                    if (!dirHandle) return true;
+                    const hiddenFiles = getHiddenFiles(dirHandle.name);
+                    if (hiddenFiles.includes(post.path)) return false;
+                    if (selectedFolderPath && !post.path.startsWith(selectedFolderPath + '/')) return false;
+                    return true;
+                  });
+                  return `${filteredPosts.length} ${filteredPosts.length === 1 ? 'post' : 'posts'}`;
+                })()})
               </span>
+              {selectedFolderPath && (
+                <button
+                  onClick={() => setSelectedFolderPath(null)}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Clear filter
+                </button>
+              )}
             </div>
           </div>
-          <div className="flex-1 overflow-hidden p-3 sm:p-4">
-            <DataTable
-              posts={allPosts.filter(post => {
-                if (!dirHandle) return true;
-                const hiddenFiles = getHiddenFiles(dirHandle.name);
-                return !hiddenFiles.includes(post.path);
-              })}
-              isLoading={isLoadingPosts}
-              onEdit={handleEditPost}
-              onDelete={handleDeletePost}
-              onHide={handleHidePost}
-            />
+          
+          {/* Two-column layout */}
+          <div className="flex-1 overflow-hidden flex">
+            {/* File Tree Sidebar */}
+            {isFileTreeVisible && (
+              <div className="w-64 border-r overflow-auto p-3 hidden sm:block">
+                <div className="mb-2 text-xs font-semibold text-muted-foreground uppercase">
+                  Folders
+                </div>
+                <button
+                  onClick={() => setSelectedFolderPath(null)}
+                  className={`w-full text-left px-2 py-1.5 rounded-md text-sm transition-colors mb-1 ${
+                    !selectedFolderPath ? 'bg-accent font-medium' : 'hover:bg-accent/50'
+                  }`}
+                >
+                  All Posts
+                </button>
+                <FileBrowser
+                  files={fileTree}
+                  selectedFile={selectedFolderPath}
+                  onFileSelect={(path) => {
+                    // Check if this is a directory or file
+                    const findItem = (items: FileTreeItem[], targetPath: string): FileTreeItem | null => {
+                      for (const item of items) {
+                        if (item.path === targetPath) return item;
+                        if (item.children) {
+                          const found = findItem(item.children, targetPath);
+                          if (found) return found;
+                        }
+                      }
+                      return null;
+                    };
+                    const item = findItem(fileTree, path);
+                    if (item?.isDirectory) {
+                      // If directory, filter posts
+                      setSelectedFolderPath(path);
+                    } else {
+                      // If file, find the post and open it for editing
+                      const post = allPosts.find(p => p.path === path);
+                      if (post) {
+                        handleEditPost(post);
+                      }
+                    }
+                  }}
+                />
+              </div>
+            )}
+            
+            {/* Main Content - Data Table */}
+            <div className="flex-1 overflow-hidden p-3 sm:p-4">
+              <DataTable
+                posts={allPosts.filter(post => {
+                  if (!dirHandle) return true;
+                  const hiddenFiles = getHiddenFiles(dirHandle.name);
+                  if (hiddenFiles.includes(post.path)) return false;
+                  // Filter by selected folder
+                  if (selectedFolderPath && !post.path.startsWith(selectedFolderPath + '/')) return false;
+                  return true;
+                })}
+                isLoading={isLoadingPosts}
+                onEdit={handleEditPost}
+                onDelete={handleDeletePost}
+                onHide={handleHidePost}
+              />
+            </div>
           </div>
         </div>
       ) : (
