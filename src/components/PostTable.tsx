@@ -1,5 +1,6 @@
 import type { MarkdownFile } from '@/types';
 import { Edit, Trash2, Loader2 } from 'lucide-react';
+import { isDateString, formatDateValue } from '@/lib/fieldUtils';
 
 interface PostTableProps {
   posts: MarkdownFile[];
@@ -11,9 +12,39 @@ interface PostTableProps {
 export function PostTable({ posts, isLoading = false, onEdit, onDelete }: PostTableProps) {
   // Sort by date (newest first)
   const sortedPosts = [...posts].sort((a, b) => {
-    const dateA = a.frontmatter.date || '';
-    const dateB = b.frontmatter.date || '';
-    return dateB.localeCompare(dateA);
+    const dateA = a.frontmatter.date;
+    const dateB = b.frontmatter.date;
+    
+    // Handle null/undefined - put at the end
+    if (!dateA && !dateB) return 0;
+    if (!dateA) return 1;
+    if (!dateB) return -1;
+    
+    // Handle Date objects - use timestamp for numeric comparison (newest first)
+    if (dateA instanceof Date && dateB instanceof Date) {
+      return dateB.getTime() - dateA.getTime();
+    }
+    if (dateA instanceof Date) {
+      const bTime = isDateString(String(dateB)) ? new Date(String(dateB)).getTime() : 0;
+      return bTime - dateA.getTime();
+    }
+    if (dateB instanceof Date) {
+      const aTime = isDateString(String(dateA)) ? new Date(String(dateA)).getTime() : 0;
+      return dateB.getTime() - aTime;
+    }
+    
+    // Handle date strings - convert to timestamp (newest first)
+    const aStr = String(dateA);
+    const bStr = String(dateB);
+    
+    if (isDateString(aStr) && isDateString(bStr)) {
+      const aTime = new Date(aStr).getTime();
+      const bTime = new Date(bStr).getTime();
+      return bTime - aTime; // newest first
+    }
+    
+    // Fallback to string comparison
+    return String(dateB).localeCompare(String(dateA));
   });
 
   if (isLoading) {
@@ -62,7 +93,13 @@ export function PostTable({ posts, isLoading = false, onEdit, onDelete }: PostTa
                 {post.frontmatter.author || '-'}
               </td>
               <td className="p-3 text-sm text-muted-foreground whitespace-nowrap">
-                {post.frontmatter.date || '-'}
+                {post.frontmatter.date 
+                  ? (post.frontmatter.date instanceof Date
+                      ? formatDateValue(post.frontmatter.date.toISOString())
+                      : (typeof post.frontmatter.date === 'string' && isDateString(post.frontmatter.date)
+                          ? formatDateValue(post.frontmatter.date)
+                          : post.frontmatter.date))
+                  : '-'}
               </td>
               <td className="p-3 text-sm">
                 {post.frontmatter.categories && post.frontmatter.categories.length > 0 ? (
@@ -110,7 +147,7 @@ export function PostTable({ posts, isLoading = false, onEdit, onDelete }: PostTa
                   </button>
                   <button
                     onClick={() => onDelete(post)}
-                    className="inline-flex items-center justify-center rounded-md p-2 text-sm hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    className="inline-flex items-center justify-center rounded-md p-2 text-sm text-destructive hover:bg-destructive hover:text-white transition-colors"
                     title="Delete"
                   >
                     <Trash2 className="h-4 w-4" />

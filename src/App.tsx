@@ -16,6 +16,7 @@ import { getSettings } from '@/lib/settings';
 import { saveDirectoryHandle, loadDirectoryHandle, saveAppState, loadAppState, clearPersistedData } from '@/lib/persistedState';
 import { checkGitStatus, publishFile, generateCommitMessage, type GitStatus } from '@/lib/gitOperations';
 import { hideFile, getHiddenFiles } from '@/lib/hiddenFiles';
+import { updateFaviconBadge } from '@/lib/faviconBadge';
 import type { FileTreeItem, MarkdownFile } from '@/types';
 import { FolderOpen, Save, Clock, FileCode, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen, PanelLeftClose, PanelLeft } from 'lucide-react';
 
@@ -57,13 +58,13 @@ function App() {
     setShowWarningModal(shouldShowWarning());
   }, []);
 
-  // Update page title based on changes
+  // Update page title
   useEffect(() => {
     if (viewMode === 'editor' && currentFile) {
       const baseTitle = currentFile.frontmatter.title === 'Untitled Post' 
         ? 'Untitled' 
         : (currentFile.frontmatter.title || currentFile.name || 'Untitled');
-      document.title = hasChanges ? `🟠 ${baseTitle} - Markdown++` : `${baseTitle} - Markdown++`;
+      document.title = `${baseTitle} - Markdown++`;
     } else if (viewMode === 'settings') {
       document.title = 'Settings - Markdown++';
     } else if (viewMode === 'table' && dirHandle) {
@@ -71,7 +72,14 @@ function App() {
     } else {
       document.title = 'Markdown++';
     }
-  }, [viewMode, currentFile, hasChanges, dirHandle]);
+  }, [viewMode, currentFile, dirHandle]);
+
+  // Update favicon badge based on changes (only in editor mode)
+  useEffect(() => {
+    const shouldShowBadge = viewMode === 'editor' && hasChanges;
+    console.log('Favicon badge update:', { viewMode, hasChanges, shouldShowBadge });
+    updateFaviconBadge(shouldShowBadge);
+  }, [hasChanges, viewMode]);
 
   const loadAllPosts = async (handle: FileSystemDirectoryHandle, fileTree: FileTreeItem[]) => {
     try {
@@ -869,7 +877,7 @@ function App() {
           
           {/* Unsaved Changes Indicator */}
           {viewMode === 'editor' && hasChanges && (
-            <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse -ml-1 relative z-10" title="Unsaved changes" />
+            <span className="h-2 w-2 rounded-full bg-yellow-500 animate-pulse -ml-1 relative z-10" title="Unsaved changes" />
           )}
 
           {/* Title in Header (when scrolled in editor) - Absolutely positioned to center */}

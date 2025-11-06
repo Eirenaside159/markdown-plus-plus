@@ -366,7 +366,7 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
                   />
                   <button
                     onClick={() => handleRemoveMeta(key)}
-                    className="inline-flex items-center justify-center h-9 w-9 rounded-md text-destructive hover:bg-destructive/10 transition-colors shrink-0"
+                    className="inline-flex items-center justify-center h-9 w-9 rounded-md text-destructive hover:bg-destructive hover:text-white transition-colors shrink-0"
                     title="Remove field"
                   >
                     <Trash2 className="h-4 w-4" />

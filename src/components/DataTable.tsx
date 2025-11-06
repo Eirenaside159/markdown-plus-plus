@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Search, ArrowUp, ArrowDown, Edit, Trash2, Filter, Loader2, EyeOff } from 'lucide-react';
+import { Search, ArrowUp, ArrowDown, Edit, Trash2, Filter, Loader2, EyeOff, MoreVertical } from 'lucide-react';
 import type { MarkdownFile } from '@/types';
-import { formatFieldLabel } from '@/lib/fieldUtils';
+import { formatFieldLabel, isDateString, formatDateValue, normalizeDateValue } from '@/lib/fieldUtils';
 import { ColumnSettings } from './ColumnSettings';
 
 interface DataTableProps {
@@ -27,6 +27,7 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
   const [sortState, setSortState] = useState<SortState>({ column: 'date', direction: 'desc' });
   const [showColumnFilters, setShowColumnFilters] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   // Extract all unique metadata keys from all posts
   const columns = useMemo(() => {
@@ -84,6 +85,22 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
     }
   }, [columns, visibleColumns.length]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // Check if click is outside all dropdowns
+      if (!target.closest('[data-dropdown-menu]') && !target.closest('[data-dropdown-trigger]')) {
+        setOpenDropdown(null);
+      }
+    };
+
+    if (openDropdown) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [openDropdown]);
+
   // Save visible columns to localStorage
   const handleVisibilityChange = (newVisibleColumns: string[]) => {
     setVisibleColumns(newVisibleColumns);
@@ -104,16 +121,67 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
     if (value === null || value === undefined) return '';
     if (Array.isArray(value)) return value.join(', ');
     if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    
+    // Handle Date objects (gray-matter parses dates as Date objects)
+    if (value instanceof Date) {
+      return formatDateValue(value.toISOString());
+    }
+    
+    // Handle other objects
     if (typeof value === 'object') return JSON.stringify(value);
-    return String(value);
+    
+    const strValue = String(value);
+    
+    // Auto-detect and format date strings
+    if (isDateString(strValue)) {
+      return formatDateValue(strValue);
+    }
+    
+    return strValue;
   };
 
-  // Get raw value for sorting/filtering
-  const getRawValue = (post: MarkdownFile, column: string): string => {
+  // Get raw value for sorting (used in sort function)
+  const getRawValueForSort = (post: MarkdownFile, column: string): string => {
     const value = post.frontmatter[column];
     if (value === null || value === undefined) return '';
     if (Array.isArray(value)) return value.join(' ').toLowerCase();
-    return String(value).toLowerCase();
+    
+    // Handle Date objects - use ISO format for proper sorting
+    if (value instanceof Date) {
+      return value.toISOString().toLowerCase();
+    }
+    
+    const strValue = String(value);
+    // Normalize dates to ISO format for proper sorting
+    if (isDateString(strValue)) {
+      return normalizeDateValue(strValue).toLowerCase();
+    }
+    
+    return strValue.toLowerCase();
+  };
+
+  // Get raw value for filtering (includes formatted dates for user-friendly search)
+  const getRawValueForFilter = (post: MarkdownFile, column: string): string => {
+    const value = post.frontmatter[column];
+    if (value === null || value === undefined) return '';
+    if (Array.isArray(value)) return value.join(' ').toLowerCase();
+    
+    // Handle Date objects - include BOTH ISO and formatted versions for filtering
+    if (value instanceof Date) {
+      const iso = value.toISOString();
+      const formatted = formatDateValue(iso);
+      return `${iso} ${formatted}`.toLowerCase();
+    }
+    
+    const strValue = String(value);
+    // For date strings, include BOTH ISO and formatted versions
+    if (isDateString(strValue)) {
+      const iso = normalizeDateValue(strValue);
+      const formatted = formatDateValue(strValue);
+      return `${iso} ${formatted}`.toLowerCase();
+    }
+    
+    return strValue.toLowerCase();
   };
 
   // Filter posts
@@ -126,7 +194,7 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
       filtered = filtered.filter(post => {
         // Search in all metadata fields
         return columns.some(column => {
-          const value = getRawValue(post, column);
+          const value = getRawValueForFilter(post, column);
           return value.includes(searchTerm);
         });
       });
@@ -137,7 +205,7 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
       if (filterValue) {
         const searchTerm = filterValue.toLowerCase();
         filtered = filtered.filter(post => {
-          const value = getRawValue(post, column);
+          const value = getRawValueForFilter(post, column);
           return value.includes(searchTerm);
         });
       }
@@ -151,8 +219,44 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
     if (!sortState.column || !sortState.direction) return filteredPosts;
 
     return [...filteredPosts].sort((a, b) => {
-      const aValue = getRawValue(a, sortState.column!);
-      const bValue = getRawValue(b, sortState.column!);
+      const aVal = a.frontmatter[sortState.column!];
+      const bVal = b.frontmatter[sortState.column!];
+
+      // Handle null/undefined
+      if (!aVal && !bVal) return 0;
+      if (!aVal) return 1;
+      if (!bVal) return -1;
+
+      // Handle Date objects - use timestamp for numeric comparison
+      if (aVal instanceof Date && bVal instanceof Date) {
+        const comparison = aVal.getTime() - bVal.getTime();
+        return sortState.direction === 'asc' ? comparison : -comparison;
+      }
+      if (aVal instanceof Date) {
+        const bTime = isDateString(String(bVal)) ? new Date(String(bVal)).getTime() : 0;
+        const comparison = aVal.getTime() - bTime;
+        return sortState.direction === 'asc' ? comparison : -comparison;
+      }
+      if (bVal instanceof Date) {
+        const aTime = isDateString(String(aVal)) ? new Date(String(aVal)).getTime() : 0;
+        const comparison = aTime - bVal.getTime();
+        return sortState.direction === 'asc' ? comparison : -comparison;
+      }
+
+      // Handle date strings - convert to timestamp for proper sorting
+      const aStr = String(aVal);
+      const bStr = String(bVal);
+      
+      if (isDateString(aStr) && isDateString(bStr)) {
+        const aTime = new Date(aStr).getTime();
+        const bTime = new Date(bStr).getTime();
+        const comparison = aTime - bTime;
+        return sortState.direction === 'asc' ? comparison : -comparison;
+      }
+      
+      // Fallback to string comparison for non-dates
+      const aValue = getRawValueForSort(a, sortState.column!);
+      const bValue = getRawValueForSort(b, sortState.column!);
 
       if (aValue === bValue) return 0;
       
@@ -276,15 +380,12 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                   </div>
                 </th>
               ))}
-              <th className="text-left px-4 py-1.5 border-b sticky right-0 bg-muted/50">
-                <span className="text-base font-semibold">Actions</span>
-              </th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={displayColumns.length + 1} className="text-center py-16">
+                <td colSpan={displayColumns.length} className="text-center py-16">
                   <div className="flex flex-col items-center gap-3">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     <p className="text-base text-muted-foreground">Loading posts...</p>
@@ -293,7 +394,7 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
               </tr>
             ) : sortedPosts.length === 0 ? (
               <tr>
-                <td colSpan={displayColumns.length + 1} className="text-center py-16 text-base text-muted-foreground">
+                <td colSpan={displayColumns.length} className="text-center py-16 text-base text-muted-foreground">
                   No posts found
                 </td>
               </tr>
@@ -306,15 +407,60 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                   {displayColumns.map(column => (
                     <td key={column} className="px-4 py-3 max-w-xs">
                       {column === 'title' ? (
-                        <button
-                          onClick={() => onEdit(post)}
-                          className="truncate text-sm text-left w-full hover:text-primary hover:underline transition-colors font-medium"
-                          title={formatCellValue(post.frontmatter[column])}
-                        >
-                          {formatCellValue(post.frontmatter[column]) || (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </button>
+                        <div className="flex items-center gap-2 group">
+                          <button
+                            onClick={() => onEdit(post)}
+                            className="truncate text-sm text-left flex-1 hover:text-primary hover:underline transition-colors font-medium"
+                            title={formatCellValue(post.frontmatter[column])}
+                          >
+                            {formatCellValue(post.frontmatter[column]) || (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </button>
+                          <div className="relative">
+                            <button
+                              data-dropdown-trigger
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenDropdown(openDropdown === post.path ? null : post.path);
+                              }}
+                              className="inline-flex items-center justify-center h-7 w-7 rounded-md hover:bg-accent transition-colors opacity-0 group-hover:opacity-100"
+                              title="More actions"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </button>
+                            {openDropdown === post.path && (
+                              <div 
+                                data-dropdown-menu
+                                className="absolute right-0 top-8 z-50 min-w-[180px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+                              >
+                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                                  Actions
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    onHide(post);
+                                    setOpenDropdown(null);
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent transition-colors"
+                                >
+                                  <EyeOff className="h-4 w-4" />
+                                  <span>Hide</span>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    onDelete(post);
+                                    setOpenDropdown(null);
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-destructive hover:text-white transition-colors"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  <span>Delete</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       ) : (
                         <div className="truncate text-sm" title={formatCellValue(post.frontmatter[column])}>
                           {formatCellValue(post.frontmatter[column]) || (
@@ -324,31 +470,6 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                       )}
                     </td>
                   ))}
-                  <td className="px-4 py-3 sticky right-0 bg-background">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => onEdit(post)}
-                        className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent transition-colors"
-                        title="Edit"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => onHide(post)}
-                        className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent transition-colors"
-                        title="Hide file"
-                      >
-                        <EyeOff className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => onDelete(post)}
-                        className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
                 </tr>
               ))
             )}
@@ -385,21 +506,48 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                     {post.frontmatter.title || post.name}
                   </h3>
                 </button>
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="relative shrink-0">
                   <button
-                    onClick={() => onEdit(post)}
+                    data-dropdown-trigger
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenDropdown(openDropdown === post.path ? null : post.path);
+                    }}
                     className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent transition-colors"
-                    title="Edit"
+                    title="More actions"
                   >
-                    <Edit className="h-4 w-4" />
+                    <MoreVertical className="h-4 w-4" />
                   </button>
-                  <button
-                    onClick={() => onDelete(post)}
-                    className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors"
-                    title="Delete"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  {openDropdown === post.path && (
+                    <div 
+                      data-dropdown-menu
+                      className="absolute right-0 top-10 z-50 min-w-[180px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+                    >
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                        Edit
+                      </div>
+                      <button
+                        onClick={() => {
+                          onHide(post);
+                          setOpenDropdown(null);
+                        }}
+                        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent transition-colors"
+                      >
+                        <EyeOff className="h-4 w-4" />
+                        <span>Hide</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          onDelete(post);
+                          setOpenDropdown(null);
+                        }}
+                        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-destructive hover:text-white transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -419,18 +567,6 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                     </div>
                   );
                 })}
-              </div>
-
-              {/* Mobile Actions */}
-              <div className="flex items-center gap-2 pt-2 border-t">
-                <button
-                  onClick={() => onHide(post)}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-md hover:bg-accent transition-colors"
-                  title="Hide file"
-                >
-                  <EyeOff className="h-4 w-4" />
-                  <span>Hide</span>
-                </button>
               </div>
             </div>
           ))

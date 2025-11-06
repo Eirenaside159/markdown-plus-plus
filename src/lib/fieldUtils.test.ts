@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { formatFieldLabel, inferFieldType } from './fieldUtils';
+import { 
+  formatFieldLabel, 
+  inferFieldType, 
+  isDateString, 
+  formatDateValue, 
+  normalizeDateValue 
+} from './fieldUtils';
 
 describe('fieldUtils', () => {
   it('formatFieldLabel handles empty, snake, kebab, and camelCase', () => {
@@ -27,6 +33,118 @@ describe('fieldUtils', () => {
     expect(inferFieldType('Thu, 01 Jan 2000 00:00:00 GMT')).toBe('date');
     expect(inferFieldType('Thu, 01 Jan 1960 00:00:00 GMT')).toBe('string');
     expect(inferFieldType('Thu, 01 Jan 2200 00:00:00 GMT')).toBe('string');
+  });
+
+  describe('isDateString', () => {
+    it('detects ISO 8601 dates', () => {
+      expect(isDateString('2025-01-15')).toBe(true);
+      expect(isDateString('2025-01-15T10:30:00Z')).toBe(true);
+      expect(isDateString('2025-01-15T10:30:00.000Z')).toBe(true);
+    });
+
+    it('detects various date formats', () => {
+      expect(isDateString('2025/01/15')).toBe(true);
+      expect(isDateString('15-01-2025')).toBe(true);
+      expect(isDateString('15/01/2025')).toBe(true);
+      expect(isDateString('15.01.2025')).toBe(true);
+      expect(isDateString('15-01-25')).toBe(true);
+    });
+
+    it('detects text date formats', () => {
+      expect(isDateString('15 January 2025')).toBe(true);
+      expect(isDateString('January 15, 2025')).toBe(true);
+      expect(isDateString('Jan 15 2025')).toBe(true);
+    });
+
+    it('rejects non-date strings', () => {
+      expect(isDateString('not a date')).toBe(false);
+      expect(isDateString('hello world')).toBe(false);
+      expect(isDateString('123456')).toBe(false);
+    });
+
+    it('rejects dates outside reasonable range', () => {
+      expect(isDateString('Thu, 01 Jan 1960 00:00:00 GMT')).toBe(false);
+      expect(isDateString('Thu, 01 Jan 2200 00:00:00 GMT')).toBe(false);
+    });
+
+    it('handles empty and invalid inputs', () => {
+      expect(isDateString('')).toBe(false);
+    });
+  });
+
+  describe('formatDateValue', () => {
+    it('formats ISO 8601 dates', () => {
+      const result = formatDateValue('2025-01-15');
+      expect(result).toBe('Jan 15, 2025');
+    });
+
+    it('formats dates with time', () => {
+      const result = formatDateValue('2025-01-15T10:30:00Z');
+      // The exact result depends on timezone, but it should start with month
+      expect(result).toMatch(/^[A-Z][a-z]{2} \d{1,2}, \d{4}$/);
+    });
+
+    it('formats ISO 8601 dates with milliseconds', () => {
+      const result = formatDateValue('2025-10-06T00:00:00.000Z');
+      expect(result).toMatch(/^[A-Z][a-z]{2} \d{1,2}, \d{4}$/);
+      expect(result).not.toContain('T');
+      expect(result).not.toContain('Z');
+      console.log('Formatted result for 2025-10-06T00:00:00.000Z:', result);
+    });
+
+    it('handles various date formats', () => {
+      expect(formatDateValue('2025/01/15')).toBe('Jan 15, 2025');
+      expect(formatDateValue('January 15, 2025')).toMatch(/^[A-Z][a-z]{2} \d{1,2}, \d{4}$/);
+    });
+
+    it('returns original string if not a date', () => {
+      expect(formatDateValue('not a date')).toBe('not a date');
+      expect(formatDateValue('hello world')).toBe('hello world');
+    });
+
+    it('handles empty strings', () => {
+      expect(formatDateValue('')).toBe('');
+    });
+  });
+
+  describe('normalizeDateValue', () => {
+    it('normalizes ISO 8601 dates to ISO string', () => {
+      const result = normalizeDateValue('2025-01-15');
+      expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+      expect(result.startsWith('2025-01-15')).toBe(true);
+    });
+
+    it('normalizes various date formats to ISO string', () => {
+      const result1 = normalizeDateValue('2025/01/15');
+      expect(result1).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+
+      const result2 = normalizeDateValue('January 15, 2025');
+      expect(result2).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+    });
+
+    it('returns original string if not a date', () => {
+      expect(normalizeDateValue('not a date')).toBe('not a date');
+      expect(normalizeDateValue('hello world')).toBe('hello world');
+    });
+
+    it('handles empty strings', () => {
+      expect(normalizeDateValue('')).toBe('');
+    });
+
+    it('allows proper date sorting', () => {
+      const dates = [
+        '2025-03-15',
+        '2025-01-15',
+        '2025-02-15',
+      ];
+      const normalized = dates.map(normalizeDateValue);
+      const sorted = [...normalized].sort();
+      
+      // Should be sorted chronologically
+      expect(sorted[0]).toContain('2025-01-15');
+      expect(sorted[1]).toContain('2025-02-15');
+      expect(sorted[2]).toContain('2025-03-15');
+    });
   });
 });
 

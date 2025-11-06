@@ -70,7 +70,7 @@ export function inferFieldType(value: unknown): FieldType {
 /**
  * Checks if a string represents a date
  */
-function isDateString(str: string): boolean {
+export function isDateString(str: string): boolean {
   // Common date patterns
   const datePatterns = [
     /^\d{4}-\d{2}-\d{2}/, // YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss
@@ -95,5 +95,60 @@ function isDateString(str: string): boolean {
   }
 
   return false;
+}
+
+/**
+ * Formats a date value for display
+ * Attempts to parse various date formats and returns a consistent format
+ * Returns original string if it's not a valid date
+ */
+export function formatDateValue(value: string): string {
+  if (!value || !isDateString(value)) {
+    return value;
+  }
+
+  try {
+    const date = new Date(value);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return value;
+    }
+
+    // Format as: Jan 15, 2024
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    };
+    
+    return date.toLocaleDateString('en-US', options);
+  } catch {
+    return value;
+  }
+}
+
+/**
+ * Normalizes a date value to ISO format for sorting/filtering
+ * Returns original string if it's not a valid date
+ */
+export function normalizeDateValue(value: string): string {
+  if (!value || !isDateString(value)) {
+    return value;
+  }
+
+  try {
+    const date = new Date(value);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return value;
+    }
+
+    // Return ISO format for consistent sorting
+    return date.toISOString();
+  } catch {
+    return value;
+  }
 }
 

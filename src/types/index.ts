@@ -8,7 +8,7 @@ export interface MarkdownFile {
 
 export interface FrontMatter {
   title?: string;
-  date?: string;
+  date?: string | Date; // gray-matter can parse dates as Date objects
   categories?: string[];
   tags?: string[];
   author?: string;
