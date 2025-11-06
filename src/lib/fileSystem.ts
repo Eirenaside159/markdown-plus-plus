@@ -274,3 +274,35 @@ export async function deleteFile(
   await currentHandle.removeEntry(fileName);
 }
 
+export async function renameFile(
+  dirHandle: FileSystemDirectoryHandle,
+  oldPath: string,
+  newFileName: string
+): Promise<string> {
+  // Ensure new filename ends with .md
+  if (!newFileName.endsWith('.md')) {
+    newFileName += '.md';
+  }
+
+  // Read the content of the old file
+  const content = await readFile(dirHandle, oldPath);
+
+  // Calculate the new path
+  const parts = oldPath.split('/');
+  parts[parts.length - 1] = newFileName;
+  const newPath = parts.join('/');
+
+  // If the paths are the same, no need to rename
+  if (oldPath === newPath) {
+    return newPath;
+  }
+
+  // Write to the new file
+  await writeFile(dirHandle, newPath, content);
+
+  // Delete the old file
+  await deleteFile(dirHandle, oldPath);
+
+  return newPath;
+}
+

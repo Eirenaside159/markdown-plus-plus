@@ -9,11 +9,12 @@ interface SidebarTabsProps {
   allPosts: MarkdownFile[];
   onMetaChange: (frontmatter: MarkdownFile['frontmatter']) => void;
   onPostClick: (post: MarkdownFile) => void;
+  onFileNameChange?: (newFileName: string) => void;
 }
 
 type TabType = 'meta' | 'canonical';
 
-export function SidebarTabs({ currentFile, allPosts, onMetaChange, onPostClick }: SidebarTabsProps) {
+export function SidebarTabs({ currentFile, allPosts, onMetaChange, onPostClick, onFileNameChange }: SidebarTabsProps) {
   const [activeTab, setActiveTab] = useState<TabType>('meta');
 
   // Count canonical related posts
@@ -98,6 +99,8 @@ export function SidebarTabs({ currentFile, allPosts, onMetaChange, onPostClick }
             frontmatter={currentFile.frontmatter}
             onChange={onMetaChange}
             allPosts={allPosts}
+            fileName={currentFile.name}
+            onFileNameChange={onFileNameChange}
           />
         )}
         

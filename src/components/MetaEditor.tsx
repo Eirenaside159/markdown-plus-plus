@@ -9,12 +9,15 @@ export interface MetaEditorProps {
   frontmatter: MarkdownFile['frontmatter'];
   onChange: (frontmatter: MarkdownFile['frontmatter']) => void;
   allPosts: MarkdownFile[];
+  fileName?: string;
+  onFileNameChange?: (newFileName: string) => void;
 }
 
-export function MetaEditor({ frontmatter, onChange, allPosts }: MetaEditorProps) {
+export function MetaEditor({ frontmatter, onChange, allPosts, fileName, onFileNameChange }: MetaEditorProps) {
   const [isAddingField, setIsAddingField] = useState(false);
   const [newFieldName, setNewFieldName] = useState('');
   const [newFieldValue, setNewFieldValue] = useState('');
+  const [editingFileName, setEditingFileName] = useState('');
 
   const handleFieldChange = (key: string, value: unknown) => {
     onChange({ ...frontmatter, [key]: value });
@@ -61,8 +64,73 @@ export function MetaEditor({ frontmatter, onChange, allPosts }: MetaEditorProps)
     return a.localeCompare(b);
   });
 
+  const handleFileNameSave = () => {
+    if (editingFileName.trim() && onFileNameChange) {
+      onFileNameChange(editingFileName.trim());
+    }
+    setEditingFileName('');
+  };
+
+  const handleFileNameCancel = () => {
+    setEditingFileName('');
+  };
+
   return (
     <div className="space-y-4">
+      {/* File Name Editor */}
+      {fileName && onFileNameChange && (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-foreground cursor-pointer">
+            File Name
+            <span className="ml-2 text-xs text-muted-foreground">(filename)</span>
+          </label>
+          
+          {editingFileName !== '' ? (
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={editingFileName}
+                onChange={(e) => setEditingFileName(e.target.value)}
+                placeholder="Enter new file name"
+                className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleFileNameSave();
+                  if (e.key === 'Escape') handleFileNameCancel();
+                }}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleFileNameSave}
+                  disabled={!editingFileName.trim()}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                >
+                  <Check className="h-4 w-4" />
+                  Rename
+                </button>
+                <button
+                  onClick={handleFileNameCancel}
+                  className="inline-flex items-center justify-center h-8 w-8 text-sm rounded-md border border-input bg-background hover:bg-accent transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                // Remove .md extension for editing
+                const nameWithoutExt = fileName.replace(/\.md$/, '');
+                setEditingFileName(nameWithoutExt);
+              }}
+              className="w-full text-left px-3 py-2 text-sm rounded-md border border-input bg-background text-foreground hover:bg-accent transition-colors font-mono focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              {fileName}
+            </button>
+          )}
+        </div>
+      )}
+
       {fields.map((key) => {
         const value = frontmatter[key];
         const fieldType = inferFieldType(value);

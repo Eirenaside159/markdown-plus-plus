@@ -9,7 +9,7 @@ import { Sheet } from '@/components/ui/Sheet';
 import { Toast, useToast } from '@/components/ui/Toast';
 import { WelcomeWarningModal, shouldShowWarning } from '@/components/WelcomeWarningModal';
 import { FileBrowser } from '@/components/FileBrowser';
-import { selectDirectory, readDirectory, readFile, writeFile, deleteFile, isFileSystemAccessSupported } from '@/lib/fileSystem';
+import { selectDirectory, readDirectory, readFile, writeFile, deleteFile, renameFile, isFileSystemAccessSupported } from '@/lib/fileSystem';
 import { parseMarkdown, stringifyMarkdown, updateFrontmatter } from '@/lib/markdown';
 import { getRecentFolders, addRecentFolder, clearRecentFolders, formatTimestamp } from '@/lib/recentFolders';
 import { getSettings } from '@/lib/settings';
@@ -526,6 +526,48 @@ function App() {
       });
       setCurrentFile(updated);
       setHasChanges(true);
+    }
+  };
+
+  const handleFileNameChange = async (newFileName: string) => {
+    if (!dirHandle || !currentFile || !selectedFilePath) return;
+
+    try {
+      // Rename the file
+      const newPath = await renameFile(dirHandle, selectedFilePath, newFileName);
+
+      // Update current file state
+      const updatedFile = {
+        ...currentFile,
+        name: newFileName.endsWith('.md') ? newFileName : `${newFileName}.md`,
+        path: newPath,
+      };
+      setCurrentFile(updatedFile);
+      setSelectedFilePath(newPath);
+
+      // Update allPosts
+      const updatedPosts = allPosts.map(post =>
+        post.path === selectedFilePath ? updatedFile : post
+      );
+      setAllPosts(updatedPosts);
+
+      // Update file tree
+      const fileTree = await readDirectory(dirHandle);
+      setFileTree(fileTree);
+
+      // Save state with new path
+      saveAppState({
+        selectedFilePath: newPath,
+        viewMode: 'editor',
+      });
+
+      // Update browser history
+      window.history.replaceState({ viewMode: 'editor', filePath: newPath }, '', '#editor');
+
+      showToast('File renamed successfully', 'success');
+    } catch (error) {
+      showToast('Failed to rename file', 'error');
+      console.error('Rename error:', error);
     }
   };
 
@@ -1252,6 +1294,7 @@ function App() {
               handleEditPost(post);
               setIsMobileSidebarOpen(false);
             }}
+            onFileNameChange={handleFileNameChange}
           />
         </Sheet>
       )}
