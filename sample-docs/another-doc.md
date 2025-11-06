@@ -2,6 +2,7 @@
 title: "Another Document"
 author: "Jane Smith"
 date: "2025-11-02"
+featured_image: "https://picsum.photos/seed/another/300/200.jpg"
 categories:
   - Blog
 tags:

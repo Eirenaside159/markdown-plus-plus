@@ -3,6 +3,8 @@ title: "Sample Markdown Document"
 author: "John Doe"
 date: "2025-11-02"
 description: "A sample markdown file for testing the markdown admin interface"
+image: "https://picsum.photos/400/300"
+thumbnail: "https://via.placeholder.com/150.png"
 categories:
   - Tutorial
   - Documentation

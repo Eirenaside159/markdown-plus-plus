@@ -30,6 +30,7 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
   const [showColumnFilters, setShowColumnFilters] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [imageModal, setImageModal] = useState<{ url: string; alt: string } | null>(null);
   
   // Get settings for URL building
   const settings = getSettings();
@@ -120,6 +121,13 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
   const displayColumns = useMemo(() => {
     return columns.filter(col => visibleColumns.includes(col));
   }, [columns, visibleColumns]);
+
+  // Check if value is an image URL
+  const isImageUrl = (value: string): boolean => {
+    const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'];
+    const lowerValue = value.toLowerCase().trim();
+    return imageExtensions.some(ext => lowerValue.endsWith(ext));
+  };
 
   // Format cell value for display
   const formatCellValue = (value: unknown): string => {
@@ -409,16 +417,21 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                   key={post.path + index}
                   className="border-b last:border-0 hover:bg-accent/30 transition-colors"
                 >
-                  {displayColumns.map(column => (
+                  {displayColumns.map(column => {
+                    const cellValue = post.frontmatter[column];
+                    const formattedValue = formatCellValue(cellValue);
+                    const isImage = cellValue && typeof cellValue === 'string' && isImageUrl(cellValue);
+
+                    return (
                     <td key={column} className="px-4 py-3 max-w-xs">
                       {column === 'title' ? (
                         <div className="flex items-center gap-2 group">
                           <button
                             onClick={() => onEdit(post)}
                             className="truncate text-sm text-left flex-1 hover:text-primary hover:underline transition-colors font-medium"
-                            title={formatCellValue(post.frontmatter[column])}
+                            title={formattedValue}
                           >
-                            {formatCellValue(post.frontmatter[column]) || (
+                            {formattedValue || (
                               <span className="text-muted-foreground">—</span>
                             )}
                           </button>
@@ -481,15 +494,41 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                             )}
                           </div>
                         </div>
+                      ) : isImage ? (
+                        <button
+                          onClick={() => setImageModal({ url: cellValue as string, alt: formattedValue })}
+                          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                          title="Click to view full size"
+                        >
+                          <img 
+                            src={cellValue as string} 
+                            alt={formattedValue}
+                            className="h-10 w-10 object-cover rounded border border-border cursor-pointer"
+                            loading="lazy"
+                            onError={(e) => {
+                              // If image fails to load, show the URL instead
+                              (e.target as HTMLImageElement).style.display = 'none';
+                              const parent = (e.target as HTMLImageElement).parentElement;
+                              if (parent) {
+                                const span = document.createElement('span');
+                                span.className = 'text-sm text-muted-foreground truncate';
+                                span.textContent = formattedValue;
+                                span.title = formattedValue;
+                                parent.appendChild(span);
+                              }
+                            }}
+                          />
+                        </button>
                       ) : (
-                        <div className="truncate text-sm" title={formatCellValue(post.frontmatter[column])}>
-                          {formatCellValue(post.frontmatter[column]) || (
+                        <div className="truncate text-sm" title={formattedValue}>
+                          {formattedValue || (
                             <span className="text-muted-foreground">—</span>
                           )}
                         </div>
                       )}
                     </td>
-                  ))}
+                    );
+                  })}
                 </tr>
               ))
             )}
@@ -592,15 +631,44 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
               <div className="space-y-1.5 text-sm">
                 {displayColumns.slice(0, 5).map(column => {
                   if (column === 'title') return null;
-                  const value = formatCellValue(post.frontmatter[column]);
+                  const cellValue = post.frontmatter[column];
+                  const value = formatCellValue(cellValue);
                   if (!value) return null;
+                  
+                  const isImage = cellValue && typeof cellValue === 'string' && isImageUrl(cellValue);
                   
                   return (
                     <div key={column} className="flex gap-2">
                       <span className="text-muted-foreground min-w-[80px] shrink-0">
                         {formatFieldLabel(column)}:
                       </span>
-                      <span className="truncate">{value}</span>
+                      {isImage ? (
+                        <button
+                          onClick={() => setImageModal({ url: cellValue as string, alt: value })}
+                          className="hover:opacity-80 transition-opacity"
+                        >
+                          <img 
+                            src={cellValue as string} 
+                            alt={value}
+                            className="h-10 w-10 object-cover rounded border border-border cursor-pointer"
+                            loading="lazy"
+                            onError={(e) => {
+                              // If image fails to load, show the URL instead
+                              (e.target as HTMLImageElement).style.display = 'none';
+                              const parent = (e.target as HTMLImageElement).parentElement;
+                              if (parent) {
+                                const span = document.createElement('span');
+                                span.className = 'truncate';
+                                span.textContent = value;
+                                span.title = value;
+                                parent.appendChild(span);
+                              }
+                            }}
+                          />
+                        </button>
+                      ) : (
+                        <span className="truncate">{value}</span>
+                      )}
                     </div>
                   );
                 })}
@@ -609,6 +677,56 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
           ))
         )}
       </div>
+
+      {/* Image Modal */}
+      {imageModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={() => setImageModal(null)}
+        >
+          <div 
+            className="relative max-w-4xl max-h-[90vh] bg-background rounded-lg shadow-xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setImageModal(null)}
+              className="absolute top-2 right-2 z-10 h-8 w-8 rounded-full bg-background/80 hover:bg-background flex items-center justify-center text-foreground shadow-lg transition-colors"
+              title="Close"
+            >
+              ✕
+            </button>
+            
+            {/* Image */}
+            <div className="p-6 flex flex-col gap-4">
+              <img 
+                src={imageModal.url} 
+                alt={imageModal.alt}
+                className="max-w-full max-h-[70vh] object-contain rounded border border-border"
+              />
+              
+              {/* URL */}
+              <div className="flex flex-col gap-2">
+                <span className="text-sm font-semibold text-muted-foreground">Image URL:</span>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 px-3 py-2 text-sm bg-muted rounded border border-border break-all">
+                    {imageModal.url}
+                  </code>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(imageModal.url);
+                    }}
+                    className="px-3 py-2 text-sm rounded-md border border-input bg-background hover:bg-accent transition-colors whitespace-nowrap"
+                    title="Copy URL"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
