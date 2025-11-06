@@ -9,7 +9,7 @@ import { Sheet } from '@/components/ui/Sheet';
 import { Toast, useToast } from '@/components/ui/Toast';
 import { WelcomeWarningModal, shouldShowWarning } from '@/components/WelcomeWarningModal';
 import { FileBrowser } from '@/components/FileBrowser';
-import { selectDirectory, readDirectory, readFile, writeFile, deleteFile, renameFile, isFileSystemAccessSupported } from '@/lib/fileSystem';
+import { selectDirectory, readDirectory, readFile, writeFile, deleteFile, renameFile, moveFile, isFileSystemAccessSupported } from '@/lib/fileSystem';
 import { parseMarkdown, stringifyMarkdown, updateFrontmatter } from '@/lib/markdown';
 import { getRecentFolders, addRecentFolder, clearRecentFolders, formatTimestamp } from '@/lib/recentFolders';
 import { getSettings } from '@/lib/settings';
@@ -53,6 +53,7 @@ function App() {
   });
   const [isResizing, setIsResizing] = useState(false);
   const [shouldAutoFocus, setShouldAutoFocus] = useState(false);
+  const [isMovingFile, setIsMovingFile] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
   // Check if warning should be shown on mount
@@ -580,6 +581,68 @@ function App() {
     } catch (error) {
       showToast('Failed to rename file', 'error');
       console.error('Rename error:', error);
+    }
+  };
+
+  const handleFileMove = async (sourcePath: string, targetDirPath: string) => {
+    if (!dirHandle || isMovingFile) return;
+
+    // Get the filename for better UX messaging
+    const fileName = sourcePath.split('/').pop() || sourcePath;
+
+    try {
+      // Show loading state
+      setIsMovingFile(true);
+
+      // Move the file (this is slow due to browser API: read + write + delete)
+      const newPath = await moveFile(dirHandle, sourcePath, targetDirPath);
+
+      // Update allPosts
+      const updatedPosts = allPosts.map(post => {
+        if (post.path === sourcePath) {
+          return {
+            ...post,
+            path: newPath,
+          };
+        }
+        return post;
+      });
+      setAllPosts(updatedPosts);
+
+      // Update current file if it was the moved file
+      if (currentFile?.path === sourcePath) {
+        const updatedFile = {
+          ...currentFile,
+          path: newPath,
+        };
+        setCurrentFile(updatedFile);
+        setSelectedFilePath(newPath);
+
+        // Save state with new path
+        saveAppState({
+          selectedFilePath: newPath,
+          viewMode: 'editor',
+        });
+
+        // Update browser history
+        window.history.replaceState({ viewMode: 'editor', filePath: newPath }, '', '#editor');
+      }
+
+      // Update file tree
+      const fileTree = await readDirectory(dirHandle);
+      setFileTree(fileTree);
+
+      showToast(`"${fileName}" moved successfully`, 'success', 3000);
+    } catch (error) {
+      // Show error
+      if (error instanceof Error) {
+        showToast(error.message, 'error');
+      } else {
+        showToast(`Failed to move "${fileName}"`, 'error');
+      }
+      console.error('Move error:', error);
+    } finally {
+      setIsMovingFile(false);
     }
   };
 
@@ -1185,14 +1248,49 @@ function App() {
             {/* File Tree Sidebar */}
             {isFileTreeVisible && (
               <div className="relative border-r overflow-y-auto overflow-x-hidden p-3 hidden sm:block" style={{ width: `${fileTreeWidth}px` }}>
+                {/* Loading Overlay */}
+                {isMovingFile && (
+                  <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+                    <div className="text-center space-y-3 p-6">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">Moving file...</p>
+                        <p className="text-xs text-muted-foreground">
+                          This may take a moment due to browser limitations
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="mb-2 text-xs font-semibold text-muted-foreground uppercase">
                   Folders
                 </div>
                 <button
                   onClick={() => setSelectedFolderPath(null)}
+                  onDragOver={(e) => {
+                    if (isMovingFile) return;
+                    e.preventDefault();
+                    e.currentTarget.classList.add('bg-primary/20', 'border-2', 'border-primary', 'border-dashed');
+                  }}
+                  onDragLeave={(e) => {
+                    if (isMovingFile) return;
+                    e.preventDefault();
+                    e.currentTarget.classList.remove('bg-primary/20', 'border-2', 'border-primary', 'border-dashed');
+                  }}
+                  onDrop={(e) => {
+                    if (isMovingFile) return;
+                    e.preventDefault();
+                    e.currentTarget.classList.remove('bg-primary/20', 'border-2', 'border-primary', 'border-dashed');
+                    const sourcePath = e.dataTransfer.getData('text/plain');
+                    if (sourcePath) {
+                      // Move to root directory (empty string)
+                      handleFileMove(sourcePath, '');
+                    }
+                  }}
                   className={`w-full text-left px-4 py-2 rounded-md text-sm transition-colors mb-1 ${
                     !selectedFolderPath ? 'bg-accent font-medium' : 'hover:bg-accent/50'
-                  }`}
+                  } ${isMovingFile ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
                   All Posts
                 </button>
@@ -1224,6 +1322,8 @@ function App() {
                       }
                     }
                   }}
+                  onFileMove={handleFileMove}
+                  isMoving={isMovingFile}
                 />
                 {/* Resize Handle */}
                 <div

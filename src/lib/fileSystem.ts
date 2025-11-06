@@ -306,3 +306,48 @@ export async function renameFile(
   return newPath;
 }
 
+/**
+ * Move a file to a different directory
+ * Note: This operation is slow due to File System Access API limitations.
+ * It requires three sequential operations: read, write, and delete.
+ * Always show a loading indicator when calling this function.
+ */
+export async function moveFile(
+  dirHandle: FileSystemDirectoryHandle,
+  sourcePath: string,
+  targetDirPath: string
+): Promise<string> {
+  // Read the content of the source file
+  const content = await readFile(dirHandle, sourcePath);
+
+  // Get the filename from the source path
+  const fileName = sourcePath.split('/').pop() || sourcePath;
+
+  // Calculate the new path
+  const newPath = targetDirPath ? `${targetDirPath}/${fileName}` : fileName;
+
+  // If the paths are the same, no need to move
+  if (sourcePath === newPath) {
+    return newPath;
+  }
+
+  // Check if target file already exists
+  try {
+    await readFile(dirHandle, newPath);
+    throw new Error('A file with this name already exists in the target folder');
+  } catch (error) {
+    // File doesn't exist, which is what we want
+    if (error instanceof Error && error.message.includes('already exists')) {
+      throw error;
+    }
+  }
+
+  // Write to the new location
+  await writeFile(dirHandle, newPath, content);
+
+  // Delete the old file
+  await deleteFile(dirHandle, sourcePath);
+
+  return newPath;
+}
+
