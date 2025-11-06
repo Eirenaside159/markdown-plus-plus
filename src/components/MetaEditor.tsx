@@ -82,7 +82,6 @@ export function MetaEditor({ frontmatter, onChange, allPosts, fileName, onFileNa
         <div className="space-y-2">
           <label className="block text-sm font-medium text-foreground cursor-pointer">
             File Name
-            <span className="ml-2 text-xs text-muted-foreground">(filename)</span>
           </label>
           
           {editingFileName !== '' ? (

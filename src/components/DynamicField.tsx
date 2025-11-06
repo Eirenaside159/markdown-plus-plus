@@ -249,8 +249,9 @@ export function DynamicField({ fieldKey, fieldLabel, fieldType, value, onChange,
               className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
 
-            {/* Suggestions dropdown for string fields */}
-            {showSuggestions && suggestions && suggestions.length > 1 && (
+            {/* Suggestions dropdown for string fields (exclude title and unique fields) */}
+            {showSuggestions && suggestions && suggestions.length > 1 && 
+             !['title', 'slug', 'permalink', 'url', 'description', 'excerpt', 'summary'].includes(fieldKey.toLowerCase()) && (
               <div className="absolute z-10 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
                 {suggestions.slice(0, 10).map((suggestion, index) => (
                   <button
@@ -273,7 +274,6 @@ export function DynamicField({ fieldKey, fieldLabel, fieldType, value, onChange,
     <div className="space-y-2">
       <label htmlFor={`field-${fieldKey}`} className="block text-sm font-medium text-foreground cursor-pointer">
         {fieldLabel}
-        <span className="ml-2 text-xs text-muted-foreground">({fieldType})</span>
       </label>
       {renderField()}
     </div>
