@@ -1,8 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Search, ArrowUp, ArrowDown, Trash2, Filter, Loader2, EyeOff, MoreVertical } from 'lucide-react';
+import { Search, ArrowUp, ArrowDown, Trash2, Filter, Loader2, EyeOff, MoreVertical, ExternalLink } from 'lucide-react';
 import type { MarkdownFile } from '@/types';
 import { formatFieldLabel, isDateString, formatDateValue, normalizeDateValue } from '@/lib/fieldUtils';
 import { ColumnSettings } from './ColumnSettings';
+import { buildPostUrl } from '@/lib/utils';
+import { getSettings } from '@/lib/settings';
 
 interface DataTableProps {
   posts: MarkdownFile[];
@@ -28,6 +30,9 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
   const [showColumnFilters, setShowColumnFilters] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  
+  // Get settings for URL building
+  const settings = getSettings();
 
   // Extract all unique metadata keys from all posts
   const columns = useMemo(() => {
@@ -417,6 +422,21 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                               <span className="text-muted-foreground">—</span>
                             )}
                           </button>
+                          {(() => {
+                            const postUrl = buildPostUrl(settings.baseUrl, settings.urlFormat, post.frontmatter);
+                            return postUrl ? (
+                              <a
+                                href={postUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center h-7 w-7 rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100"
+                                title={`Open: ${postUrl}`}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </a>
+                            ) : null;
+                          })()}
                           <div className="relative">
                             <button
                               data-dropdown-trigger
@@ -506,18 +526,34 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                     {post.frontmatter.title || post.name}
                   </h3>
                 </button>
-                <div className="relative shrink-0">
-                  <button
-                    data-dropdown-trigger
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenDropdown(openDropdown === post.path ? null : post.path);
-                    }}
-                    className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent transition-colors"
-                    title="More actions"
-                  >
-                    <MoreVertical className="h-4 w-4" />
-                  </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  {(() => {
+                    const postUrl = buildPostUrl(settings.baseUrl, settings.urlFormat, post.frontmatter);
+                    return postUrl ? (
+                      <a
+                        href={postUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                        title={`Open: ${postUrl}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    ) : null;
+                  })()}
+                  <div className="relative">
+                    <button
+                      data-dropdown-trigger
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenDropdown(openDropdown === post.path ? null : post.path);
+                      }}
+                      className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent transition-colors"
+                      title="More actions"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
                   {openDropdown === post.path && (
                     <div 
                       data-dropdown-menu
@@ -548,6 +584,7 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                       </button>
                     </div>
                   )}
+                </div>
                 </div>
               </div>
 

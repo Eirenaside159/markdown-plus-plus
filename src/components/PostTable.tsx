@@ -1,6 +1,8 @@
 import type { MarkdownFile } from '@/types';
-import { Edit, Trash2, Loader2 } from 'lucide-react';
+import { Edit, Trash2, Loader2, ExternalLink } from 'lucide-react';
 import { isDateString, formatDateValue } from '@/lib/fieldUtils';
+import { buildPostUrl } from '@/lib/utils';
+import { getSettings } from '@/lib/settings';
 
 interface PostTableProps {
   posts: MarkdownFile[];
@@ -10,6 +12,9 @@ interface PostTableProps {
 }
 
 export function PostTable({ posts, isLoading = false, onEdit, onDelete }: PostTableProps) {
+  // Get settings for URL building
+  const settings = getSettings();
+  
   // Sort by date (newest first)
   const sortedPosts = [...posts].sort((a, b) => {
     const dateA = a.frontmatter.date;
@@ -87,7 +92,26 @@ export function PostTable({ posts, isLoading = false, onEdit, onDelete }: PostTa
               className="border-b hover:bg-accent/50 transition-colors"
             >
               <td className="p-3 text-sm font-medium">
-                {post.frontmatter.title || post.name}
+                <div className="flex items-center gap-2 group">
+                  <span className="flex-1">
+                    {post.frontmatter.title || post.name}
+                  </span>
+                  {(() => {
+                    const postUrl = buildPostUrl(settings.baseUrl, settings.urlFormat, post.frontmatter);
+                    return postUrl ? (
+                      <a
+                        href={postUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center h-7 w-7 rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100"
+                        title={`Open: ${postUrl}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    ) : null;
+                  })()}
+                </div>
               </td>
               <td className="p-3 text-sm text-muted-foreground">
                 {post.frontmatter.author || '-'}

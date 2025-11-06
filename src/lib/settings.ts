@@ -11,6 +11,8 @@ export function getSettings(): AppSettings {
       // Merge with defaults to ensure all fields exist
       return {
         defaultMeta: { ...DEFAULT_SETTINGS.defaultMeta, ...parsed.defaultMeta },
+        baseUrl: parsed.baseUrl ?? DEFAULT_SETTINGS.baseUrl,
+        urlFormat: parsed.urlFormat ?? DEFAULT_SETTINGS.urlFormat,
       };
     }
   } catch (error) {

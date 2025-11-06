@@ -301,6 +301,59 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
         {/* General Tab */}
         {activeTab === 'general' && (
           <section className="space-y-4">
+              {/* URL Configuration */}
+              <div className="p-4 bg-muted/30 rounded-lg space-y-3">
+                <div className="text-lg font-semibold">URL Configuration</div>
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Base URL
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.baseUrl || ''}
+                      onChange={(e) => {
+                        const updatedSettings = {
+                          ...settings,
+                          baseUrl: e.target.value,
+                        };
+                        setSettings(updatedSettings);
+                        saveSettings(updatedSettings);
+                      }}
+                      placeholder="https://example.com"
+                      className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      URL Format
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.urlFormat || ''}
+                      onChange={(e) => {
+                        const updatedSettings = {
+                          ...settings,
+                          urlFormat: e.target.value,
+                        };
+                        setSettings(updatedSettings);
+                        saveSettings(updatedSettings);
+                      }}
+                      placeholder="blog/{CATEGORY}/{SLUG}"
+                      className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+                  <div className="p-3 bg-muted/30 rounded-md text-sm text-muted-foreground">
+                    <p className="flex items-start gap-1.5">
+                      <Lightbulb className="h-4 w-4 shrink-0 mt-0.5" />
+                      <span>
+                        Use placeholders like <code className="px-1.5 py-0.5 rounded bg-muted font-mono text-xs">{'{SLUG}'}</code>, <code className="px-1.5 py-0.5 rounded bg-muted font-mono text-xs">{'{CATEGORY}'}</code>, or any meta field in curly braces. Example: <code className="px-1.5 py-0.5 rounded bg-muted font-mono text-xs">blog/{'{CATEGORY}'}/{'{SLUG}'}</code>
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* App Info */}
               <div className="p-4 bg-muted/30 rounded-lg space-y-2">
                 <div className="text-lg font-semibold">Application Info</div>
