@@ -1098,6 +1098,7 @@ function App() {
                 <FileBrowser
                   files={fileTree}
                   selectedFile={selectedFolderPath}
+                  hiddenFiles={dirHandle ? getHiddenFiles(dirHandle.name) : []}
                   onFileSelect={(path) => {
                     // Check if this is a directory or file
                     const findItem = (items: FileTreeItem[], targetPath: string): FileTreeItem | null => {
