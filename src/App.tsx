@@ -18,7 +18,7 @@ import { checkGitStatus, publishFile, generateCommitMessage, type GitStatus } fr
 import { hideFile, getHiddenFiles } from '@/lib/hiddenFiles';
 import { updateFaviconBadge } from '@/lib/faviconBadge';
 import type { FileTreeItem, MarkdownFile } from '@/types';
-import { FolderOpen, Save, Clock, FileCode, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen, PanelLeftClose, PanelLeft, Loader2 } from 'lucide-react';
+import { FolderOpen, Save, Clock, FileCode, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen, PanelLeftClose, PanelLeft, Loader2, BookOpen } from 'lucide-react';
 
 type ViewMode = 'table' | 'editor' | 'settings';
 
@@ -813,17 +813,39 @@ function App() {
 
           {/* Footer with GitHub Link */}
           <div className="pt-6 border-t border-border">
-            <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
-              <a
-                href="https://github.com/emir/markdown-plus-plus"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 hover:text-foreground transition-colors px-4 py-2 rounded-md hover:bg-accent"
-              >
-                <Github className="h-4 w-4" />
-                <span>View on GitHub</span>
-              </a>
-              <span className="text-muted-foreground/50">•</span>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-4">
+                <a
+                  href="https://github.com/emir/markdown-plus-plus"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 hover:text-foreground transition-colors px-4 py-2 rounded-md hover:bg-accent"
+                >
+                  <Github className="h-4 w-4" />
+                  <span>View on GitHub</span>
+                </a>
+                <span className="text-muted-foreground/50">•</span>
+                <a
+                  href="https://github.com/emir/markdown-plus-plus?tab=readme-ov-file#readme"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 hover:text-foreground transition-colors px-4 py-2 rounded-md hover:bg-accent"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  <span>Documentation</span>
+                </a>
+                <span className="text-muted-foreground/50">•</span>
+                <a
+                  href="https://buymeacoffee.com/emirkarsiyakali"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 hover:text-foreground transition-colors px-4 py-2 rounded-md hover:bg-accent"
+                >
+                  <span>☕</span>
+                  <span>Support Me</span>
+                </a>
+              </div>
+              <span className="hidden sm:inline text-muted-foreground/50">•</span>
               <span>v0.6.0-beta</span>
             </div>
           </div>
