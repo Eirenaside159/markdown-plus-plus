@@ -123,9 +123,9 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      showToast('Configuration exported successfully!', 'success');
+      showToast('Configuration exported', 'success');
     } catch (error) {
-      showToast('Failed to export settings. Please try again.', 'error');
+      showToast('Failed to export settings', 'error');
     }
   };
 
@@ -175,14 +175,14 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
         const newSettings = getSettings();
         setSettings(newSettings);
         
-        showToast(`Successfully imported ${importedCount} setting(s)! Reloading...`, 'success');
+        showToast(`Imported ${importedCount} setting(s). Reloading...`, 'success');
         
         // Reload page to apply all changes
         setTimeout(() => {
           window.location.reload();
         }, 2000);
       } catch (error) {
-        showToast('Failed to import config. Please check the file format.', 'error');
+        showToast('Invalid config file format', 'error');
       }
     };
     reader.readAsText(file);
@@ -198,7 +198,7 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
     
     unhideFile(directoryName, filePath);
     setHiddenFiles(prev => prev.filter(path => path !== filePath));
-    showToast('File unhidden successfully', 'success');
+    showToast('File unhidden', 'success');
   };
 
   const handleClearAllHidden = () => {

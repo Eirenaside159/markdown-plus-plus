@@ -107,7 +107,7 @@ function App() {
     // Check browser support first
     if (!isFileSystemAccessSupported()) {
       showToast(
-        'File System Access API is not supported on this device. Please use a desktop browser (Chrome, Edge, or Safari 15.2+).',
+        'File API not supported. Use desktop Chrome, Edge, or Safari 15.2+',
         'error'
       );
       return;
@@ -145,7 +145,7 @@ function App() {
         console.log('Selected folder:', handle.name);
         console.log('Error:', status.error);
         showToast(
-          `Folder "${handle.name}" selected. Git repository not detected - publish feature will be limited.`,
+          `Git not detected - publish limited`,
           'info'
         );
       } else {
@@ -279,7 +279,7 @@ function App() {
       setHasPendingPublish(false); // Clear publish flag when discarding
       showToast('Changes discarded', 'info');
     } catch (error) {
-      showToast('Failed to discard changes. Please try again.', 'error');
+      showToast('Failed to discard changes', 'error');
     }
   };
 
@@ -328,9 +328,9 @@ function App() {
         setHasPendingPublish(false);
       }
 
-      showToast('Post deleted successfully', 'success');
+      showToast('Post deleted', 'success');
     } catch (error) {
-      showToast('Failed to delete file. Please try again.', 'error');
+      showToast('Failed to delete file', 'error');
       setIsLoadingPosts(false);
     }
   };
@@ -408,7 +408,7 @@ function App() {
         // Silently fail - file tree will update on next refresh
       });
     } catch (error) {
-      showToast('Failed to create file. Please try again.', 'error');
+      showToast('Failed to create file', 'error');
     }
   };
 
@@ -429,9 +429,9 @@ function App() {
       setHasChanges(false);
       setHasPendingPublish(true);
       
-      showToast('Changes saved successfully!', 'success');
+      showToast('Changes saved', 'success');
     } catch (error) {
-      showToast('Failed to save file. Please try again.', 'error');
+      showToast('Failed to save file', 'error');
     }
   };
 
