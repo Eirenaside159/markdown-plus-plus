@@ -46,6 +46,7 @@ function App() {
     return saved ? parseInt(saved, 10) : 256; // Default 256px (w-64 = 16rem = 256px)
   });
   const [isResizing, setIsResizing] = useState(false);
+  const [shouldAutoFocus, setShouldAutoFocus] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
   // Check if warning should be shown on mount
@@ -56,7 +57,9 @@ function App() {
   // Update page title based on changes
   useEffect(() => {
     if (viewMode === 'editor' && currentFile) {
-      const baseTitle = currentFile.frontmatter.title || currentFile.name || 'Untitled';
+      const baseTitle = currentFile.frontmatter.title === 'Untitled Post' 
+        ? 'Untitled' 
+        : (currentFile.frontmatter.title || currentFile.name || 'Untitled');
       document.title = hasChanges ? `🟠 ${baseTitle} - Markdown++` : `${baseTitle} - Markdown++`;
     } else if (viewMode === 'settings') {
       document.title = 'Settings - Markdown++';
@@ -199,6 +202,7 @@ function App() {
                 const parsed = parseMarkdown(fileContent, savedState.selectedFilePath, fileName);
                 setCurrentFile(parsed);
                 setSelectedFilePath(savedState.selectedFilePath);
+                setShouldAutoFocus(false); // Don't auto-focus on restored files
               } catch (error) {
                 // File might not exist anymore, silently fail
                 console.warn('Could not restore file:', savedState.selectedFilePath);
@@ -291,6 +295,7 @@ function App() {
     setSelectedFilePath(post.path);
     setHasChanges(false);
     setHasPendingPublish(false); // Reset publish flag when switching files
+    setShouldAutoFocus(false); // Don't auto-focus when editing existing posts
     setViewMode('editor');
     
     // Save state
@@ -389,6 +394,7 @@ function App() {
       setSelectedFilePath(filePath);
       setHasChanges(false);
       setHasPendingPublish(true);
+      setShouldAutoFocus(true); // Auto-focus when creating new post
       setViewMode('editor');
       
       // Save state and update history
@@ -558,6 +564,7 @@ function App() {
           setSelectedFilePath(state.filePath);
           setHasChanges(false);
           setHasPendingPublish(false);
+          setShouldAutoFocus(false); // Don't auto-focus when navigating back
           setViewMode('editor');
         } catch (error) {
           // File not found, go to table
@@ -573,6 +580,16 @@ function App() {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [hasChanges, viewMode, dirHandle]);
+
+  // Reset autoFocus after editor has had time to focus
+  useEffect(() => {
+    if (shouldAutoFocus) {
+      const timer = setTimeout(() => {
+        setShouldAutoFocus(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [shouldAutoFocus]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -855,17 +872,17 @@ function App() {
                   onClick={scrollToTop}
                   className={`font-bold text-center leading-tight truncate cursor-pointer hover:opacity-80 transition-opacity ${
                     (() => {
-                      const title = currentFile.frontmatter.title || 'Untitled';
+                      const title = currentFile.frontmatter.title === 'Untitled Post' ? 'Untitled' : (currentFile.frontmatter.title || 'Untitled');
                       const length = title.length;
                       if (length > 60) return 'text-sm';
                       if (length > 40) return 'text-base';
                       if (length > 25) return 'text-lg';
                       return 'text-xl';
                     })()
-                  }`}
-                  title={currentFile.frontmatter.title || 'Untitled'}
+                  } ${currentFile.frontmatter.title === 'Untitled Post' ? 'opacity-40' : ''}`}
+                  title={currentFile.frontmatter.title === 'Untitled Post' ? 'Untitled' : (currentFile.frontmatter.title || 'Untitled')}
                 >
-                  {currentFile.frontmatter.title || 'Untitled'}
+                  {currentFile.frontmatter.title === 'Untitled Post' ? 'Untitled' : (currentFile.frontmatter.title || 'Untitled')}
                 </div>
               </div>
             </div>
@@ -1141,6 +1158,7 @@ function App() {
                   onChange={handleContentChange}
                   title={currentFile.frontmatter.title || ''}
                   onTitleChange={handleTitleChange}
+                  autoFocus={shouldAutoFocus}
                 />
               </div>
             ) : (

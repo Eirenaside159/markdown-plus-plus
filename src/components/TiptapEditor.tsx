@@ -41,12 +41,13 @@ interface TiptapEditorProps {
   onChange: (content: string) => void;
   title?: string;
   onTitleChange?: (title: string) => void;
+  autoFocus?: boolean;
 }
 
 // Create lowlight instance with common languages
 const lowlight = createLowlight(common);
 
-export function TiptapEditor({ content, onChange, title, onTitleChange }: TiptapEditorProps) {
+export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocus = false }: TiptapEditorProps) {
   const [showMoreTools, setShowMoreTools] = useState(false);
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
   const moreToolsRef = useRef<HTMLDivElement>(null);
@@ -160,7 +161,17 @@ export function TiptapEditor({ content, onChange, title, onTitleChange }: Tiptap
       titleTextareaRef.current.style.height = 'auto';
       titleTextareaRef.current.style.height = titleTextareaRef.current.scrollHeight + 'px';
     }
-  }, [title]);
+  }, [title === 'Untitled Post' ? '' : title]);
+
+  // Auto-focus editor when autoFocus is true
+  useEffect(() => {
+    if (editor && autoFocus) {
+      // Small delay to ensure editor is fully mounted
+      setTimeout(() => {
+        editor.commands.focus('end');
+      }, 100);
+    }
+  }, [editor, autoFocus]);
 
   if (!editor) {
     return null;
@@ -445,8 +456,8 @@ export function TiptapEditor({ content, onChange, title, onTitleChange }: Tiptap
         <div className="px-8 pt-6 -mb-2">
           <textarea
             ref={titleTextareaRef}
-            value={title}
-            onChange={(e) => onTitleChange(e.target.value)}
+            value={title === 'Untitled Post' ? '' : title}
+            onChange={(e) => onTitleChange(e.target.value || 'Untitled Post')}
             placeholder="Untitled"
             rows={1}
             className="w-full text-5xl font-bold border-none outline-none bg-transparent placeholder:text-muted-foreground/30 focus:ring-0 p-0 leading-tight text-center resize-none overflow-hidden"
