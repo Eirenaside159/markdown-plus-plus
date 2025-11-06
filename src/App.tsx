@@ -403,6 +403,9 @@ function App() {
       // Convert to markdown string and write to file
       const content = stringifyMarkdown(newPost);
       await writeFile(dirHandle, filePath, content);
+      
+      // Set rawContent to the saved content so View Changes can compare properly
+      newPost.rawContent = content;
 
       // Immediately switch to editor with the new post
       setCurrentFile(newPost);
@@ -444,11 +447,20 @@ function App() {
       const content = stringifyMarkdown(currentFile);
       await writeFile(dirHandle, selectedFilePath, content);
       
+      // Update rawContent to the saved content so View Changes can compare properly
+      const updatedFile = {
+        ...currentFile,
+        rawContent: content,
+      };
+      
       // Update the post in allPosts
       const updatedPosts = allPosts.map(post => 
-        post.path === currentFile.path ? currentFile : post
+        post.path === currentFile.path ? updatedFile : post
       );
       setAllPosts(updatedPosts);
+      
+      // Update current file with new rawContent
+      setCurrentFile(updatedFile);
       
       // Update states in one batch
       setHasChanges(false);
