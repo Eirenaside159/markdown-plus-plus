@@ -2,10 +2,16 @@ import { useState, useEffect } from 'react';
 import { X, GitBranch, Upload, AlertCircle, CheckCircle, Terminal, Copy, Clipboard, Rocket, Lightbulb, Send } from 'lucide-react';
 import type { GitStatus } from '@/lib/gitOperations';
 
+interface PublishResult {
+  pushed?: boolean;
+  needsManualPush?: boolean;
+  commitSha?: string;
+}
+
 interface PublishModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onPublish: (commitMessage: string) => Promise<void>;
+  onPublish: (commitMessage: string) => Promise<PublishResult | void>;
   fileName: string;
   gitStatus: GitStatus | null;
   defaultMessage: string;
@@ -26,6 +32,7 @@ export function PublishModal({
   const [copied, setCopied] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
+  const [publishResult, setPublishResult] = useState<PublishResult | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -33,6 +40,7 @@ export function PublishModal({
       setIsPublishing(false);
       setPublishSuccess(false);
       setPublishError(null);
+      setPublishResult(null);
       setCopied(false);
     }
   }, [isOpen, defaultMessage]);
@@ -54,10 +62,11 @@ export function PublishModal({
     setIsPublishing(true);
     setPublishError(null);
     try {
-      await onPublish(commitMessage);
+      const result = await onPublish(commitMessage);
       // Don't close modal, show success state instead
       setPublishSuccess(true);
       setPublishError(null);
+      setPublishResult(result || null);
     } catch (error) {
       console.error('Publish error:', error);
       setPublishSuccess(false);
@@ -70,6 +79,7 @@ export function PublishModal({
   const handleClose = () => {
     setPublishSuccess(false);
     setPublishError(null);
+    setPublishResult(null);
     onClose();
   };
 
@@ -177,15 +187,37 @@ export function PublishModal({
                   <div className="flex gap-3">
                     <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
                     <div className="space-y-2 text-sm flex-1">
-                      <p className="font-medium text-green-500">Commit Created Successfully!</p>
-                      <p className="text-muted-foreground">
-                        Your changes have been committed to the local repository.
-                      </p>
+                      {publishResult?.pushed ? (
+                        <>
+                          <p className="font-medium text-green-500">Changes Published Successfully!</p>
+                          <p className="text-muted-foreground">
+                            Your changes have been committed and pushed to the remote repository.
+                          </p>
+                          {publishResult?.commitSha && (
+                            <p className="text-xs text-muted-foreground font-mono">
+                              Commit: {publishResult.commitSha}
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <p className="font-medium text-green-500">Commit Created Successfully!</p>
+                          <p className="text-muted-foreground">
+                            Your changes have been committed to the local repository.
+                          </p>
+                          {publishResult?.commitSha && (
+                            <p className="text-xs text-muted-foreground font-mono">
+                              Commit: {publishResult.commitSha}
+                            </p>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* Next Steps */}
+                {/* Next Steps - Only show if push was not successful */}
+                {publishResult?.needsManualPush && (
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold flex items-center gap-2">
                     <Send className="h-4 w-4" />
@@ -254,6 +286,7 @@ export function PublishModal({
                     </ol>
                   </div>
                 </div>
+                )}
               </>
             ) : (
               /* Regular Publish Form */

@@ -424,6 +424,12 @@ function App() {
       if (result.success) {
         setHasPendingPublish(false);
         // Don't show toast - success is shown in modal
+        // Return result to modal so it can show appropriate message
+        return {
+          pushed: result.pushed,
+          needsManualPush: result.needsManualPush,
+          commitSha: result.commitSha,
+        };
       } else {
         // Throw error so modal can catch and show it
         throw new Error(result.error || 'Failed to publish changes');

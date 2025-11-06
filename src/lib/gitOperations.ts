@@ -18,6 +18,9 @@ export interface PublishResult {
   success: boolean;
   message: string;
   error?: string;
+  pushed?: boolean;
+  needsManualPush?: boolean;
+  commitSha?: string;
 }
 
 /**
@@ -227,6 +230,9 @@ export async function publishFile(
       return {
         success: true,
         message: `Successfully published to ${branch}! 🚀\n\nCommit: ${commitSha.substring(0, 7)}\nChanges have been pushed to remote.`,
+        pushed: true,
+        needsManualPush: false,
+        commitSha: commitSha.substring(0, 7),
       };
     } catch (pushError) {
       console.log('ℹ️ Push from browser failed (expected):', pushError);
@@ -236,6 +242,9 @@ export async function publishFile(
         return {
           success: true,
           message: `✅ Changes committed successfully!\n\nCommit: ${commitSha.substring(0, 7)}\n\n📡 Your repository uses SSH protocol which cannot be pushed from browser.\n\nTo publish, run in your terminal:\n\ncd ${dirHandle.name}\ngit push origin ${branch}\n\n💡 Tip: If you want automatic push, change remote URL to HTTPS:\ngit remote set-url origin https://gitlab.com/itsmoneo/moneo.com.tr.git`,
+          pushed: false,
+          needsManualPush: true,
+          commitSha: commitSha.substring(0, 7),
         };
       }
       
@@ -243,6 +252,9 @@ export async function publishFile(
       return {
         success: true,
         message: `✅ Changes committed successfully!\n\nCommit: ${commitSha.substring(0, 7)}\n\nTo publish to remote, run this in your terminal:\n\ncd ${dirHandle.name}\ngit push origin ${branch}`,
+        pushed: false,
+        needsManualPush: true,
+        commitSha: commitSha.substring(0, 7),
       };
     }
   } catch (error) {
