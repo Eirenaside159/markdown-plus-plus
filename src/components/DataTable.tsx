@@ -428,7 +428,7 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                         <div className="flex items-center gap-2 group">
                           <button
                             onClick={() => onEdit(post)}
-                            className="truncate text-sm text-left flex-1 hover:text-primary hover:underline transition-colors font-medium"
+                            className="truncate text-base text-left flex-1 hover:text-primary hover:underline transition-colors font-medium"
                             title={formattedValue}
                           >
                             {formattedValue || (
@@ -561,7 +561,7 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                   onClick={() => onEdit(post)}
                   className="flex-1 text-left"
                 >
-                  <h3 className="font-semibold text-base line-clamp-2 hover:text-primary transition-colors">
+                  <h3 className="font-semibold text-lg line-clamp-2 hover:text-primary transition-colors">
                     {post.frontmatter.title || post.name}
                   </h3>
                 </button>
