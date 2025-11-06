@@ -55,6 +55,8 @@ function App() {
     if (viewMode === 'editor' && currentFile) {
       const baseTitle = currentFile.frontmatter.title || currentFile.name || 'Untitled';
       document.title = hasChanges ? `🟠 ${baseTitle} - Markdown++` : `${baseTitle} - Markdown++`;
+    } else if (viewMode === 'settings') {
+      document.title = 'Settings - Markdown++';
     } else if (viewMode === 'table' && dirHandle) {
       document.title = `${dirHandle.name} - Markdown++`;
     } else {
