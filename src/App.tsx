@@ -22,6 +22,32 @@ import { FolderOpen, Save, Clock, FileCode, Plus, RotateCcw, Settings as Setting
 
 type ViewMode = 'table' | 'editor' | 'settings';
 
+// Typewriter hook for animated text
+function useTypewriter(text: string, speed: number = 100) {
+  const [displayedText, setDisplayedText] = useState('');
+  const [isComplete, setIsComplete] = useState(false);
+
+  useEffect(() => {
+    setDisplayedText('');
+    setIsComplete(false);
+    let currentIndex = 0;
+
+    const interval = setInterval(() => {
+      if (currentIndex <= text.length) {
+        setDisplayedText(text.slice(0, currentIndex));
+        currentIndex++;
+      } else {
+        setIsComplete(true);
+        clearInterval(interval);
+      }
+    }, speed);
+
+    return () => clearInterval(interval);
+  }, [text, speed]);
+
+  return { displayedText, isComplete };
+}
+
 function App() {
   const [dirHandle, setDirHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [allPosts, setAllPosts] = useState<MarkdownFile[]>([]);
@@ -55,6 +81,9 @@ function App() {
   const [shouldAutoFocus, setShouldAutoFocus] = useState(false);
   const [isMovingFile, setIsMovingFile] = useState(false);
   const { toast, showToast, hideToast } = useToast();
+  
+  // Always call the hook, but only use it when dirHandle is null
+  const { displayedText, isComplete } = useTypewriter('Markdown++', 80);
 
   // Check if warning should be shown on mount
   useEffect(() => {
@@ -843,11 +872,14 @@ function App() {
                 <button 
                   onClick={() => window.location.reload()}
                   className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 mb-2 cursor-pointer hover:scale-105 transition-transform"
-                  title="Click to refresh"
+                  title="Markdown++"
                 >
                   <img src="/logo.png" alt="Markdown++" className="w-full h-full object-contain" />
                 </button>
-                <h1 className="text-3xl sm:text-4xl font-bold">Markdown++</h1>
+                <h1 className="text-3xl sm:text-4xl font-bold">
+                  {displayedText}
+                  <span className="font-thin animate-cursor-blink">|</span>
+                </h1>
                 <p className="text-muted-foreground text-base sm:text-lg px-4">
                   Select a folder to start editing your markdown files
                 </p>
@@ -933,7 +965,9 @@ function App() {
             {/* Privacy Statement */}
             <div className="text-center px-4">
               <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
-                Markdown++ works fully in your browser. No servers, no tracking, no data stored anywhere. We cannot see what you write or what you do here. Your privacy stays with you.
+                Markdown++ works fully in your browser. No servers, no tracking, no data stored anywhere.
+                <br />
+                We cannot see what you write or what you do here. Your privacy stays with you.
               </p>
             </div>
             
