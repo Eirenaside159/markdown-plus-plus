@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, GitBranch, Upload, AlertCircle, CheckCircle, Terminal, Copy, Clipboard, Rocket, Lightbulb, Send } from 'lucide-react';
+import { X, GitBranch, Upload, AlertCircle, CheckCircle, Terminal, Copy, Lightbulb, Send } from 'lucide-react';
 import type { GitStatus } from '@/lib/gitOperations';
 
 interface PublishResult {
@@ -36,6 +36,12 @@ export function PublishModal({
 
   useEffect(() => {
     if (isOpen) {
+      console.log('📝 Publish Modal opened:', {
+        fileName,
+        hasGitRepo: gitStatus?.isGitRepo,
+        currentBranch: gitStatus?.currentBranch,
+        projectPath,
+      });
       setCommitMessage(defaultMessage);
       setIsPublishing(false);
       setPublishSuccess(false);
@@ -43,7 +49,7 @@ export function PublishModal({
       setPublishResult(null);
       setCopied(false);
     }
-  }, [isOpen, defaultMessage]);
+  }, [isOpen, defaultMessage, fileName, gitStatus, projectPath]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -57,18 +63,27 @@ export function PublishModal({
   }, [isOpen, isPublishing]);
 
   const handlePublish = async () => {
-    if (!commitMessage.trim() || isPublishing) return;
+    if (!commitMessage.trim() || isPublishing) {
+      console.log('❌ Publish blocked:', { 
+        hasMessage: !!commitMessage.trim(), 
+        isPublishing,
+        gitStatus: gitStatus?.isGitRepo 
+      });
+      return;
+    }
 
+    console.log('🚀 Starting publish...', { fileName, commitMessage: commitMessage.substring(0, 50) });
     setIsPublishing(true);
     setPublishError(null);
     try {
       const result = await onPublish(commitMessage);
+      console.log('✅ Publish completed:', result);
       // Don't close modal, show success state instead
       setPublishSuccess(true);
       setPublishError(null);
       setPublishResult(result || null);
     } catch (error) {
-      console.error('Publish error:', error);
+      console.error('❌ Publish error:', error);
       setPublishSuccess(false);
       setPublishError(error instanceof Error ? error.message : 'Failed to publish changes');
     } finally {
@@ -144,72 +159,95 @@ export function PublishModal({
   if (!isOpen) return null;
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/60 z-50 transition-opacity"
-        onClick={isPublishing ? undefined : onClose}
-      />
-
-      {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-background rounded-lg shadow-xl border border-border w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b shrink-0">
-            <div className="flex items-center gap-3">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-md ${publishSuccess ? 'bg-green-500/10 text-green-500' : 'bg-primary/10 text-primary'}`}>
-                {publishSuccess ? <CheckCircle className="h-5 w-5" /> : <Upload className="h-5 w-5" />}
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold">
-                  {publishSuccess ? 'Published Successfully!' : 'Publish Changes'}
-                </h2>
-                <p className="text-sm text-muted-foreground">{fileName}</p>
-              </div>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={isPublishing || publishSuccess ? undefined : handleClose}
+    >
+      <div 
+        className="bg-background rounded-lg shadow-xl border w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center gap-3">
+            <div className={`flex items-center justify-center w-10 h-10 rounded-md ${
+              publishSuccess 
+                ? publishResult?.pushed 
+                  ? 'bg-green-500/10 text-green-500' 
+                  : 'bg-blue-500/10 text-blue-500'
+                : 'bg-primary/10 text-primary'
+            }`}>
+              {publishSuccess ? <CheckCircle className="h-5 w-5" /> : <Upload className="h-5 w-5" />}
             </div>
-            <button
-              onClick={handleClose}
-              disabled={isPublishing}
-              className="h-9 w-9 rounded-md hover:bg-accent transition-colors inline-flex items-center justify-center disabled:opacity-50"
-              aria-label="Close"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg font-semibold">
+                {publishSuccess 
+                  ? publishResult?.pushed 
+                    ? 'Published Successfully' 
+                    : 'Commit Created'
+                  : 'Publish Changes'}
+              </h2>
+              <p className="text-sm text-muted-foreground truncate">{fileName}</p>
+            </div>
           </div>
+          <button
+            onClick={handleClose}
+            disabled={isPublishing}
+            className="h-9 w-9 rounded-md hover:bg-accent transition-colors inline-flex items-center justify-center disabled:opacity-50"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
 
-          {/* Content */}
-          <div className="flex-1 overflow-auto p-4 space-y-4">
+        {/* Content */}
+        <div className="flex-1 overflow-auto p-4 space-y-4">
             {/* Success State */}
             {publishSuccess ? (
               <>
                 {/* Success Message */}
-                <div className="rounded-lg border border-green-500/50 bg-green-500/10 p-4">
+                <div className={`rounded-lg border p-4 ${
+                  publishResult?.pushed 
+                    ? 'border-green-500/50 bg-green-500/10' 
+                    : 'border-blue-500/50 bg-blue-500/10'
+                }`}>
                   <div className="flex gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                    <CheckCircle className={`h-5 w-5 shrink-0 mt-0.5 ${
+                      publishResult?.pushed ? 'text-green-500' : 'text-blue-500'
+                    }`} />
                     <div className="space-y-2 text-sm flex-1">
                       {publishResult?.pushed ? (
                         <>
-                          <p className="font-medium text-green-500">Changes Published Successfully!</p>
-                          <p className="text-muted-foreground">
-                            Your changes have been committed and pushed to the remote repository.
+                          <p className="font-medium text-green-600 dark:text-green-400">
+                            Changes committed and pushed successfully
+                          </p>
+                          <p className="text-muted-foreground text-sm">
+                            Your changes are now live on the remote repository.
                           </p>
                           {publishResult?.commitSha && (
-                            <p className="text-xs text-muted-foreground font-mono">
+                            <p className="text-xs text-muted-foreground font-mono mt-2">
                               Commit: {publishResult.commitSha}
                             </p>
                           )}
                         </>
                       ) : (
                         <>
-                          <p className="font-medium text-green-500">Commit Created Successfully!</p>
-                          <p className="text-muted-foreground">
-                            Your changes have been committed to the local repository.
+                          <p className="font-medium text-blue-600 dark:text-blue-400">
+                            Commit created, but push failed
+                          </p>
+                          <p className="text-muted-foreground text-sm">
+                            Your changes have been <strong>committed locally</strong>. However, they could not be pushed to the remote repository.
                           </p>
                           {publishResult?.commitSha && (
-                            <p className="text-xs text-muted-foreground font-mono">
+                            <p className="text-xs text-muted-foreground font-mono mt-2">
                               Commit: {publishResult.commitSha}
                             </p>
                           )}
+                          <div className="pt-3 mt-3 border-t border-blue-500/20">
+                            <p className="text-xs text-blue-700 dark:text-blue-400">
+                              <strong>Likely reason:</strong> Your repository uses SSH protocol, which cannot be pushed from the browser due to security restrictions.
+                            </p>
+                          </div>
                         </>
                       )}
                     </div>
@@ -219,12 +257,16 @@ export function PublishModal({
                 {/* Next Steps - Only show if push was not successful */}
                 {publishResult?.needsManualPush && (
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold flex items-center gap-2">
-                    <Send className="h-4 w-4" />
-                    Next Step: Push to Remote
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <div className="h-px flex-1 bg-border" />
+                    <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Send className="h-4 w-4" />
+                      Manual Push Required
+                    </h3>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
                   <p className="text-sm text-muted-foreground">
-                    To publish your changes to the remote repository, run this command in your terminal:
+                    Run this command in your terminal to push to the remote repository:
                   </p>
                   
                   {/* Terminal Command */}
@@ -270,19 +312,15 @@ export function PublishModal({
                   </div>
 
                   {/* Instructions */}
-                  <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-md text-xs text-blue-700 dark:text-blue-400">
-                    <p className="font-medium mb-2 flex items-center gap-1.5">
-                      <Clipboard className="h-3.5 w-3.5 shrink-0" />
-                      How to push:
+                  <div className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
+                    <p className="mb-2 flex items-center gap-1.5">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                      <strong>How to push:</strong>
                     </p>
                     <ol className="space-y-1 ml-4 list-decimal">
-                      <li>Open Terminal in your project folder</li>
-                      <li>Paste the command above (or click Copy)</li>
-                      <li>Press Enter</li>
-                      <li className="flex items-center gap-1.5">
-                        Your changes will be published!
-                        <Rocket className="h-3.5 w-3.5 inline" />
-                      </li>
+                      <li>Open Terminal in your project directory</li>
+                      <li>Paste the command above (click Copy button)</li>
+                      <li>Press Enter to execute</li>
                     </ol>
                   </div>
                 </div>
@@ -416,14 +454,14 @@ export function PublishModal({
             )}
           </div>
 
-          {/* Footer */}
-          <div className="flex flex-col gap-3 p-4 border-t shrink-0">
+        {/* Footer */}
+        <div className="flex flex-col gap-3 p-4 border-t bg-muted/30">
             {publishSuccess ? (
               /* Success Footer */
-              <div className="flex items-center justify-end">
+              <div className="flex items-center justify-end gap-3">
                 <button
                   onClick={handleClose}
-                  className="px-6 py-2.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium"
+                  className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
                   Close
                 </button>
@@ -494,7 +532,14 @@ export function PublishModal({
                 <button
                   onClick={handlePublish}
                   disabled={!commitMessage.trim() || isPublishing || !gitStatus?.isGitRepo}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50 disabled:pointer-events-none"
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={
+                    !gitStatus?.isGitRepo 
+                      ? 'Git repository not found' 
+                      : !commitMessage.trim() 
+                        ? 'Commit message required' 
+                        : 'Commit and push changes'
+                  }
                 >
                   {isPublishing ? (
                     <>
@@ -512,10 +557,9 @@ export function PublishModal({
             </div>
             </>
             )}
-          </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
