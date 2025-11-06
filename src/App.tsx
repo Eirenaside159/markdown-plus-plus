@@ -83,7 +83,7 @@ function App() {
   const { toast, showToast, hideToast } = useToast();
   
   // Always call the hook, but only use it when dirHandle is null
-  const { displayedText, isComplete } = useTypewriter('Markdown++', 80);
+  const { displayedText } = useTypewriter('Markdown++', 80);
 
   // Check if warning should be shown on mount
   useEffect(() => {
