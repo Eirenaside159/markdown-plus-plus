@@ -307,7 +307,7 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
                 <div className="text-base text-muted-foreground space-y-1">
                   <div className="flex justify-between">
                     <span>Version:</span>
-                    <span className="font-medium">v0.5.0-beta</span>
+                    <span className="font-medium">v0.6.0-beta</span>
                   </div>
                   {directoryName && (
                     <div className="flex justify-between">

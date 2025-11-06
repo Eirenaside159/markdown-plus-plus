@@ -2,8 +2,8 @@
 
 **A powerful, browser-based content management panel for static site generators. Edit, organize, and publish Markdown files with a beautiful UI. No backend, no database, no complexity.**
 
-[![Use in your browser](https://img.shields.io/badge/Use%20in%20your%20browser-Click%20Here-blue)](https://markdown-plus-plus.pages.dev/)
-![Version](https://img.shields.io/badge/version-0.5.0--beta-blue.svg)
+[![Use in your browser](https://img.shields.io/badge/Use%20in%20your%20browser-Click%20Here-blue)](https://markdown-plus-plus.com/)
+![Version](https://img.shields.io/badge/version-0.6.0--beta-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 ## 🎬 Demo
@@ -104,7 +104,7 @@ Built for developers who love static sites but want a better content editing exp
 ### Option 1: Use the Hosted Version (Recommended)
 The easiest way to get started—no installation required!
 
-1. Visit <a href="https://markdown-plus-plus.pages.dev/" style="text-decoration:none;">markdown-plus-plus.pages.dev</a>
+1. Visit <a href="https://markdown-plus-plus.com/" style="text-decoration:none;">markdown-plus-plus.com</a>
 2. Click "Select Folder" and choose your Markdown files directory
 3. Grant browser permission to access the folder
 4. Start editing!

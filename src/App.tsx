@@ -814,7 +814,7 @@ function App() {
                 <span>View on GitHub</span>
               </a>
               <span className="text-muted-foreground/50">•</span>
-              <span>v0.5.0-beta</span>
+              <span>v0.6.0-beta</span>
             </div>
           </div>
 
