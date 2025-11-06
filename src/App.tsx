@@ -40,7 +40,10 @@ function App() {
   const [showTitleInHeader, setShowTitleInHeader] = useState(false);
   const [fileTree, setFileTree] = useState<FileTreeItem[]>([]);
   const [selectedFolderPath, setSelectedFolderPath] = useState<string | null>(null);
-  const [isFileTreeVisible, setIsFileTreeVisible] = useState(true);
+  const [isFileTreeVisible, setIsFileTreeVisible] = useState(() => {
+    const saved = localStorage.getItem('isFileTreeVisible');
+    return saved ? saved === 'true' : true; // Default true
+  });
   const [fileTreeWidth, setFileTreeWidth] = useState(() => {
     const saved = localStorage.getItem('fileTreeWidth');
     return saved ? parseInt(saved, 10) : 256; // Default 256px (w-64 = 16rem = 256px)
@@ -628,6 +631,11 @@ function App() {
       return () => scrollContainer.removeEventListener('scroll', handleScroll);
     }
   }, [viewMode, currentFile]);
+
+  // Save file tree visibility preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('isFileTreeVisible', isFileTreeVisible.toString());
+  }, [isFileTreeVisible]);
 
   // Handle resizing file tree panel
   useEffect(() => {
