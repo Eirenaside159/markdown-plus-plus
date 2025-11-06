@@ -929,7 +929,14 @@ function App() {
           )}
 
           {/* Footer with GitHub Link */}
-          <div className="pt-6 border-t border-border">
+          <div className="pt-6 border-t border-border space-y-4">
+            {/* Privacy Statement */}
+            <div className="text-center px-4">
+              <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
+                Markdown++ works fully in your browser. No servers, no tracking, no data stored anywhere. We cannot see what you write or what you do here. Your privacy stays with you.
+              </p>
+            </div>
+            
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-4">
                 <a
