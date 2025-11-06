@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { MarkdownEditor } from '@/components/MarkdownEditor';
 import { DataTable } from '@/components/DataTable';
 import { RawMarkdownModal } from '@/components/RawMarkdownModal';
-import { NewPostModal } from '@/components/NewPostModal';
 import { PublishModal } from '@/components/PublishModal';
 import { SidebarTabs } from '@/components/SidebarTabs';
 import { Settings } from '@/components/Settings';
@@ -32,7 +31,6 @@ function App() {
   const [hasPendingPublish, setHasPendingPublish] = useState(false); // Track if user saved but hasn't published yet
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [showRawModal, setShowRawModal] = useState(false);
-  const [showNewPostModal, setShowNewPostModal] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isRestoring, setIsRestoring] = useState(true);
@@ -344,10 +342,21 @@ function App() {
     showToast(`"${post.frontmatter.title || post.name}" hidden`, 'info');
   };
 
-  const handleCreatePost = async (filename: string, title: string) => {
+  const handleCreatePost = async () => {
     if (!dirHandle) return;
 
     try {
+      // Generate temporary filename with timestamp
+      const timestamp = Date.now();
+      const baseFilename = `new-post-${timestamp}.md`;
+      
+      // If a folder is selected in file tree, create the file there
+      const filePath = selectedFolderPath 
+        ? `${selectedFolderPath}/${baseFilename}`
+        : baseFilename;
+      
+      const title = 'Untitled Post';
+      
       // Get default meta from settings
       const settings = getSettings();
       const defaultMeta = settings.defaultMeta || {};
@@ -355,8 +364,8 @@ function App() {
       // Create new post with default frontmatter
       const today = new Date().toISOString().split('T')[0];
       const newPost: MarkdownFile = {
-        name: filename,
-        path: filename,
+        name: baseFilename,
+        path: filePath,
         content: '',
         frontmatter: {
           title: title,
@@ -371,31 +380,35 @@ function App() {
         rawContent: '',
       };
 
-      // Convert to markdown string
+      // Convert to markdown string and write to file
       const content = stringifyMarkdown(newPost);
+      await writeFile(dirHandle, filePath, content);
 
-      // Write to file
-      await writeFile(dirHandle, filename, content);
-
-      // Show loading and refresh posts
-      setIsLoadingPosts(true);
-      const fileTree = await readDirectory(dirHandle);
-      setFileTree(fileTree);
-      await loadAllPosts(dirHandle, fileTree);
-
-      // Load the new file
-      const fileContent = await readFile(dirHandle, filename);
-      const parsed = parseMarkdown(fileContent, filename, filename);
-      
-      setCurrentFile(parsed);
-      setSelectedFilePath(filename);
+      // Immediately switch to editor with the new post
+      setCurrentFile(newPost);
+      setSelectedFilePath(filePath);
       setHasChanges(false);
       setHasPendingPublish(true);
       setViewMode('editor');
-      setShowNewPostModal(false);
+      
+      // Save state and update history
+      saveAppState({
+        selectedFilePath: filePath,
+        viewMode: 'editor',
+      });
+      window.history.pushState({ viewMode: 'editor', filePath: filePath }, '', '#editor');
+      
+      // Update allPosts in background without showing loading
+      setAllPosts(prev => [...prev, newPost]);
+      
+      // Update file tree in background
+      readDirectory(dirHandle).then(fileTree => {
+        setFileTree(fileTree);
+      }).catch(() => {
+        // Silently fail - file tree will update on next refresh
+      });
     } catch (error) {
       showToast('Failed to create file. Please try again.', 'error');
-      setIsLoadingPosts(false);
     }
   };
 
@@ -864,7 +877,7 @@ function App() {
             {viewMode !== 'editor' && (
               <>
                 <button
-                  onClick={() => setShowNewPostModal(true)}
+                  onClick={handleCreatePost}
                   className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
                   <Plus className="h-4 w-4" />
@@ -1179,13 +1192,6 @@ function App() {
           filename={currentFile.path}
         />
       )}
-
-      {/* New Post Modal */}
-      <NewPostModal
-        isOpen={showNewPostModal}
-        onClose={() => setShowNewPostModal(false)}
-        onCreate={handleCreatePost}
-      />
 
       {/* Publish Modal */}
       {currentFile && selectedFilePath && (
