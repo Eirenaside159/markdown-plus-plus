@@ -134,6 +134,9 @@ function App() {
       setFileTree(fileTree);
       await loadAllPosts(handle, fileTree);
       
+      // Initialize browser history with table view
+      window.history.replaceState({ viewMode: 'table' }, '', '#table');
+      
       // Check git status
       const status = await checkGitStatus(handle);
       setGitStatus(status);
@@ -181,6 +184,13 @@ function App() {
           if (savedState) {
             if (savedState.viewMode) {
               setViewMode(savedState.viewMode);
+              
+              // Initialize browser history based on restored state
+              const hash = savedState.viewMode === 'editor' ? '#editor' : savedState.viewMode === 'settings' ? '#settings' : '#table';
+              const historyState = savedState.viewMode === 'editor' && savedState.selectedFilePath 
+                ? { viewMode: savedState.viewMode, filePath: savedState.selectedFilePath }
+                : { viewMode: savedState.viewMode };
+              window.history.replaceState(historyState, '', hash);
             }
             
             // Restore selected file if in editor mode
@@ -196,6 +206,9 @@ function App() {
                 console.warn('Could not restore file:', savedState.selectedFilePath);
               }
             }
+          } else {
+            // No saved state, initialize with table view
+            window.history.replaceState({ viewMode: 'table' }, '', '#table');
           }
           
           // Check git status
@@ -287,6 +300,9 @@ function App() {
       selectedFilePath: post.path,
       viewMode: 'editor',
     });
+    
+    // Push to browser history
+    window.history.pushState({ viewMode: 'editor', filePath: post.path }, '', '#editor');
   };
 
   const handleDeletePost = async (post: MarkdownFile) => {
@@ -482,6 +498,68 @@ function App() {
       });
     }
   }, [viewMode, selectedFilePath, dirHandle, isRestoring]);
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = async (event: PopStateEvent) => {
+      const state = event.state;
+      
+      if (!state) {
+        // No state, go to table view
+        if (hasChanges && !window.confirm('You have unsaved changes. Discard them?')) {
+          // User cancelled, push current state back
+          window.history.pushState({ viewMode }, '', viewMode === 'editor' ? '#editor' : viewMode === 'settings' ? '#settings' : '#table');
+          return;
+        }
+        setViewMode('table');
+        setCurrentFile(null);
+        setSelectedFilePath(null);
+        setHasChanges(false);
+        setHasPendingPublish(false);
+        return;
+      }
+
+      // Handle unsaved changes
+      if (hasChanges && !window.confirm('You have unsaved changes. Discard them?')) {
+        // User cancelled, push current state back
+        window.history.pushState({ viewMode }, '', viewMode === 'editor' ? '#editor' : viewMode === 'settings' ? '#settings' : '#table');
+        return;
+      }
+
+      // Navigate to the requested view
+      if (state.viewMode === 'table') {
+        setViewMode('table');
+        setCurrentFile(null);
+        setSelectedFilePath(null);
+        setHasChanges(false);
+        setHasPendingPublish(false);
+      } else if (state.viewMode === 'settings') {
+        setViewMode('settings');
+      } else if (state.viewMode === 'editor' && state.filePath && dirHandle) {
+        // Try to load the file
+        try {
+          const fileContent = await readFile(dirHandle, state.filePath);
+          const fileName = state.filePath.split('/').pop() || state.filePath;
+          const parsed = parseMarkdown(fileContent, state.filePath, fileName);
+          setCurrentFile(parsed);
+          setSelectedFilePath(state.filePath);
+          setHasChanges(false);
+          setHasPendingPublish(false);
+          setViewMode('editor');
+        } catch (error) {
+          // File not found, go to table
+          setViewMode('table');
+          setCurrentFile(null);
+          setSelectedFilePath(null);
+          setHasChanges(false);
+          setHasPendingPublish(false);
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [hasChanges, viewMode, dirHandle]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -731,9 +809,11 @@ function App() {
                 setSelectedFilePath(null);
                 setHasChanges(false);
                 setHasPendingPublish(false);
+                window.history.pushState({ viewMode: 'table' }, '', '#table');
               } else if (viewMode === 'settings') {
                 // If in settings, go to table view
                 setViewMode('table');
+                window.history.pushState({ viewMode: 'table' }, '', '#table');
               } else if (viewMode === 'table' && dirHandle) {
                 // If in table view, refresh posts
                 setIsLoadingPosts(true);
@@ -792,7 +872,10 @@ function App() {
                 </button>
 
                 <button
-                  onClick={() => setViewMode('settings')}
+                  onClick={() => {
+                    setViewMode('settings');
+                    window.history.pushState({ viewMode: 'settings' }, '', '#settings');
+                  }}
                   className="inline-flex items-center justify-center rounded-md bg-white dark:bg-white/10 h-9 w-9 hover:bg-white/90 dark:hover:bg-white/20 transition-colors shadow-sm"
                   title="Settings"
                 >
@@ -906,7 +989,10 @@ function App() {
         <div className="flex-1 overflow-auto">
           <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
             <Settings 
-              onClose={() => setViewMode('table')} 
+              onClose={() => {
+                setViewMode('table');
+                window.history.pushState({ viewMode: 'table' }, '', '#table');
+              }} 
               onLogout={handleLogout}
               directoryName={dirHandle?.name}
             />
@@ -1049,7 +1135,10 @@ function App() {
                 <div className="text-center space-y-2">
                   <p>No file selected</p>
                   <button
-                    onClick={() => setViewMode('table')}
+                    onClick={() => {
+                      setViewMode('table');
+                      window.history.pushState({ viewMode: 'table' }, '', '#table');
+                    }}
                     className="text-sm text-primary hover:underline px-4 py-2"
                   >
                     Go to Table View to select a post
