@@ -18,7 +18,7 @@ import { checkGitStatus, publishFile, generateCommitMessage, type GitStatus } fr
 import { hideFile, getHiddenFiles } from '@/lib/hiddenFiles';
 import { updateFaviconBadge } from '@/lib/faviconBadge';
 import type { FileTreeItem, MarkdownFile } from '@/types';
-import { FolderOpen, Save, Clock, FileCode, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { FolderOpen, Save, Clock, FileCode, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen, PanelLeftClose, PanelLeft, Loader2 } from 'lucide-react';
 
 type ViewMode = 'table' | 'editor' | 'settings';
 
@@ -26,6 +26,8 @@ function App() {
   const [dirHandle, setDirHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [allPosts, setAllPosts] = useState<MarkdownFile[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isCreatingPost, setIsCreatingPost] = useState(false);
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
   const [currentFile, setCurrentFile] = useState<MarkdownFile | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
@@ -359,9 +361,11 @@ function App() {
   };
 
   const handleCreatePost = async () => {
-    if (!dirHandle) return;
+    if (!dirHandle || isCreatingPost) return;
 
     try {
+      setIsCreatingPost(true);
+      
       // Generate temporary filename with timestamp
       const timestamp = Date.now();
       const baseFilename = `new-post-${timestamp}.md`;
@@ -426,13 +430,17 @@ function App() {
       });
     } catch (error) {
       showToast('Failed to create file', 'error');
+    } finally {
+      setIsCreatingPost(false);
     }
   };
 
   const handleSave = async () => {
-    if (!dirHandle || !currentFile || !selectedFilePath) return;
+    if (!dirHandle || !currentFile || !selectedFilePath || isSaving) return;
     
     try {
+      setIsSaving(true);
+      
       const content = stringifyMarkdown(currentFile);
       await writeFile(dirHandle, selectedFilePath, content);
       
@@ -449,6 +457,8 @@ function App() {
       showToast('Changes saved', 'success');
     } catch (error) {
       showToast('Failed to save file', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -607,7 +617,7 @@ function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault();
-        if (hasChanges) handleSave();
+        if (!isSaving) handleSave();
       }
       if (e.key === 'Escape' && showActionsDropdown) {
         setShowActionsDropdown(false);
@@ -615,7 +625,7 @@ function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [hasChanges, currentFile, selectedFilePath, showActionsDropdown]);
+  }, [isSaving, currentFile, selectedFilePath, showActionsDropdown]);
 
   // Track scroll to show/hide title in header (only in editor mode)
   useEffect(() => {
@@ -911,9 +921,14 @@ function App() {
               <>
                 <button
                   onClick={handleCreatePost}
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                  disabled={isCreatingPost}
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Plus className="h-4 w-4" />
+                  {isCreatingPost ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
                   <span className="hidden sm:inline">New Post</span>
                 </button>
 
@@ -932,16 +947,21 @@ function App() {
 
             {viewMode === 'editor' && currentFile && (
               <>
-                {/* Actions Button Group */}
+                {/* Save Button Group */}
                 <div className="relative flex items-stretch">
-                  {/* Open Sidebar Button */}
+                  {/* Save Button */}
                   <button
-                    onClick={() => setIsMobileSidebarOpen(true)}
-                    className="inline-flex items-center gap-1.5 rounded-l-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-                    title="Open Sidebar"
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="inline-flex items-center gap-1.5 rounded-l-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Save Changes"
                   >
-                    <PanelRightOpen className="h-4 w-4" />
-                    <span>Sidebar</span>
+                    {isSaving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    <span>Save</span>
                   </button>
                   
                   {/* Dropdown Toggle */}
@@ -966,6 +986,27 @@ function App() {
                         <div className="py-1">
                           <button
                             onClick={() => {
+                              handlePublishClick();
+                              setShowActionsDropdown(false);
+                            }}
+                            disabled={hasChanges || !hasPendingPublish}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
+                            title={
+                              hasChanges 
+                                ? "Save changes before publishing" 
+                                : !hasPendingPublish 
+                                  ? "No changes to publish" 
+                                  : "Publish to Git"
+                            }
+                          >
+                            <Upload className="h-4 w-4" />
+                            <span>Publish</span>
+                          </button>
+                          
+                          <div className="h-px bg-border my-1" />
+                          
+                          <button
+                            onClick={() => {
                               setShowRawModal(true);
                               setShowActionsDropdown(false);
                             }}
@@ -986,44 +1027,20 @@ function App() {
                             <RotateCcw className="h-4 w-4" />
                             <span>Discard Changes</span>
                           </button>
-                          
-                          <div className="h-px bg-border my-1" />
-                          
-                          <button
-                            onClick={() => {
-                              handleSave();
-                              setShowActionsDropdown(false);
-                            }}
-                            disabled={!hasChanges}
-                            className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
-                          >
-                            <Save className="h-4 w-4" />
-                            <span>Save Changes</span>
-                          </button>
-                          
-                          <button
-                            onClick={() => {
-                              handlePublishClick();
-                              setShowActionsDropdown(false);
-                            }}
-                            disabled={hasChanges || !hasPendingPublish}
-                            className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
-                            title={
-                              hasChanges 
-                                ? "Save changes before publishing" 
-                                : !hasPendingPublish 
-                                  ? "No changes to publish" 
-                                  : "Publish to Git"
-                            }
-                          >
-                            <Upload className="h-4 w-4" />
-                            <span>Publish</span>
-                          </button>
                         </div>
                       </div>
                     </>
                   )}
                 </div>
+
+                {/* Sidebar Icon Button */}
+                <button
+                  onClick={() => setIsMobileSidebarOpen(true)}
+                  className="inline-flex items-center justify-center rounded-md bg-white dark:bg-white/10 h-9 w-9 hover:bg-white/90 dark:hover:bg-white/20 transition-colors shadow-sm"
+                  title="Open Sidebar"
+                >
+                  <PanelRightOpen className="h-4 w-4" />
+                </button>
               </>
             )}
           </div>
