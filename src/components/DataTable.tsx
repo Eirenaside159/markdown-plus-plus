@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Search, ArrowUp, ArrowDown, Edit, Trash2, Filter, Loader2, EyeOff, MoreVertical } from 'lucide-react';
+import { Search, ArrowUp, ArrowDown, Trash2, Filter, Loader2, EyeOff, MoreVertical } from 'lucide-react';
 import type { MarkdownFile } from '@/types';
 import { formatFieldLabel, isDateString, formatDateValue, normalizeDateValue } from '@/lib/fieldUtils';
 import { ColumnSettings } from './ColumnSettings';
