@@ -10,6 +10,15 @@ export default {
       fontFamily: {
         sans: ['Geist', 'system-ui', 'sans-serif'],
       },
+      fontSize: {
+        // Standardized semantic sizes
+        'xs': ['0.75rem', { lineHeight: '1rem' }],     // 12px - badges, captions
+        'sm': ['0.875rem', { lineHeight: '1.25rem' }], // 14px - body, buttons, inputs
+        'base': ['1rem', { lineHeight: '1.5rem' }],    // 16px - headings, important text
+        'lg': ['1.125rem', { lineHeight: '1.75rem' }], // 18px - section headings
+        'xl': ['1.25rem', { lineHeight: '1.75rem' }],  // 20px - page headings
+        '2xl': ['1.5rem', { lineHeight: '2rem' }],     // 24px - main headings
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',

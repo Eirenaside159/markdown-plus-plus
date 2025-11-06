@@ -52,7 +52,7 @@ export function SidebarTabs({ currentFile, allPosts, onMetaChange, onPostClick }
   return (
     <div className="flex flex-col h-full">
       {/* Tabs */}
-      <div className="flex border-b">
+      <div className="flex border-b h-14">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -64,7 +64,7 @@ export function SidebarTabs({ currentFile, allPosts, onMetaChange, onPostClick }
               onClick={() => !isDisabled && setActiveTab(tab.id)}
               disabled={isDisabled}
               className={`
-                flex-1 flex items-center justify-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors
+                flex-1 flex items-center justify-center gap-1.5 px-4 text-sm font-medium transition-colors
                 ${isActive 
                   ? 'text-foreground border-b-2 border-primary -mb-[1px]' 
                   : isDisabled

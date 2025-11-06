@@ -77,36 +77,38 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-3 sm:p-4 border-b gap-2">
+        <div className="flex items-center justify-between p-4 border-b gap-3">
           <div className="flex-1 min-w-0">
-            <h2 className="text-base sm:text-lg font-semibold truncate">Raw Markdown</h2>
-            <p className="text-xs text-muted-foreground truncate hidden sm:block">{filename}</p>
+            <h2 className="text-lg font-semibold truncate">
+              {showComparison ? 'View Changes' : 'Raw Markdown'}
+            </h2>
+            <p className="text-sm text-muted-foreground truncate hidden sm:block">{filename}</p>
           </div>
-          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             {showComparison && (
               <div className="flex items-center gap-1 border rounded-md p-0.5">
                 <button
                   onClick={() => setViewMode('split')}
-                  className={`inline-flex items-center gap-1.5 px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded transition-colors ${
+                  className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors ${
                     viewMode === 'split' 
                       ? 'bg-primary text-primary-foreground' 
                       : 'hover:bg-accent hover:text-accent-foreground'
                   }`}
                   title="Split view"
                 >
-                  <SplitSquareHorizontal className="h-3.5 w-3.5" />
+                  <SplitSquareHorizontal className="h-4 w-4" />
                   <span className="hidden sm:inline">Split</span>
                 </button>
                 <button
                   onClick={() => setViewMode('unified')}
-                  className={`inline-flex items-center gap-1.5 px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded transition-colors ${
+                  className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors ${
                     viewMode === 'unified' 
                       ? 'bg-primary text-primary-foreground' 
                       : 'hover:bg-accent hover:text-accent-foreground'
                   }`}
                   title="Unified diff"
                 >
-                  <GitCompare className="h-3.5 w-3.5" />
+                  <GitCompare className="h-4 w-4" />
                   <span className="hidden sm:inline">Unified</span>
                 </button>
               </div>
@@ -114,7 +116,7 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
             {!showComparison && (
               <button
                 onClick={handleCopy}
-                className="inline-flex items-center gap-2 px-2 sm:px-3 py-1.5 text-sm rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors touch-target"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors font-medium"
                 title="Copy to clipboard"
               >
                 {copied ? (
@@ -132,11 +134,11 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
             )}
             <button
               onClick={onClose}
-              className="p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors touch-target inline-flex items-center justify-center"
+              className="h-9 w-9 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors inline-flex items-center justify-center"
               title="Close"
               aria-label="Close"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -204,7 +206,7 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
                   <h3 className="text-sm font-semibold">Original</h3>
                   <button
                     onClick={handleCopyOriginal}
-                    className="inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded border border-input bg-background hover:bg-accent transition-colors"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 text-xs rounded-md border border-input bg-background hover:bg-accent transition-colors"
                     title="Copy original"
                   >
                     {copiedOriginal ? (
@@ -267,7 +269,7 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
                   <h3 className="text-sm font-semibold text-green-700 dark:text-green-400">Edited (To Save)</h3>
                   <button
                     onClick={handleCopy}
-                    className="inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded border border-input bg-background hover:bg-accent transition-colors"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 text-xs rounded-md border border-input bg-background hover:bg-accent transition-colors"
                     title="Copy edited"
                   >
                     {copied ? (
@@ -334,13 +336,13 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-3 sm:p-4 border-t bg-muted/30 gap-2 flex-wrap">
+        <div className="flex items-center justify-between p-4 border-t bg-muted/30 gap-3 flex-wrap">
           {!showComparison ? (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {content.split('\n').length} lines • {content.length} chars
             </p>
           ) : (
-            <div className="text-xs text-muted-foreground flex gap-4">
+            <div className="text-sm text-muted-foreground flex gap-4">
               <span>
                 {diffResult?.filter(d => d.added).reduce((acc, d) => acc + d.value.split('\n').length - 1, 0) || 0} additions
               </span>
@@ -351,7 +353,7 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
           )}
           <button
             onClick={onClose}
-            className="inline-flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors touch-target"
+            className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             Close
           </button>

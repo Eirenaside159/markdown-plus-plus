@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, AlertCircle } from 'lucide-react';
+import { X, AlertCircle, FileText, Sparkles, Plus } from 'lucide-react';
 import { Toast, useToast } from './ui/Toast';
 
 interface NewPostModalProps {
@@ -141,124 +141,140 @@ export function NewPostModal({ isOpen, onClose, onCreate }: NewPostModalProps) {
         onClose={hideToast}
       />
       
-      <div 
-        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4"
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/60 z-50 transition-opacity"
         onClick={handleClose}
-      >
-      <div 
-        className="bg-background border-t sm:border border-border rounded-t-2xl sm:rounded-lg shadow-lg w-full sm:max-w-md max-h-[90vh] sm:max-h-[85vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-4 border-b shrink-0">
-          <h2 className="text-lg sm:text-lg font-semibold">Create New Post</h2>
-          <button
-            onClick={handleClose}
-            className="p-2 hover:bg-accent rounded-md transition-colors touch-target inline-flex items-center justify-center"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+      />
 
-        {/* Form - Scrollable */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto overscroll-contain">
-          <div className="p-4 sm:p-4 space-y-5">
+      {/* Modal */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div 
+          className="bg-background rounded-lg shadow-xl border border-border w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-md bg-primary/10 text-primary">
+                <Plus className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold">Create New Post</h2>
+                <p className="text-sm text-muted-foreground">Add a new markdown file</p>
+              </div>
+            </div>
+            <button
+              onClick={handleClose}
+              className="h-9 w-9 rounded-md hover:bg-accent transition-colors inline-flex items-center justify-center"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Content */}
+          <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+            <div className="flex-1 overflow-auto p-4 space-y-4">
+            {/* Title Field */}
             <div className="space-y-2">
-              <label htmlFor="title" className="block text-sm font-medium">
+              <label htmlFor="title" className="flex items-center gap-2 text-sm font-medium">
+                <FileText className="h-4 w-4 text-primary" />
                 Title <span className="text-destructive">*</span>
               </label>
-              <input
-                id="title"
-                type="text"
-                value={title}
-                onChange={(e) => handleTitleChange(e.target.value)}
-                placeholder="My Awesome Blog Post"
-                className={`w-full px-4 py-3 text-base rounded-lg border-2 bg-background text-foreground focus:outline-none touch-target transition-colors ${
-                  errors.title 
-                    ? 'border-destructive focus:border-destructive focus:ring-2 focus:ring-destructive/20' 
-                    : 'border-input focus:border-primary focus:ring-2 focus:ring-primary/20'
-                }`}
-                autoFocus
-                aria-invalid={!!errors.title}
-                aria-describedby={errors.title ? 'title-error' : undefined}
-              />
-              {errors.title ? (
-                <div id="title-error" className="flex items-start gap-2 text-xs text-destructive animate-in slide-in-from-top-1 duration-200">
-                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                  <p className="leading-relaxed">{errors.title}</p>
+              <div className="relative group">
+                <input
+                  id="title"
+                  type="text"
+                  value={title}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  placeholder="My Awesome Blog Post"
+                  className={`w-full px-3 py-2 text-sm rounded-md border bg-background text-foreground focus:outline-none transition-all ${
+                    errors.title 
+                      ? 'border-destructive focus:border-destructive focus:ring-2 focus:ring-destructive/20' 
+                      : 'border-input focus:border-primary focus:ring-2 focus:ring-primary/20 hover:border-primary/50'
+                  }`}
+                  autoFocus
+                  aria-invalid={!!errors.title}
+                  aria-describedby={errors.title ? 'title-error' : undefined}
+                />
+              </div>
+              {errors.title && (
+                <div id="title-error" className="flex items-center gap-1.5 text-sm text-destructive animate-in slide-in-from-top-1 duration-200">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <p>{errors.title}</p>
                 </div>
-              ) : (
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Enter the title of your post
-                </p>
               )}
             </div>
 
+            {/* Filename Field */}
             <div className="space-y-2">
-              <label htmlFor="filename" className="block text-sm font-medium">
-                Filename (Slug) <span className="text-destructive">*</span>
+              <label htmlFor="filename" className="flex items-center gap-2 text-sm font-medium">
+                <FileText className="h-4 w-4 text-primary" />
+                Filename <span className="text-destructive">*</span>
               </label>
-              <input
-                id="filename"
-                type="text"
-                value={filename}
-                onChange={(e) => handleFilenameChange(e.target.value)}
-                placeholder="my-awesome-blog-post"
-                className={`w-full px-4 py-3 text-base rounded-lg border-2 bg-background text-foreground focus:outline-none touch-target font-mono transition-colors ${
-                  errors.filename 
-                    ? 'border-destructive focus:border-destructive focus:ring-2 focus:ring-destructive/20' 
-                    : 'border-input focus:border-primary focus:ring-2 focus:ring-primary/20'
-                }`}
-                aria-invalid={!!errors.filename}
-                aria-describedby={errors.filename ? 'filename-error' : undefined}
-              />
+              <div className="relative group">
+                <input
+                  id="filename"
+                  type="text"
+                  value={filename}
+                  onChange={(e) => handleFilenameChange(e.target.value)}
+                  placeholder="my-awesome-blog-post"
+                  className={`w-full px-3 py-2 text-sm rounded-md border bg-background text-foreground focus:outline-none font-mono transition-all ${
+                    errors.filename 
+                      ? 'border-destructive focus:border-destructive focus:ring-2 focus:ring-destructive/20' 
+                      : 'border-input focus:border-primary focus:ring-2 focus:ring-primary/20 hover:border-primary/50'
+                  }`}
+                  aria-invalid={!!errors.filename}
+                  aria-describedby={errors.filename ? 'filename-error' : undefined}
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 text-xs font-mono pointer-events-none">
+                  .md
+                </div>
+              </div>
               {errors.filename ? (
-                <div id="filename-error" className="flex items-start gap-2 text-xs text-destructive animate-in slide-in-from-top-1 duration-200">
-                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                  <p className="leading-relaxed">{errors.filename}</p>
+                <div id="filename-error" className="flex items-center gap-1.5 text-sm text-destructive animate-in slide-in-from-top-1 duration-200">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <p>{errors.filename}</p>
                 </div>
               ) : (
-                <div className="text-xs text-muted-foreground leading-relaxed">
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                   {isFilenameManuallyEdited ? (
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-                      <span>Custom filename</span>
-                      <span className="hidden sm:inline">•</span>
+                    <>
+                      <FileText className="h-3.5 w-3.5 shrink-0" />
                       <span>Will be saved as <span className="font-mono font-medium text-foreground">{filename || 'filename'}.md</span></span>
-                    </div>
+                    </>
                   ) : (
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-                      <span>✨ Auto-generated from title</span>
-                      <span className="hidden sm:inline">•</span>
-                      <span>Edit to customize</span>
-                    </div>
+                    <>
+                      <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" />
+                      <span>Auto-generated from title</span>
+                    </>
                   )}
                 </div>
               )}
             </div>
-          </div>
+            </div>
 
-          {/* Footer - Sticky on mobile */}
-          <div className="sticky bottom-0 bg-background border-t p-4 sm:p-4 mt-auto">
-            <div className="flex flex-col sm:flex-row gap-3">
+            {/* Footer */}
+            <div className="flex items-center justify-between gap-3 p-4 border-t bg-muted/30 shrink-0">
               <button
                 type="button"
                 onClick={handleClose}
-                className="sm:flex-1 order-2 sm:order-1 px-4 py-1.5 rounded-lg border-2 border-input bg-background hover:bg-accent hover:text-accent-foreground active:bg-accent/80 transition-colors touch-target text-base font-medium"
+                className="px-4 py-2 rounded-md border border-input bg-background hover:bg-accent transition-colors text-sm font-medium"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="sm:flex-1 order-1 sm:order-2 px-4 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 transition-colors touch-target text-base font-semibold shadow-lg shadow-primary/20"
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium"
               >
+                <Plus className="h-4 w-4" />
                 Create Post
               </button>
             </div>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
-    </div>
     </>
   );
 }

@@ -43,6 +43,11 @@ function App() {
   const [fileTree, setFileTree] = useState<FileTreeItem[]>([]);
   const [selectedFolderPath, setSelectedFolderPath] = useState<string | null>(null);
   const [isFileTreeVisible, setIsFileTreeVisible] = useState(true);
+  const [fileTreeWidth, setFileTreeWidth] = useState(() => {
+    const saved = localStorage.getItem('fileTreeWidth');
+    return saved ? parseInt(saved, 10) : 256; // Default 256px (w-64 = 16rem = 256px)
+  });
+  const [isResizing, setIsResizing] = useState(false);
   const { toast, showToast, hideToast } = useToast();
 
   // Check if warning should be shown on mount
@@ -516,6 +521,41 @@ function App() {
     }
   }, [viewMode, currentFile]);
 
+  // Handle resizing file tree panel
+  useEffect(() => {
+    if (!isResizing) return;
+
+    // Disable text selection while resizing
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+
+    const handleMouseMove = (e: MouseEvent) => {
+      // Min width: 200px, Max width: 500px
+      const newWidth = Math.max(200, Math.min(500, e.clientX));
+      setFileTreeWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      // Re-enable text selection
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+      // Save to localStorage
+      localStorage.setItem('fileTreeWidth', fileTreeWidth.toString());
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      // Cleanup styles
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+  }, [isResizing, fileTreeWidth]);
+
   const scrollToTop = () => {
     const scrollContainer = document.querySelector('.flex-1.overflow-auto');
     if (scrollContainer) {
@@ -589,7 +629,7 @@ function App() {
             <button
               onClick={handleSelectDirectory}
               disabled={!isSupported}
-              className="inline-flex items-center gap-3 rounded-lg bg-primary px-6 sm:px-8 py-3 sm:py-4 text-base font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg hover:shadow-xl touch-target disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary disabled:hover:shadow-lg"
+              className="inline-flex items-center gap-3 rounded-md bg-primary px-6 py-2.5 text-base font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg hover:shadow-xl touch-target disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary disabled:hover:shadow-lg"
             >
               <FolderOpen className="h-5 w-5" />
               Select Folder
@@ -606,7 +646,7 @@ function App() {
                 </div>
                 <button
                   onClick={handleClearRecent}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors touch-target px-2 py-1"
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5"
                 >
                   Clear
                 </button>
@@ -618,7 +658,7 @@ function App() {
                     key={folder.name + folder.timestamp}
                     onClick={handleSelectDirectory}
                     disabled={!isSupported}
-                    className="flex items-center justify-between p-3 sm:p-4 rounded-lg border border-border bg-card hover:bg-accent active:bg-accent/80 transition-colors text-left group touch-target disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-card"
+                    className="flex items-center justify-between p-4 rounded-md border border-border bg-card hover:bg-accent active:bg-accent/80 transition-colors text-left group touch-target disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-card"
                   >
                     <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                       <div className="shrink-0">
@@ -644,7 +684,7 @@ function App() {
                 href="https://github.com/emir/markdown-plus-plus"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 hover:text-foreground transition-colors touch-target py-1.5 px-3 rounded-md hover:bg-accent"
+                className="inline-flex items-center gap-2 hover:text-foreground transition-colors px-4 py-2 rounded-md hover:bg-accent"
               >
                 <Github className="h-4 w-4" />
                 <span>View on GitHub</span>
@@ -745,7 +785,7 @@ function App() {
               <>
                 <button
                   onClick={() => setShowNewPostModal(true)}
-                  className="inline-flex items-center gap-2 rounded-md bg-primary pl-2 pr-2 sm:pr-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
                   <Plus className="h-4 w-4" />
                   <span className="hidden sm:inline">New Post</span>
@@ -753,10 +793,10 @@ function App() {
 
                 <button
                   onClick={() => setViewMode('settings')}
-                  className="inline-flex items-center justify-center rounded-md bg-white dark:bg-white/10 px-2 py-1.5 hover:bg-white/90 dark:hover:bg-white/20 transition-colors shadow-sm"
+                  className="inline-flex items-center justify-center rounded-md bg-white dark:bg-white/10 h-9 w-9 hover:bg-white/90 dark:hover:bg-white/20 transition-colors shadow-sm"
                   title="Settings"
                 >
-                  <SettingsIcon className="h-5 w-5" />
+                  <SettingsIcon className="h-4 w-4" />
                 </button>
               </>
             )}
@@ -768,7 +808,7 @@ function App() {
                   {/* Open Sidebar Button */}
                   <button
                     onClick={() => setIsMobileSidebarOpen(true)}
-                    className="inline-flex items-center gap-1.5 rounded-l-md bg-primary pl-2 pr-2 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-l-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
                     title="Open Sidebar"
                   >
                     <PanelRightOpen className="h-4 w-4" />
@@ -778,7 +818,7 @@ function App() {
                   {/* Dropdown Toggle */}
                   <button
                     onClick={() => setShowActionsDropdown(!showActionsDropdown)}
-                    className="inline-flex items-center justify-center rounded-r-md bg-primary px-1.5 py-1.5 text-primary-foreground hover:bg-primary/90 transition-colors border-l border-primary-foreground/20"
+                    className="inline-flex items-center justify-center rounded-r-md bg-primary px-3 py-2 text-primary-foreground hover:bg-primary/90 transition-colors border-l border-primary-foreground/20"
                     title="More actions"
                   >
                     <ChevronDown className="h-4 w-4" />
@@ -797,25 +837,25 @@ function App() {
                         <div className="py-1">
                           <button
                             onClick={() => {
-                              handleDiscardChanges();
+                              setShowRawModal(true);
                               setShowActionsDropdown(false);
                             }}
-                            disabled={!hasChanges}
-                            className="flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-accent transition-colors text-left"
                           >
-                            <RotateCcw className="h-4 w-4" />
-                            <span>Discard Changes</span>
+                            <FileCode className="h-4 w-4" />
+                            <span>View Changes</span>
                           </button>
                           
                           <button
                             onClick={() => {
-                              setShowRawModal(true);
+                              handleDiscardChanges();
                               setShowActionsDropdown(false);
                             }}
-                            className="flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-accent transition-colors text-left"
+                            disabled={!hasChanges}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
                           >
-                            <FileCode className="h-4 w-4" />
-                            <span>View Raw Markdown</span>
+                            <RotateCcw className="h-4 w-4" />
+                            <span>Discard Changes</span>
                           </button>
                           
                           <div className="h-px bg-border my-1" />
@@ -826,7 +866,7 @@ function App() {
                               setShowActionsDropdown(false);
                             }}
                             disabled={!hasChanges}
-                            className="flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
                           >
                             <Save className="h-4 w-4" />
                             <span>Save Changes</span>
@@ -838,7 +878,7 @@ function App() {
                               setShowActionsDropdown(false);
                             }}
                             disabled={hasChanges || !hasPendingPublish}
-                            className="flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
                             title={
                               hasChanges 
                                 ? "Save changes before publishing" 
@@ -879,13 +919,13 @@ function App() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsFileTreeVisible(!isFileTreeVisible)}
-                className="inline-flex items-center justify-center p-2 rounded-md hover:bg-accent transition-colors"
+                className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent transition-colors"
                 title={isFileTreeVisible ? 'Hide file tree' : 'Show file tree'}
               >
                 {isFileTreeVisible ? (
-                  <PanelLeftClose className="h-5 w-5" />
+                  <PanelLeftClose className="h-4 w-4" />
                 ) : (
-                  <PanelLeft className="h-5 w-5" />
+                  <PanelLeft className="h-4 w-4" />
                 )}
               </button>
               <div className="h-4 w-px bg-border" />
@@ -907,7 +947,7 @@ function App() {
               {selectedFolderPath && (
                 <button
                   onClick={() => setSelectedFolderPath(null)}
-                  className="text-xs text-primary hover:underline"
+                  className="text-sm text-primary hover:underline px-3 py-1.5"
                 >
                   Clear filter
                 </button>
@@ -919,13 +959,13 @@ function App() {
           <div className="flex-1 overflow-hidden flex">
             {/* File Tree Sidebar */}
             {isFileTreeVisible && (
-              <div className="w-64 border-r overflow-auto p-3 hidden sm:block">
+              <div className="relative border-r overflow-y-auto overflow-x-hidden p-3 hidden sm:block" style={{ width: `${fileTreeWidth}px` }}>
                 <div className="mb-2 text-xs font-semibold text-muted-foreground uppercase">
                   Folders
                 </div>
                 <button
                   onClick={() => setSelectedFolderPath(null)}
-                  className={`w-full text-left px-2 py-1.5 rounded-md text-sm transition-colors mb-1 ${
+                  className={`w-full text-left px-4 py-2 rounded-md text-sm transition-colors mb-1 ${
                     !selectedFolderPath ? 'bg-accent font-medium' : 'hover:bg-accent/50'
                   }`}
                 >
@@ -959,6 +999,17 @@ function App() {
                     }
                   }}
                 />
+                {/* Resize Handle */}
+                <div
+                  className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/50 active:bg-primary transition-colors group"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    setIsResizing(true);
+                  }}
+                  title="Drag to resize"
+                >
+                  <div className="absolute inset-y-0 -right-1 w-3" />
+                </div>
               </div>
             )}
             
@@ -999,7 +1050,7 @@ function App() {
                   <p>No file selected</p>
                   <button
                     onClick={() => setViewMode('table')}
-                    className="text-sm text-primary hover:underline"
+                    className="text-sm text-primary hover:underline px-4 py-2"
                   >
                     Go to Table View to select a post
                   </button>

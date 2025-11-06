@@ -155,13 +155,13 @@ export function PublishModal({
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="bg-background rounded-lg shadow-xl border border-border w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 sm:p-6 border-b shrink-0">
+          <div className="flex items-center justify-between p-4 border-b shrink-0">
             <div className="flex items-center gap-3">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-lg ${publishSuccess ? 'bg-green-500/10 text-green-500' : 'bg-primary/10 text-primary'}`}>
+              <div className={`flex items-center justify-center w-10 h-10 rounded-md ${publishSuccess ? 'bg-green-500/10 text-green-500' : 'bg-primary/10 text-primary'}`}>
                 {publishSuccess ? <CheckCircle className="h-5 w-5" /> : <Upload className="h-5 w-5" />}
               </div>
               <div>
-                <h2 className="text-lg sm:text-xl font-semibold">
+                <h2 className="text-lg font-semibold">
                   {publishSuccess ? 'Published Successfully!' : 'Publish Changes'}
                 </h2>
                 <p className="text-sm text-muted-foreground">{fileName}</p>
@@ -170,15 +170,15 @@ export function PublishModal({
             <button
               onClick={handleClose}
               disabled={isPublishing}
-              className="p-2 rounded-md hover:bg-accent transition-colors touch-target inline-flex items-center justify-center disabled:opacity-50"
+              className="h-9 w-9 rounded-md hover:bg-accent transition-colors inline-flex items-center justify-center disabled:opacity-50"
               aria-label="Close"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </button>
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-auto p-4 sm:p-6 space-y-6">
+          <div className="flex-1 overflow-auto p-4 space-y-4">
             {/* Success State */}
             {publishSuccess ? (
               <>
@@ -244,7 +244,7 @@ export function PublishModal({
                             console.error('Failed to copy:', error);
                           }
                         }}
-                        className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded hover:bg-background transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md hover:bg-background transition-colors"
                         title="Copy push command"
                       >
                         {copied ? (
@@ -307,7 +307,7 @@ export function PublishModal({
                       console.log('Current Git Status:', gitStatus);
                       console.log('Press F12 and check Console tab for detailed logs');
                     }}
-                    className="text-xs text-muted-foreground hover:text-foreground underline"
+                    className="text-xs text-muted-foreground hover:text-foreground underline px-3 py-1.5"
                     title="Show debug info in console"
                   >
                     Debug Info
@@ -366,12 +366,12 @@ export function PublishModal({
                 onChange={(e) => setCommitMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
                 disabled={isPublishing}
-                className="w-full min-h-[120px] px-3 py-2 rounded-md border border-input bg-background text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                className="w-full min-h-[120px] px-3 py-2 rounded-md border border-input bg-background text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
                 placeholder="Enter commit message..."
                 autoFocus
               />
               <p className="text-xs text-muted-foreground">
-                Describe your changes. Press <kbd className="px-1.5 py-0.5 rounded bg-muted border text-xs">⌘/Ctrl+Enter</kbd> to publish.
+                Describe your changes. Press <kbd className="px-2 py-1 rounded-md bg-muted border text-xs">⌘/Ctrl+Enter</kbd> to publish.
               </p>
             </div>
 
@@ -386,9 +386,9 @@ export function PublishModal({
                     <button
                       onClick={handlePublish}
                       disabled={isPublishing || !commitMessage.trim()}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50 disabled:pointer-events-none"
                     >
-                      <Upload className="h-3.5 w-3.5" />
+                      <Upload className="h-4 w-4" />
                       Try Again
                     </button>
                   </div>
@@ -417,13 +417,13 @@ export function PublishModal({
           </div>
 
           {/* Footer */}
-          <div className="flex flex-col gap-3 p-4 sm:p-6 border-t shrink-0">
+          <div className="flex flex-col gap-3 p-4 border-t shrink-0">
             {publishSuccess ? (
               /* Success Footer */
               <div className="flex items-center justify-end">
                 <button
                   onClick={handleClose}
-                  className="px-6 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium"
+                  className="px-6 py-2.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium"
                 >
                   Close
                 </button>
@@ -441,7 +441,7 @@ export function PublishModal({
                   </span>
                   <button
                     onClick={handleCopyCommand}
-                    className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded hover:bg-background transition-colors"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md hover:bg-background transition-colors"
                     title="Copy command"
                   >
                     {copied ? (
@@ -468,21 +468,21 @@ export function PublishModal({
             )}
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
               <button
                 onClick={onClose}
                 disabled={isPublishing}
-                className="px-4 py-1.5 rounded-md border border-input bg-background hover:bg-accent transition-colors text-sm font-medium disabled:opacity-50"
+                className="px-4 py-2 rounded-md border border-input bg-background hover:bg-accent transition-colors text-sm font-medium disabled:opacity-50"
               >
                 Cancel
               </button>
               
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 {terminalCommand && gitStatus?.isGitRepo && (
                   <button
                     onClick={handleCopyAndShowInstructions}
                     disabled={isPublishing || !commitMessage.trim()}
-                    className="inline-flex items-center gap-2 px-4 py-1.5 rounded-md border-2 border-primary bg-background hover:bg-primary/10 transition-colors text-sm font-medium disabled:opacity-50 disabled:pointer-events-none text-primary"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-md border-2 border-primary bg-background hover:bg-primary/10 transition-colors text-sm font-medium disabled:opacity-50 disabled:pointer-events-none text-primary"
                     title="Open iTerm2 with command"
                   >
                     <Terminal className="h-4 w-4" />
@@ -494,7 +494,7 @@ export function PublishModal({
                 <button
                   onClick={handlePublish}
                   disabled={!commitMessage.trim() || isPublishing || !gitStatus?.isGitRepo}
-                  className="inline-flex items-center gap-2 px-4 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50 disabled:pointer-events-none"
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50 disabled:pointer-events-none"
                 >
                   {isPublishing ? (
                     <>

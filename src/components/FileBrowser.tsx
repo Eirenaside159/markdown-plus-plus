@@ -25,7 +25,7 @@ function FileTreeNode({
   if (item.isDirectory) {
     return (
       <div>
-        <div className="flex w-full items-center">
+        <div className="flex w-full items-center min-w-0">
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="flex items-center justify-center p-1 hover:bg-accent rounded"
@@ -41,7 +41,7 @@ function FileTreeNode({
           <button
             onClick={() => onFileSelect(item.path)}
             className={cn(
-              'flex flex-1 items-center gap-1 rounded-md py-1.5 px-1 text-sm hover:bg-accent',
+              'flex flex-1 items-center gap-1 rounded-md py-1.5 px-1 text-sm hover:bg-accent min-w-0',
               selectedFile === item.path && 'bg-accent font-medium'
             )}
           >
@@ -74,7 +74,7 @@ function FileTreeNode({
     <button
       onClick={() => onFileSelect(item.path)}
       className={cn(
-        'flex w-full items-center gap-2 rounded-md py-1.5 text-sm hover:bg-accent',
+        'flex w-full items-center gap-2 rounded-md py-1.5 text-sm hover:bg-accent min-w-0',
         selectedFile === item.path && 'bg-accent'
       )}
       style={{ paddingLeft: `${level * 12 + 20}px` }}

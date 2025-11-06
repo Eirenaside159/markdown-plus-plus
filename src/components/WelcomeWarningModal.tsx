@@ -45,17 +45,17 @@ export function WelcomeWarningModal({ isOpen, onAccept }: WelcomeWarningModalPro
           }`}
         >
           {/* Header */}
-          <div className="flex items-center gap-4 p-6 border-b">
-            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center">
+          <div className="flex items-center gap-4 p-4 border-b">
+            <div className="flex-shrink-0 w-12 h-12 rounded-md bg-yellow-500/10 flex items-center justify-center">
               <AlertTriangle className="h-6 w-6 text-yellow-500" />
             </div>
             <div className="flex-1">
-              <h2 className="text-xl font-semibold">Disclaimer</h2>
+              <h2 className="text-lg font-semibold">Disclaimer</h2>
             </div>
           </div>
 
           {/* Content */}
-          <div className="p-6 space-y-4">
+          <div className="p-4 space-y-4">
             <div className="space-y-3 text-sm leading-relaxed">
               <p className="text-foreground">
                 <strong>Markdown++</strong> is a new project and is actively under development.
@@ -84,12 +84,12 @@ export function WelcomeWarningModal({ isOpen, onAccept }: WelcomeWarningModalPro
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 p-6 border-t bg-muted/30">
+          <div className="flex items-center justify-end gap-3 p-4 border-t bg-muted/30">
             <button
               onClick={handleAccept}
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-6 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
             >
-              Okay
+              I Understand
             </button>
           </div>
         </div>

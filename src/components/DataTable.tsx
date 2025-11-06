@@ -205,19 +205,19 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
             placeholder="Search..."
-            className="w-full h-10 pl-10 pr-4 text-base rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full px-3 py-2 pl-10 text-sm rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
         <button
           onClick={() => setShowColumnFilters(!showColumnFilters)}
-          className={`inline-flex items-center justify-center p-2 rounded-md border transition-colors ${
+          className={`inline-flex items-center justify-center h-9 w-9 rounded-md border transition-colors ${
             showColumnFilters || Object.values(columnFilters).some(v => v)
               ? 'border-primary bg-primary text-primary-foreground'
               : 'border-input bg-background hover:bg-accent'
           }`}
           title="Toggle column filters"
         >
-          <Filter className="h-5 w-5" />
+          <Filter className="h-4 w-4" />
         </button>
         <div className="hidden sm:block">
           <ColumnSettings
@@ -229,7 +229,7 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
         {hasActiveFilters && (
           <button
             onClick={handleClearFilters}
-            className="px-3 py-1.5 text-sm rounded-md border border-input bg-background hover:bg-accent transition-colors touch-target"
+            className="px-4 py-2 text-sm rounded-md border border-input bg-background hover:bg-accent transition-colors"
           >
             Clear
           </button>
@@ -250,7 +250,7 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                     {/* Column Header with Sort */}
                     <button
                       onClick={() => handleSort(column)}
-                      className="flex items-center gap-2 text-base font-semibold hover:text-primary transition-colors w-full touch-target"
+                      className="flex items-center gap-2 text-sm font-semibold hover:text-primary transition-colors w-full"
                     >
                       <span className="truncate">{formatFieldLabel(column)}</span>
                       {sortState.column === column && (
@@ -308,7 +308,7 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                       {column === 'title' ? (
                         <button
                           onClick={() => onEdit(post)}
-                          className="truncate text-base text-left w-full hover:text-primary hover:underline transition-colors font-medium"
+                          className="truncate text-sm text-left w-full hover:text-primary hover:underline transition-colors font-medium"
                           title={formatCellValue(post.frontmatter[column])}
                         >
                           {formatCellValue(post.frontmatter[column]) || (
@@ -316,7 +316,7 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                           )}
                         </button>
                       ) : (
-                        <div className="truncate text-base" title={formatCellValue(post.frontmatter[column])}>
+                        <div className="truncate text-sm" title={formatCellValue(post.frontmatter[column])}>
                           {formatCellValue(post.frontmatter[column]) || (
                             <span className="text-muted-foreground">—</span>
                           )}
@@ -328,21 +328,21 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => onEdit(post)}
-                        className="inline-flex items-center justify-center p-2 rounded hover:bg-accent transition-colors touch-target"
+                        className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent transition-colors"
                         title="Edit"
                       >
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => onHide(post)}
-                        className="inline-flex items-center justify-center p-2 rounded hover:bg-accent transition-colors touch-target"
+                        className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent transition-colors"
                         title="Hide file"
                       >
                         <EyeOff className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => onDelete(post)}
-                        className="inline-flex items-center justify-center p-2 rounded hover:bg-destructive/10 hover:text-destructive transition-colors touch-target"
+                        className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors"
                         title="Delete"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -388,17 +388,17 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={() => onEdit(post)}
-                    className="inline-flex items-center justify-center p-2 rounded hover:bg-accent transition-colors touch-target"
+                    className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent transition-colors"
                     title="Edit"
                   >
-                    <Edit className="h-5 w-5" />
+                    <Edit className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => onDelete(post)}
-                    className="inline-flex items-center justify-center p-2 rounded hover:bg-destructive/10 hover:text-destructive transition-colors touch-target"
+                    className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors"
                     title="Delete"
                   >
-                    <Trash2 className="h-5 w-5" />
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -425,7 +425,7 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
               <div className="flex items-center gap-2 pt-2 border-t">
                 <button
                   onClick={() => onHide(post)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded hover:bg-accent transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-md hover:bg-accent transition-colors"
                   title="Hide file"
                 >
                   <EyeOff className="h-4 w-4" />

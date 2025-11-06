@@ -92,10 +92,11 @@ export function DynamicField({ fieldKey, fieldLabel, fieldType, value, onChange,
       case 'number':
         return (
           <input
+            id={`field-${fieldKey}`}
             type="number"
             value={value as number || ''}
             onChange={(e) => onChange(fieldKey, e.target.value ? Number(e.target.value) : '')}
-            className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         );
 
@@ -105,10 +106,11 @@ export function DynamicField({ fieldKey, fieldLabel, fieldType, value, onChange,
         
         return (
           <input
+            id={`field-${fieldKey}`}
             type="date"
             value={dateValue}
             onChange={(e) => onChange(fieldKey, e.target.value)}
-            className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         );
 
@@ -139,6 +141,7 @@ export function DynamicField({ fieldKey, fieldLabel, fieldType, value, onChange,
             {/* Input for new items */}
             <div className="relative">
               <input
+                id={`field-${fieldKey}`}
                 type="text"
                 value={arrayInput}
                 onChange={(e) => {
@@ -149,12 +152,12 @@ export function DynamicField({ fieldKey, fieldLabel, fieldType, value, onChange,
                 onFocus={() => setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                 placeholder={`Add ${fieldKey}...`}
-                className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <button
                 onClick={handleAddArrayItem}
                 type="button"
-                className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 text-xs rounded bg-primary text-primary-foreground hover:bg-primary/90"
+                className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 Add
               </button>
@@ -191,6 +194,7 @@ export function DynamicField({ fieldKey, fieldLabel, fieldType, value, onChange,
       case 'object':
         return (
           <textarea
+            id={`field-${fieldKey}`}
             value={JSON.stringify(value, null, 2)}
             onChange={(e) => {
               try {
@@ -201,7 +205,7 @@ export function DynamicField({ fieldKey, fieldLabel, fieldType, value, onChange,
               }
             }}
             rows={4}
-            className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground font-mono text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-ring"
           />
         );
 
@@ -219,11 +223,12 @@ export function DynamicField({ fieldKey, fieldLabel, fieldType, value, onChange,
           return (
             <div className="relative">
               <textarea
+                id={`field-${fieldKey}`}
                 value={stringValue}
                 onChange={(e) => onChange(fieldKey, e.target.value)}
                 rows={4}
                 dir={textDirection}
-                className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-y"
+                className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-y"
                 style={{ minHeight: '100px' }}
               />
             </div>
@@ -233,6 +238,7 @@ export function DynamicField({ fieldKey, fieldLabel, fieldType, value, onChange,
         return (
           <div className="relative">
             <input
+              id={`field-${fieldKey}`}
               type="text"
               value={stringValue}
               onChange={(e) => onChange(fieldKey, e.target.value)}
@@ -240,7 +246,7 @@ export function DynamicField({ fieldKey, fieldLabel, fieldType, value, onChange,
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               dir={textDirection}
               placeholder={`Enter ${fieldLabel.toLowerCase()}...`}
-              className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
 
             {/* Suggestions dropdown for string fields */}
@@ -265,7 +271,7 @@ export function DynamicField({ fieldKey, fieldLabel, fieldType, value, onChange,
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-foreground">
+      <label htmlFor={`field-${fieldKey}`} className="block text-sm font-medium text-foreground cursor-pointer">
         {fieldLabel}
         <span className="ml-2 text-xs text-muted-foreground">({fieldType})</span>
       </label>

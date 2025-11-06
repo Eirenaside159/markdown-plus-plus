@@ -254,11 +254,11 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
         {onClose && (
           <button
             onClick={onClose}
-            className="p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors touch-target inline-flex items-center justify-center"
+            className="h-9 w-9 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors inline-flex items-center justify-center"
             title="Close Settings"
             aria-label="Close"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         )}
       </div>
@@ -275,7 +275,7 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
-                  flex items-center gap-2 px-3 sm:px-4 py-2 text-base font-medium transition-colors border-b-2 -mb-[1px] touch-target whitespace-nowrap relative
+                  flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-[1px] whitespace-nowrap relative
                   ${isActive 
                     ? 'text-foreground border-primary' 
                     : 'text-muted-foreground border-transparent hover:text-foreground hover:bg-accent/50'
@@ -330,7 +330,7 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
                   </p>
                   <button
                     onClick={onLogout}
-                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-base font-medium rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
                   >
                     <LogOut className="h-4 w-4" />
                     Logout from Workspace
@@ -355,21 +355,21 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
                     type="text"
                     value={key}
                     disabled
-                    className="flex-1 px-3 py-2 text-base rounded-md border border-input bg-muted cursor-not-allowed"
+                    className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-muted cursor-not-allowed"
                   />
                   <input
                     type="text"
                     value={typeof value === 'string' ? value : JSON.stringify(value)}
                     onChange={(e) => handleUpdateMeta(key, e.target.value)}
                     placeholder="Default value"
-                    className="flex-1 px-3 py-2 text-base rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring touch-target"
+                    className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                   <button
                     onClick={() => handleRemoveMeta(key)}
-                    className="inline-flex items-center justify-center px-3 py-2 rounded-md text-destructive hover:bg-destructive/10 transition-colors touch-target shrink-0"
+                    className="inline-flex items-center justify-center h-9 w-9 rounded-md text-destructive hover:bg-destructive/10 transition-colors shrink-0"
                     title="Remove field"
                   >
-                    <Trash2 className="h-5 w-5" />
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               ))}
@@ -381,7 +381,7 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
                   value={newMetaKey}
                   onChange={(e) => setNewMetaKey(e.target.value)}
                   placeholder="Field name (e.g., author)"
-                  className="flex-1 px-3 py-2 text-base rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring touch-target"
+                  className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -395,7 +395,7 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
                   value={newMetaValue}
                   onChange={(e) => setNewMetaValue(e.target.value)}
                   placeholder="Default value"
-                  className="flex-1 px-3 py-2 text-base rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring touch-target"
+                  className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -405,10 +405,10 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
                 />
                 <button
                   onClick={handleAddMeta}
-                  className="inline-flex items-center justify-center px-3 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors touch-target shrink-0"
+                  className="inline-flex items-center justify-center h-9 w-9 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
                   title="Save field"
                 >
-                  <Save className="h-5 w-5" />
+                  <Save className="h-4 w-4" />
                 </button>
               </div>
             </div>
@@ -429,7 +429,7 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
               <div className="flex justify-end">
                 <button
                   onClick={handleClearAllHidden}
-                  className="text-sm text-primary hover:text-primary/80 transition-colors"
+                  className="text-sm text-primary hover:text-primary/80 transition-colors px-3 py-1.5"
                 >
                   Unhide All
                 </button>
@@ -456,10 +456,10 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
                       </div>
                       <button
                         onClick={() => handleUnhideFile(filePath)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0 opacity-0 group-hover:opacity-100"
+                        className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0 opacity-0 group-hover:opacity-100"
                         title="Unhide file"
                       >
-                        <Eye className="h-3.5 w-3.5" />
+                        <Eye className="h-4 w-4" />
                         <span>Unhide</span>
                       </button>
                     </div>
@@ -521,7 +521,7 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
               </p>
               <button
                 onClick={handleExport}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-base font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
               >
                 <Download className="h-4 w-4" />
                 Export All Data
@@ -539,7 +539,7 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
               </p>
               <button
                 onClick={handleImport}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-base font-medium rounded-md border border-input bg-background hover:bg-accent transition-colors"
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent transition-colors"
               >
                 <Upload className="h-4 w-4" />
                 Import Config File

@@ -95,10 +95,11 @@ export function MetaEditor({ frontmatter, onChange, allPosts }: MetaEditorProps)
       {isAddingField ? (
         <div className="space-y-3 p-4 border border-primary/50 rounded-md bg-accent/30">
           <div className="space-y-2">
-            <label className="text-xs font-medium text-foreground">
+            <label htmlFor="new-field-name" className="text-xs font-medium text-foreground cursor-pointer">
               Field Name
             </label>
             <input
+              id="new-field-name"
               type="text"
               value={newFieldName}
               onChange={(e) => setNewFieldName(e.target.value)}
@@ -109,10 +110,11 @@ export function MetaEditor({ frontmatter, onChange, allPosts }: MetaEditorProps)
           </div>
           
           <div className="space-y-2">
-            <label className="text-xs font-medium text-foreground">
+            <label htmlFor="new-field-value" className="text-xs font-medium text-foreground cursor-pointer">
               Field Value
             </label>
             <input
+              id="new-field-value"
               type="text"
               value={newFieldValue}
               onChange={(e) => setNewFieldValue(e.target.value)}
@@ -129,14 +131,14 @@ export function MetaEditor({ frontmatter, onChange, allPosts }: MetaEditorProps)
             <button
               onClick={handleAddField}
               disabled={!newFieldName.trim()}
-              className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none transition-colors"
             >
               <Check className="h-4 w-4" />
               Add Field
             </button>
             <button
               onClick={handleCancelAddField}
-              className="inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md border border-input bg-background hover:bg-accent transition-colors"
+              className="inline-flex items-center justify-center h-9 w-9 text-sm rounded-md border border-input bg-background hover:bg-accent transition-colors"
             >
               <X className="h-4 w-4" />
             </button>
@@ -145,7 +147,7 @@ export function MetaEditor({ frontmatter, onChange, allPosts }: MetaEditorProps)
       ) : (
         <button
           onClick={() => setIsAddingField(true)}
-          className="w-full inline-flex items-center justify-center gap-2 px-4 py-1.5 text-sm font-medium rounded-md border-2 border-dashed border-input hover:border-primary hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+          className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md border-2 border-dashed border-input hover:border-primary hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
         >
           <Plus className="h-4 w-4" />
           Add Custom Field
