@@ -85,7 +85,7 @@ function FileTreeNode({
             onDrop={handleDrop}
             className={cn(
               'flex flex-1 items-center gap-1 rounded-md py-1.5 px-1 text-sm hover:bg-accent min-w-0',
-              selectedFile === item.path && 'bg-accent font-medium',
+              selectedFile === item.path && 'bg-accent font-medium text-foreground',
               isHidden && 'opacity-50',
               isDragOver && 'bg-primary/20 border-2 border-primary border-dashed'
             )}
@@ -144,7 +144,7 @@ function FileTreeNode({
       onDragEnd={handleDragEnd}
       className={cn(
         'flex w-full items-center gap-2 rounded-md py-1.5 text-sm hover:bg-accent min-w-0 transition-opacity',
-        selectedFile === item.path && 'bg-accent',
+        selectedFile === item.path && 'bg-accent text-foreground',
         isHidden && 'opacity-50',
         isDragging && 'opacity-30',
         !isMoving && 'cursor-move',

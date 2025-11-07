@@ -314,7 +314,7 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
   return (
     <div className="flex flex-col h-full">
       {/* Search and Controls */}
-      <div className="flex items-center gap-2 mb-4 flex-wrap">
+      <div className="flex items-center gap-2 mb-4 flex-wrap text-muted-foreground">
         <div className="flex-1 min-w-[200px] relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <input
@@ -357,17 +357,17 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
       </div>
 
       {/* Desktop: Table View */}
-      <div className="hidden md:block flex-1 overflow-auto border rounded-md">
+      <div className="hidden md:block flex-1 overflow-auto border rounded-md text-foreground">
         <table className="w-full text-base">
-          <thead className="bg-muted/50 sticky top-0 z-10">
+          <thead className="bg-muted/50 sticky top-0 z-10 text-muted-foreground">
             <tr>
               {displayColumns.map(column => (
-                <th key={column} className="text-left px-4 py-1.5 border-b">
+                <th key={column} className={`text-left px-4 py-2 border-b text-xs uppercase tracking-wide ${column === 'title' ? 'w-[40%]' : ''}`}>
                   <div className="space-y-2">
                     {/* Column Header with Sort */}
                     <button
                       onClick={() => handleSort(column)}
-                      className="flex items-center gap-2 text-sm font-semibold hover:text-primary transition-colors w-full"
+                      className="flex items-center gap-2 font-semibold hover:text-primary transition-colors w-full"
                     >
                       <span className="truncate">{formatFieldLabel(column)}</span>
                       {sortState.column === column && (
@@ -415,7 +415,7 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
               sortedPosts.map((post, index) => (
                 <tr 
                   key={post.path + index}
-                  className="border-b last:border-0 hover:bg-accent/30 transition-colors"
+                  className="border-b last:border-0 hover:bg-accent/30 transition-colors odd:bg-background even:bg-muted/5"
                 >
                   {displayColumns.map(column => {
                     const cellValue = post.frontmatter[column];
@@ -423,12 +423,12 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                     const isImage = cellValue && typeof cellValue === 'string' && isImageUrl(cellValue);
 
                     return (
-                    <td key={column} className="px-4 py-3 max-w-xs">
+                    <td key={column} className={`px-4 py-3 ${column === 'title' ? 'w-[40%] max-w-none' : 'max-w-xs'}`}>
                       {column === 'title' ? (
                         <div className="flex items-center gap-2 group">
                           <button
                             onClick={() => onEdit(post)}
-                            className="truncate text-base text-left flex-1 hover:text-primary hover:underline transition-colors font-medium"
+                            className="truncate text-base leading-6 text-left flex-1 text-foreground hover:text-primary hover:underline transition-colors font-semibold"
                             title={formattedValue}
                           >
                             {formattedValue || (
@@ -520,7 +520,10 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                           />
                         </button>
                       ) : (
-                        <div className="truncate text-sm" title={formattedValue}>
+                        <div
+                          className="truncate text-sm leading-6 text-muted-foreground"
+                          title={formattedValue}
+                        >
                           {formattedValue || (
                             <span className="text-muted-foreground">—</span>
                           )}
@@ -667,7 +670,7 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                           />
                         </button>
                       ) : (
-                        <span className="truncate">{value}</span>
+                        <span className="truncate text-muted-foreground">{value}</span>
                       )}
                     </div>
                   );

@@ -74,7 +74,7 @@ export function PostTable({ posts, isLoading = false, onEdit, onDelete }: PostTa
   return (
     <div className="h-full overflow-auto">
       <table className="w-full border-collapse">
-        <thead className="sticky top-0 bg-muted">
+        <thead className="sticky top-0 bg-muted text-foreground">
           <tr className="border-b">
             <th className="text-left p-3 font-medium text-sm">Title</th>
             <th className="text-left p-3 font-medium text-sm">Author</th>

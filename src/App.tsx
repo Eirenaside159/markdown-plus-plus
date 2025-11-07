@@ -1238,7 +1238,7 @@ function App() {
       ) : viewMode === 'table' ? (
         <div className="flex-1 overflow-hidden flex flex-col">
           {/* Header with toggle button */}
-          <div className="p-3 sm:p-4 border-b">
+          <div className="p-3 sm:p-4 border-b text-muted-foreground">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsFileTreeVisible(!isFileTreeVisible)}
@@ -1252,7 +1252,7 @@ function App() {
                 )}
               </button>
               <div className="h-4 w-px bg-border" />
-              <h2 className="font-semibold text-base sm:text-lg">
+              <h2 className="font-semibold text-base sm:text-lg text-foreground">
                 {selectedFolderPath ? selectedFolderPath : 'All Posts'}
               </h2>
               <span className="text-xs sm:text-sm text-muted-foreground">
@@ -1282,7 +1282,7 @@ function App() {
           <div className="flex-1 overflow-hidden flex">
             {/* File Tree Sidebar */}
             {isFileTreeVisible && (
-              <div className="relative border-r overflow-y-auto overflow-x-hidden p-3 hidden sm:block" style={{ width: `${fileTreeWidth}px` }}>
+              <div className="relative border-r overflow-y-auto overflow-x-hidden p-3 hidden sm:block text-muted-foreground" style={{ width: `${fileTreeWidth}px` }}>
                 {/* Loading Overlay */}
                 {isMovingFile && (
                   <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -1324,7 +1324,7 @@ function App() {
                     }
                   }}
                   className={`w-full text-left px-4 py-2 rounded-md text-sm transition-colors mb-1 ${
-                    !selectedFolderPath ? 'bg-accent font-medium' : 'hover:bg-accent/50'
+                    !selectedFolderPath ? 'bg-accent font-medium text-foreground' : 'hover:bg-accent/50'
                   } ${isMovingFile ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
                   All Posts
