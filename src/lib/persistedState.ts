@@ -1,11 +1,12 @@
-// IndexedDB helper for persisting FileSystem handles, app state and cached posts
-import type { MarkdownFile } from '@/types';
+// IndexedDB helper for persisting FileSystem handles, app state and cached posts & file tree
+import type { MarkdownFile, FileTreeItem } from '@/types';
 
 const DB_NAME = 'mdplusplus-db';
-const DB_VERSION = 2; // bump for posts cache store
+const DB_VERSION = 3; // bump for file tree cache store
 const HANDLE_STORE = 'directory-handles';
 const STATE_STORE = 'app-state';
 const POSTS_STORE = 'posts-cache';
+const FILETREE_STORE = 'filetree-cache';
 
 interface AppState {
   selectedFilePath: string | null;
@@ -33,6 +34,9 @@ function openDB(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(POSTS_STORE)) {
         db.createObjectStore(POSTS_STORE);
+      }
+      if (!db.objectStoreNames.contains(FILETREE_STORE)) {
+        db.createObjectStore(FILETREE_STORE);
       }
     };
   });
@@ -190,11 +194,12 @@ export async function loadAppState(): Promise<AppState | null> {
 export async function clearPersistedData(): Promise<void> {
   try {
     const db = await openDB();
-    const transaction = db.transaction([HANDLE_STORE, STATE_STORE, POSTS_STORE], 'readwrite');
+    const transaction = db.transaction([HANDLE_STORE, STATE_STORE, POSTS_STORE, FILETREE_STORE], 'readwrite');
     
     transaction.objectStore(HANDLE_STORE).clear();
     transaction.objectStore(STATE_STORE).clear();
     transaction.objectStore(POSTS_STORE).clear();
+    transaction.objectStore(FILETREE_STORE).clear();
     
     return new Promise((resolve, reject) => {
       transaction.oncomplete = () => {
@@ -290,6 +295,50 @@ export async function clearPostsCache(projectKey: string): Promise<void> {
     });
   } catch (error) {
     // Silently ignore
+  }
+}
+
+// Save file tree to cache for a project (keyed by directory name)
+export async function saveFileTreeCache(projectKey: string, tree: FileTreeItem[]): Promise<void> {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction([FILETREE_STORE], 'readwrite');
+    const store = transaction.objectStore(FILETREE_STORE);
+    store.put({ tree, updatedAt: Date.now() }, projectKey);
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      transaction.onerror = () => {
+        db.close();
+        reject(transaction.error);
+      };
+    });
+  } catch {}
+}
+
+// Load cached file tree for a project
+export async function loadFileTreeCache(projectKey: string): Promise<FileTreeItem[] | null> {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction([FILETREE_STORE], 'readonly');
+    const store = transaction.objectStore(FILETREE_STORE);
+    return await new Promise<FileTreeItem[] | null>((resolve, reject) => {
+      const request = store.get(projectKey);
+      request.onsuccess = () => {
+        db.close();
+        const result = request.result as { tree: FileTreeItem[]; updatedAt: number } | undefined;
+        if (!result) return resolve(null);
+        resolve(result.tree);
+      };
+      request.onerror = () => {
+        db.close();
+        reject(request.error);
+      };
+    });
+  } catch {
+    return null;
   }
 }
 

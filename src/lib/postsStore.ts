@@ -1,7 +1,7 @@
 import type { MarkdownFile, FileTreeItem } from '@/types';
 import { readDirectory, readFile } from '@/lib/fileSystem';
 import { parseMarkdown } from '@/lib/markdown';
-import { savePostsCache, loadPostsCache } from '@/lib/persistedState';
+import { savePostsCache, loadPostsCache, saveFileTreeCache, loadFileTreeCache } from '@/lib/persistedState';
 
 interface PostsState {
   projectKey: string | null;
@@ -57,8 +57,17 @@ export async function initializePosts(handle: FileSystemDirectoryHandle): Promis
       state = { ...state, posts: [], isLoading: true };
       notify();
     }
+    // Load cached file tree immediately if available
+    const cachedTree = await loadFileTreeCache(projectKey);
+    if (cachedTree && cachedTree.length > 0) {
+      state = { ...state, fileTree: cachedTree, isLoadingTree: false };
+      notify();
+    } else {
+      state = { ...state, isLoadingTree: true };
+      notify();
+    }
   } catch {
-    state = { ...state, isLoading: true };
+    state = { ...state, isLoading: true, isLoadingTree: true };
     notify();
   }
 
@@ -84,6 +93,7 @@ export async function refreshPosts(handle: FileSystemDirectoryHandle, fileTree?:
       const tree = fileTree || (await readDirectory(handle));
       state = { ...state, fileTree: tree, isLoadingTree: false };
       notify();
+      try { await saveFileTreeCache(projectKey, tree); } catch {}
       // Flatten file tree to a list of files
       const files: { path: string; name: string }[] = [];
       const collectFiles = (items: FileTreeItem[]) => {
@@ -136,6 +146,7 @@ export async function refreshFileTree(handle: FileSystemDirectoryHandle): Promis
   const tree = await readDirectory(handle);
   state = { ...state, fileTree: tree, isLoadingTree: false };
   notify();
+  try { await saveFileTreeCache(projectKey, tree); } catch {}
   return tree;
 }
 

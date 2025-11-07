@@ -134,8 +134,8 @@ function App() {
     if (!dirHandle || isRefreshingPosts) return;
     setIsRefreshingPosts(true);
     try {
-      const tree = await refreshFileTree(dirHandle);
-      await refreshPosts(dirHandle, tree);
+      // Cache-first: initializePosts loads from cache then refreshes in background
+      await initializePosts(dirHandle);
     } finally {
       setIsRefreshingPosts(false);
     }
@@ -205,8 +205,6 @@ function App() {
           addRecentFolder(savedHandle);
 
           // Prefill posts from cache if available for instant list
-          await initializePosts(savedHandle);
-
           // Load saved app state to choose fast path
           const savedState = await loadAppState();
 
@@ -234,13 +232,8 @@ function App() {
               window.history.replaceState({ viewMode: 'table' }, '', '#table');
             }
 
-            // Load directory and posts in the background
-            (async () => {
-              try {
-                const tree = await refreshFileTree(savedHandle);
-                await refreshPosts(savedHandle, tree);
-              } catch {}
-            })();
+            // Initialize posts and background refresh (cache-first)
+            initializePosts(savedHandle);
 
             // Check git status in the background
             (async () => {
@@ -252,13 +245,8 @@ function App() {
             setViewMode('settings');
             window.history.replaceState({ viewMode: 'settings' }, '', '#settings');
 
-            // Load directory and posts in the background
-            (async () => {
-              try {
-                const tree = await refreshFileTree(savedHandle);
-                await refreshPosts(savedHandle, tree);
-              } catch {}
-            })();
+            // Initialize posts and background refresh (cache-first)
+            initializePosts(savedHandle);
 
             // Check git status in the background
             (async () => {
@@ -267,8 +255,7 @@ function App() {
             })();
           } else {
             // Default path: load posts then apply view (table/settings)
-            const tree = await refreshFileTree(savedHandle);
-            await refreshPosts(savedHandle, tree);
+            await initializePosts(savedHandle);
 
             if (savedState?.viewMode) {
               setViewMode(savedState.viewMode);
@@ -595,7 +582,6 @@ function App() {
 
       // Update posts store
       await applyPostPathChanged(dirHandle.name, selectedFilePath, newPath);
-      if (dirHandle) savePostsCache(dirHandle.name, updatedPosts).catch(() => {});
 
       // Update file tree
       await refreshFileTree(dirHandle);
@@ -631,7 +617,6 @@ function App() {
 
       // Update posts store
       await applyPostPathChanged(dirHandle.name, sourcePath, newPath);
-      if (dirHandle) savePostsCache(dirHandle.name, updatedPosts).catch(() => {});
 
       // Update current file if it was the moved file
       if (currentFile?.path === sourcePath) {
@@ -1049,11 +1034,8 @@ function App() {
                 window.history.pushState({ viewMode: 'table' }, '', '#table');
                 await reloadPosts();
               } else if (viewMode === 'table' && dirHandle) {
-                // If in table view, refresh posts
-                setIsLoadingPosts(true);
-                const fileTree = await readDirectory(dirHandle);
-                setFileTree(fileTree);
-                await loadAllPosts(dirHandle, fileTree);
+                // If in table view, refresh posts (cache-first)
+                await initializePosts(dirHandle);
                 showToast('Posts refreshed', 'success', 2000);
               }
             }}
