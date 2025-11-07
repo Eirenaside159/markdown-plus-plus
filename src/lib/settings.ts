@@ -17,6 +17,8 @@ export function getSettings(): AppSettings {
           ...DEFAULT_SETTINGS.metaFieldMultiplicity,
           ...(parsed.metaFieldMultiplicity || {}),
         },
+        colorPalette: parsed.colorPalette ?? DEFAULT_SETTINGS.colorPalette,
+        theme: parsed.theme ?? DEFAULT_SETTINGS.theme,
       };
     }
   } catch (error) {

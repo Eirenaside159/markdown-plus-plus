@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings as SettingsIcon, X, FileText, Trash2, Download, Upload, FolderSync, Lightbulb, Package, AlertTriangle, LogOut, EyeOff, Eye, Save } from 'lucide-react';
+import { Settings as SettingsIcon, X, FileText, Trash2, Download, Upload, FolderSync, Lightbulb, Package, AlertTriangle, LogOut, EyeOff, Eye, Save, Palette, Sun, Moon, Monitor } from 'lucide-react';
 import { Toast, useToast } from './ui/Toast';
 import { getSettings, saveSettings } from '@/lib/settings';
 import { getHiddenFiles, unhideFile, clearHiddenFiles } from '@/lib/hiddenFiles';
-import type { AppSettings } from '@/types/settings';
+import { applyColorPalette, getPaletteDisplayName, PALETTE_CATEGORIES } from '@/lib/colorPalettes';
+import { setTheme } from '@/lib/theme';
+import type { AppSettings, ColorPalette, ThemeMode } from '@/types/settings';
 import { DEFAULT_SETTINGS } from '@/types/settings';
 
 function UrlPreview({ baseUrl, urlFormat }: { baseUrl: string; urlFormat: string }) {
@@ -42,7 +44,7 @@ interface SettingsProps {
   directoryName?: string;
 }
 
-type SettingsTab = 'general' | 'defaults' | 'import-export' | 'hidden-files';
+type SettingsTab = 'general' | 'appearance' | 'defaults' | 'import-export' | 'hidden-files';
 
 export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {}) {
   const [settings, setSettings] = useState<AppSettings>(getSettings());
@@ -373,6 +375,11 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
       icon: SettingsIcon,
     },
     {
+      id: 'appearance' as const,
+      label: 'Appearance',
+      icon: Palette,
+    },
+    {
       id: 'defaults' as const,
       label: 'Defaults',
       icon: FileText,
@@ -576,6 +583,90 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
                   </button>
                 </Section>
               )}
+          </div>
+        )}
+
+        {/* Appearance Tab */}
+        {activeTab === 'appearance' && (
+          <div className="space-y-4">
+            <Section title="Theme Mode" description="Choose between light, dark, or system preference.">
+              <div className="flex flex-wrap gap-2">
+                {(['light', 'dark', 'system'] as ThemeMode[]).map((mode) => {
+                  const Icon = mode === 'light' ? Sun : mode === 'dark' ? Moon : Monitor;
+                  const label = mode.charAt(0).toUpperCase() + mode.slice(1);
+                  
+                  return (
+                    <button
+                      key={mode}
+                      onClick={() => {
+                        const updatedSettings = { ...settings, theme: mode };
+                        setSettings(updatedSettings);
+                        saveSettings(updatedSettings);
+                        setTheme(mode);
+                        showToast(`Theme changed to ${label}`, 'success');
+                      }}
+                      className={`
+                        inline-flex items-center gap-2 px-4 py-3 rounded-md text-sm font-medium transition-all
+                        ${settings.theme === mode 
+                          ? 'bg-primary text-primary-foreground ring-2 ring-ring ring-offset-2 ring-offset-background' 
+                          : 'bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                        }
+                      `}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </Section>
+
+            <Section title="Theme Colors" description="Choose a color palette for the interface.">
+              <div className="space-y-4">
+                {Object.entries(PALETTE_CATEGORIES).map(([categoryName, palettes]) => (
+                  <div key={categoryName}>
+                    <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                      {categoryName}
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {(palettes as readonly ColorPalette[]).map((palette) => (
+                        <button
+                          key={palette}
+                          onClick={() => {
+                            const updatedSettings = { ...settings, colorPalette: palette };
+                            setSettings(updatedSettings);
+                            saveSettings(updatedSettings);
+                            const isDark = document.documentElement.classList.contains('dark');
+                            applyColorPalette(palette, isDark);
+                            showToast(`Palette changed to ${getPaletteDisplayName(palette)}`, 'success');
+                          }}
+                          className={`
+                            px-3 py-2 rounded-md text-sm font-medium transition-all
+                            ${settings.colorPalette === palette 
+                              ? 'bg-primary text-primary-foreground ring-2 ring-ring ring-offset-2 ring-offset-background' 
+                              : 'bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                            }
+                          `}
+                        >
+                          {getPaletteDisplayName(palette)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Section>
+
+            <div className="p-3 bg-muted/30 rounded-md text-xs sm:text-sm text-muted-foreground">
+              <p className="flex items-start gap-1.5">
+                <Lightbulb className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>
+                  <strong>Theme Mode</strong> controls whether you see light or dark colors.
+                  <strong className="ml-1">Theme Colors</strong> change the accent colors used throughout the interface.
+                  All colors are from the shadcn/ui palette.
+                </span>
+              </p>
+            </div>
           </div>
         )}
 
