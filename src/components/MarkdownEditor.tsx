@@ -2,6 +2,7 @@ import { TiptapEditor } from './TiptapEditor';
 import { useEffect, useState, useRef } from 'react';
 import { marked } from 'marked';
 import TurndownService from 'turndown';
+import { Eye } from 'lucide-react';
 
 interface MarkdownEditorProps {
   content: string;
@@ -10,6 +11,8 @@ interface MarkdownEditorProps {
   onTitleChange: (title: string) => void;
   autoFocus?: boolean;
 }
+
+type EditorMode = 'tiptap' | 'raw';
 
 // Configure marked for parsing markdown to HTML
 marked.setOptions({
@@ -25,16 +28,22 @@ const turndownService = new TurndownService({
 
 export function MarkdownEditor({ content, onChange, title, onTitleChange, autoFocus = false }: MarkdownEditorProps) {
   const [htmlContent, setHtmlContent] = useState('');
+  const [editorMode, setEditorMode] = useState<EditorMode>('tiptap');
+  const [rawMarkdown, setRawMarkdown] = useState(content);
   const isInitialMount = useRef(true);
   const lastContent = useRef(content);
+  const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const rawTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Convert markdown to HTML on initial load
   useEffect(() => {
     if (content) {
       const html = marked(content) as string;
       setHtmlContent(html);
+      setRawMarkdown(content);
     } else {
       setHtmlContent('');
+      setRawMarkdown('');
     }
     lastContent.current = content;
   }, [content]);
@@ -52,14 +61,108 @@ export function MarkdownEditor({ content, onChange, title, onTitleChange, autoFo
     // Only trigger onChange if content actually changed
     if (markdown !== lastContent.current) {
       lastContent.current = markdown;
+      setRawMarkdown(markdown);
       onChange(markdown);
     }
+  };
+
+  const handleRawChange = (markdown: string) => {
+    setRawMarkdown(markdown);
+    lastContent.current = markdown;
+    onChange(markdown);
   };
 
   // Reset initial mount flag when content prop changes (new file selected)
   useEffect(() => {
     isInitialMount.current = true;
   }, [content]);
+
+  // Auto-resize title textarea in raw mode
+  useEffect(() => {
+    if (editorMode === 'raw' && titleTextareaRef.current) {
+      titleTextareaRef.current.style.height = 'auto';
+      titleTextareaRef.current.style.height = titleTextareaRef.current.scrollHeight + 'px';
+    }
+  }, [title, editorMode]);
+
+  // Auto-resize raw markdown textarea
+  useEffect(() => {
+    if (editorMode === 'raw' && rawTextareaRef.current) {
+      rawTextareaRef.current.style.height = 'auto';
+      rawTextareaRef.current.style.height = rawTextareaRef.current.scrollHeight + 'px';
+    }
+  }, [rawMarkdown, editorMode]);
+
+  const toggleMode = () => {
+    if (editorMode === 'tiptap') {
+      // Switching to raw mode - ensure rawMarkdown is in sync
+      setRawMarkdown(lastContent.current);
+      setEditorMode('raw');
+    } else {
+      // Switching to tiptap mode - convert markdown to HTML
+      const html = marked(rawMarkdown) as string;
+      setHtmlContent(html);
+      setEditorMode('tiptap');
+    }
+  };
+
+  if (editorMode === 'raw') {
+    return (
+      <>
+        {/* Toolbar */}
+        <div className="sticky top-0 z-10 bg-background">
+          <div className="w-full max-w-[680px] mx-auto px-4 py-4 border-b flex items-center justify-end">
+            <button
+              onClick={toggleMode}
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              <Eye className="h-4 w-4" />
+              Visual Editor
+            </button>
+          </div>
+        </div>
+
+        {/* Title Input */}
+        <div className="pt-6 -mb-2">
+          <textarea
+            ref={titleTextareaRef}
+            value={title === 'Untitled Post' ? '' : title}
+            onChange={(e) => onTitleChange(e.target.value || 'Untitled Post')}
+            placeholder="Untitled"
+            rows={1}
+            className="block text-4xl font-semibold border-none outline-none bg-transparent placeholder:text-muted-foreground/30 focus:ring-0 p-0 leading-tight text-left resize-none overflow-hidden"
+            style={{ 
+              width: '680px',
+              margin: '0 auto'
+            }}
+          />
+        </div>
+
+        {/* Raw Markdown Textarea */}
+        <div className="py-6">
+          <textarea
+            ref={rawTextareaRef}
+            value={rawMarkdown}
+            onChange={(e) => handleRawChange(e.target.value)}
+            autoFocus={autoFocus}
+            placeholder="Start writing your markdown content..."
+            className="block min-h-[500px] resize-none border-none outline-none bg-transparent focus:ring-0 p-0 placeholder:text-muted-foreground/60"
+            style={{ 
+              width: '680px',
+              margin: '0 auto',
+              fontSize: '1.125rem',
+              lineHeight: '1.68',
+              letterSpacing: 'normal',
+              color: 'hsl(var(--foreground))',
+              WebkitFontSmoothing: 'antialiased',
+              textRendering: 'optimizeLegibility',
+              fontKerning: 'normal'
+            }}
+          />
+        </div>
+      </>
+    );
+  }
 
   return (
     <TiptapEditor 
@@ -68,6 +171,7 @@ export function MarkdownEditor({ content, onChange, title, onTitleChange, autoFo
       title={title}
       onTitleChange={onTitleChange}
       autoFocus={autoFocus}
+      onModeToggle={toggleMode}
     />
   );
 }

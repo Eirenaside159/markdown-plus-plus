@@ -34,6 +34,7 @@ import {
   Link as LinkIcon,
   MoreHorizontal,
   ChevronDown,
+  FileCode,
 } from 'lucide-react';
 
 interface TiptapEditorProps {
@@ -42,12 +43,13 @@ interface TiptapEditorProps {
   title?: string;
   onTitleChange?: (title: string) => void;
   autoFocus?: boolean;
+  onModeToggle?: () => void;
 }
 
 // Create lowlight instance with common languages
 const lowlight = createLowlight(common);
 
-export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocus = false }: TiptapEditorProps) {
+export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocus = false, onModeToggle }: TiptapEditorProps) {
   const [showMoreTools, setShowMoreTools] = useState(false);
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
   const moreToolsRef = useRef<HTMLDivElement>(null);
@@ -448,6 +450,20 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
               </div>
             )}
           </div>
+
+          {/* Mode Toggle Button */}
+          {onModeToggle && (
+            <>
+              <div className="toolbar-divider" />
+              <button
+                onClick={onModeToggle}
+                className="toolbar-btn"
+                title="Switch to Raw Markdown"
+              >
+                <FileCode className="h-5 w-5" />
+              </button>
+            </>
+          )}
           </div>
           </div>
         </div>
