@@ -1,7 +1,6 @@
 import matter from 'gray-matter';
 import yaml from 'js-yaml';
 import type { MarkdownFile, FrontMatter } from '@/types';
-import { getSettings } from '@/lib/settings';
 
 export function parseMarkdown(content: string, path: string, name: string): MarkdownFile {
   try {

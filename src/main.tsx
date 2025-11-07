@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { Toaster } from './components/ui/sonner'
 import { Buffer } from 'buffer'
 import { getSettings } from './lib/settings'
 import { applyTheme, initThemeListener } from './lib/theme'
@@ -23,8 +24,9 @@ const observer = new MutationObserver((mutations) => {
       const currentSettings = getSettings();
       if (currentSettings.colorPalette) {
         const isDark = document.documentElement.classList.contains('dark');
-        const { applyColorPalette } = require('./lib/colorPalettes');
-        applyColorPalette(currentSettings.colorPalette, isDark);
+        import('./lib/colorPalettes').then(({ applyColorPalette }) => {
+          applyColorPalette(currentSettings.colorPalette!, isDark);
+        });
       }
     }
   });
@@ -38,5 +40,6 @@ observer.observe(document.documentElement, {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
+    <Toaster />
   </StrictMode>,
 )

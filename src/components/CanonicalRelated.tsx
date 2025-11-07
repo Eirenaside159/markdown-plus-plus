@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Link2, ExternalLink, Lightbulb } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
 import type { MarkdownFile } from '@/types';
 
 interface CanonicalRelatedProps {
@@ -52,74 +52,61 @@ export function CanonicalRelated({ currentPost, allPosts, onPostClick }: Canonic
   };
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center gap-2">
-        <Link2 className="h-5 w-5 text-muted-foreground" />
-        <h3 className="text-base font-semibold">Canonical Related</h3>
-        <span className="text-sm text-muted-foreground">
-          ({relatedPosts.length} {relatedPosts.length === 1 ? 'post' : 'posts'})
-        </span>
-      </div>
-
+    <div className="space-y-6">
       {/* Canonical URL */}
-      <div className="p-3 bg-muted/30 rounded-md border border-border">
-        <div className="flex items-start gap-2">
-          <ExternalLink className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-muted-foreground mb-1">Canonical URL:</p>
-            <a
-              href={canonicalUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-primary hover:underline break-all"
-              title={canonicalUrl}
-            >
-              {canonicalUrl}
-            </a>
-          </div>
-        </div>
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Canonical URL</label>
+        <a
+          href={canonicalUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block px-3 py-2 text-sm rounded-md border bg-muted/30 hover:bg-muted/50 transition-colors break-all"
+          title={canonicalUrl}
+        >
+          {canonicalUrl}
+        </a>
       </div>
 
-      {/* Related Posts List */}
-      <div className="space-y-2">
-        <p className="text-sm text-muted-foreground">
-          Related posts with the same canonical URL:
-        </p>
+      {/* Related Posts */}
+      <div className="space-y-3">
+        <div>
+          <label className="text-sm font-medium">Related Posts</label>
+          <p className="text-xs text-muted-foreground mt-1">
+            {relatedPosts.length} {relatedPosts.length === 1 ? 'post shares' : 'posts share'} this URL
+          </p>
+        </div>
         
         <div className="space-y-2">
           {relatedPosts.map((post) => (
             <button
               key={post.path}
               onClick={() => onPostClick(post)}
-              className="w-full p-3 rounded-md border border-border hover:bg-accent hover:border-primary transition-colors text-left group"
+              className="w-full p-3 rounded-md border hover:bg-accent hover:border-primary transition-colors text-left group"
             >
-              <div className="space-y-2">
-                <h4 className="text-sm font-semibold group-hover:text-primary transition-colors line-clamp-2">
+              <div className="space-y-1.5">
+                <h5 className="text-sm font-medium group-hover:text-primary transition-colors line-clamp-2">
                   {post.frontmatter.title || post.name}
-                </h4>
+                </h5>
                 
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  {post.frontmatter.date && (
-                    <span>{formatDate(post.frontmatter.date)}</span>
-                  )}
-                  {post.frontmatter.author && (
-                    <>
-                      <span>•</span>
-                      <span className="truncate">{post.frontmatter.author}</span>
-                    </>
-                  )}
-                </div>
+                {(post.frontmatter.date || post.frontmatter.author) && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    {post.frontmatter.date && (
+                      <span>{formatDate(post.frontmatter.date)}</span>
+                    )}
+                    {post.frontmatter.author && (
+                      <>
+                        <span>•</span>
+                        <span className="truncate">{post.frontmatter.author}</span>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {post.frontmatter.description && (
-                  <p className="text-sm text-muted-foreground line-clamp-2">
+                  <p className="text-xs text-muted-foreground line-clamp-2">
                     {post.frontmatter.description}
                   </p>
                 )}
-
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
-                  <span className="truncate">{post.path}</span>
-                </div>
               </div>
             </button>
           ))}
@@ -127,11 +114,10 @@ export function CanonicalRelated({ currentPost, allPosts, onPostClick }: Canonic
       </div>
 
       {/* Info */}
-      <div className="p-3 bg-muted/20 rounded-md text-xs text-muted-foreground">
-        <p className="flex items-start gap-1.5">
+      <div className="p-3 bg-muted/50 rounded-md text-xs text-muted-foreground">
+        <p className="flex items-start gap-2">
           <Lightbulb className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-          <span>These posts share the same canonical URL, indicating they are alternate versions, 
-          translations, or republished content of the same article.</span>
+          <span>These posts share the same canonical URL (alternate versions, translations, or republished content).</span>
         </p>
       </div>
     </div>

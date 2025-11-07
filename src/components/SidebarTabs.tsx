@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { FileText, Link2 } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
+import { Badge } from './ui/badge';
 import { MetaEditor } from './MetaEditor';
 import { CanonicalRelated } from './CanonicalRelated';
 import type { MarkdownFile } from '@/types';
@@ -12,10 +14,8 @@ interface SidebarTabsProps {
   onFileNameChange?: (newFileName: string) => void;
 }
 
-type TabType = 'meta' | 'canonical';
-
 export function SidebarTabs({ currentFile, allPosts, onMetaChange, onPostClick, onFileNameChange }: SidebarTabsProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('meta');
+  const [activeTab, setActiveTab] = useState<string>('meta');
 
   // Count canonical related posts
   const canonicalCount = (() => {
@@ -32,93 +32,60 @@ export function SidebarTabs({ currentFile, allPosts, onMetaChange, onPostClick, 
     }).length;
   })();
 
-  const tabs = [
-    {
-      id: 'meta' as const,
-      label: 'Meta',
-      icon: FileText,
-      count: null,
-      disabled: !currentFile,
-    },
-    {
-      id: 'canonical' as const,
-      label: 'Canonical',
-      icon: Link2,
-      count: canonicalCount > 0 ? canonicalCount : null,
-      disabled: !currentFile || canonicalCount === 0,
-    },
-  ];
-
+  if (!currentFile) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center space-y-3">
+          <FileText className="h-10 w-10 mx-auto text-muted-foreground/40" />
+          <p className="text-sm text-muted-foreground">No file selected</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Tabs */}
-      <div className="flex border-b h-14">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          const isDisabled = tab.disabled;
-          
-          return (
-            <button
-              key={tab.id}
-              onClick={() => !isDisabled && setActiveTab(tab.id)}
-              disabled={isDisabled}
-              className={`
-                flex-1 flex items-center justify-center gap-1.5 px-4 text-sm font-medium transition-colors
-                ${isActive 
-                  ? 'text-foreground border-b-2 border-primary -mb-[1px]' 
-                  : isDisabled
-                    ? 'text-muted-foreground/40 cursor-not-allowed'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
-                }
-              `}
-            >
-              <Icon className="h-4 w-4" />
-              <span>{tab.label}</span>
-              {tab.count !== null && (
-                <span className={`
-                  text-xs px-1.5 py-0.5 rounded-full
-                  ${isActive 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-muted text-muted-foreground'
-                  }
-                `}>
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full overflow-hidden">
+      <TabsList className="w-full grid grid-cols-2 h-14 shrink-0 rounded-none border-b bg-background p-0">
+        <TabsTrigger 
+          value="meta" 
+          className="gap-2 rounded-none h-14 data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary"
+        >
+          <FileText className="h-4 w-4" />
+          Metadata
+        </TabsTrigger>
+        <TabsTrigger 
+          value="canonical" 
+          disabled={canonicalCount === 0} 
+          className="gap-2 rounded-none h-14 data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary"
+        >
+          <Link2 className="h-4 w-4" />
+          Canonical
+          {canonicalCount > 0 && (
+            <Badge variant="secondary" className="ml-1.5 h-4 px-1.5 text-[10px]">
+              {canonicalCount}
+            </Badge>
+          )}
+        </TabsTrigger>
+      </TabsList>
 
-      {/* Tab Content */}
-      <div className="flex-1 overflow-auto p-4">
-        {activeTab === 'meta' && currentFile && (
-          <MetaEditor
-            frontmatter={currentFile.frontmatter}
-            onChange={onMetaChange}
-            allPosts={allPosts}
-            fileName={currentFile.name}
-            onFileNameChange={onFileNameChange}
-          />
-        )}
-        
-        {activeTab === 'canonical' && currentFile && (
-          <CanonicalRelated
-            currentPost={currentFile}
-            allPosts={allPosts}
-            onPostClick={onPostClick}
-          />
-        )}
+      <TabsContent value="meta" className="flex-1 overflow-y-auto overflow-x-visible data-[state=active]:block mt-0 pt-6 pb-6 px-6">
+        <MetaEditor
+          frontmatter={currentFile.frontmatter}
+          onChange={onMetaChange}
+          allPosts={allPosts}
+          fileName={currentFile.name}
+          onFileNameChange={onFileNameChange}
+        />
+      </TabsContent>
 
-        {!currentFile && (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-sm text-muted-foreground">No file selected</p>
-          </div>
-        )}
-      </div>
-    </div>
+      <TabsContent value="canonical" className="flex-1 overflow-y-auto overflow-x-visible data-[state=active]:block mt-0 pt-6 pb-6 px-6">
+        <CanonicalRelated
+          currentPost={currentFile}
+          allPosts={allPosts}
+          onPostClick={onPostClick}
+        />
+      </TabsContent>
+    </Tabs>
   );
 }
 

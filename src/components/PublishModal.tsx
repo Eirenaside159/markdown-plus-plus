@@ -173,8 +173,8 @@ export function PublishModal({
             <div className={`flex items-center justify-center w-10 h-10 rounded-md ${
               publishSuccess 
                 ? publishResult?.pushed 
-                  ? 'bg-green-500/10 text-green-500' 
-                  : 'bg-blue-500/10 text-blue-500'
+                  ? 'bg-success/10 text-success' 
+                  : 'bg-info/10 text-info'
                 : 'bg-primary/10 text-primary'
             }`}>
               {publishSuccess ? <CheckCircle className="h-5 w-5" /> : <Upload className="h-5 w-5" />}
@@ -208,17 +208,17 @@ export function PublishModal({
                 {/* Success Message */}
                 <div className={`rounded-lg border p-4 ${
                   publishResult?.pushed 
-                    ? 'border-green-500/50 bg-green-500/10' 
-                    : 'border-blue-500/50 bg-blue-500/10'
+                    ? 'border-success/50 bg-success/10' 
+                    : 'border-info/50 bg-info/10'
                 }`}>
                   <div className="flex gap-3">
                     <CheckCircle className={`h-5 w-5 shrink-0 mt-0.5 ${
-                      publishResult?.pushed ? 'text-green-500' : 'text-blue-500'
+                      publishResult?.pushed ? 'text-success' : 'text-info'
                     }`} />
                     <div className="space-y-2 text-sm flex-1">
                       {publishResult?.pushed ? (
                         <>
-                          <p className="font-medium text-green-600 dark:text-green-400">
+                          <p className="font-medium text-success">
                             Changes committed and pushed successfully
                           </p>
                           <p className="text-muted-foreground text-sm">
@@ -232,7 +232,7 @@ export function PublishModal({
                         </>
                       ) : (
                         <>
-                          <p className="font-medium text-blue-600 dark:text-blue-400">
+                          <p className="font-medium text-info">
                             Commit created, but push failed
                           </p>
                           <p className="text-muted-foreground text-sm">
@@ -243,8 +243,8 @@ export function PublishModal({
                               Commit: {publishResult.commitSha}
                             </p>
                           )}
-                          <div className="pt-3 mt-3 border-t border-blue-500/20">
-                            <p className="text-xs text-blue-700 dark:text-blue-400">
+                          <div className="pt-3 mt-3 border-t border-info/20">
+                            <p className="text-xs text-info">
                               <strong>Likely reason:</strong> Your repository uses SSH protocol, which cannot be pushed from the browser due to security restrictions.
                             </p>
                           </div>
@@ -291,8 +291,8 @@ export function PublishModal({
                       >
                         {copied ? (
                           <>
-                            <CheckCircle className="h-3 w-3 text-green-500" />
-                            <span className="text-green-500">Copied!</span>
+                            <CheckCircle className="h-3 w-3 text-success" />
+                            <span className="text-success">Copied!</span>
                           </>
                         ) : (
                           <>
@@ -353,15 +353,15 @@ export function PublishModal({
                 </div>
 
                 {!gitStatus.isGitRepo && (
-                  <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-4">
+                  <div className="rounded-lg border border-warning/50 bg-warning/10 p-4">
                     <div className="flex gap-3">
-                      <AlertCircle className="h-5 w-5 text-yellow-500 shrink-0 mt-0.5" />
+                      <AlertCircle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
                       <div className="space-y-2 text-sm">
-                        <p className="font-medium text-yellow-500">Git Repository Not Found</p>
+                        <p className="font-medium text-warning">Git Repository Not Found</p>
                         <p className="text-muted-foreground">
                           The selected folder doesn't contain a <code className="px-1 py-0.5 bg-muted rounded">.git</code> directory.
                         </p>
-                        <div className="text-xs text-muted-foreground space-y-1 mt-2 pt-2 border-t border-yellow-500/20">
+                        <div className="text-xs text-muted-foreground space-y-1 mt-2 pt-2 border-t border-warning/20">
                           <p className="font-medium flex items-center gap-1.5">
                             <Lightbulb className="h-3.5 w-3.5 shrink-0" />
                             Troubleshooting:
@@ -379,11 +379,11 @@ export function PublishModal({
                 )}
 
                 {gitStatus.isGitRepo && (
-                  <div className="rounded-lg border border-green-500/50 bg-green-500/10 p-4">
+                  <div className="rounded-lg border border-success/50 bg-success/10 p-4">
                     <div className="flex gap-3">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mt-0.5" />
                       <div className="space-y-1 text-sm">
-                        <p className="font-medium text-green-500">Git Repository Detected</p>
+                        <p className="font-medium text-success">Git Repository Detected</p>
                         <p className="text-muted-foreground">
                           Changes will be committed and pushed to <strong>{gitStatus.currentBranch || 'main'}</strong> branch.
                         </p>
@@ -415,16 +415,16 @@ export function PublishModal({
 
             {/* Error Message */}
             {publishError && (
-              <div className="rounded-lg border border-red-500/50 bg-red-500/10 p-4">
+              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
                 <div className="flex gap-3">
-                  <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                  <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
                   <div className="space-y-2 text-sm flex-1">
-                    <p className="font-medium text-red-500">Publish Failed</p>
+                    <p className="font-medium text-destructive">Publish Failed</p>
                     <p className="text-muted-foreground">{publishError}</p>
                     <button
                       onClick={handlePublish}
                       disabled={isPublishing || !commitMessage.trim()}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:pointer-events-none"
                     >
                       <Upload className="h-4 w-4" />
                       Try Again
@@ -484,8 +484,8 @@ export function PublishModal({
                   >
                     {copied ? (
                       <>
-                        <CheckCircle className="h-3 w-3 text-green-500" />
-                        <span className="text-green-500">Copied!</span>
+                        <CheckCircle className="h-3 w-3 text-success" />
+                        <span className="text-success">Copied!</span>
                       </>
                     ) : (
                       <>

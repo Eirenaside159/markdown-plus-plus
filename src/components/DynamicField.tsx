@@ -164,7 +164,7 @@ export function DynamicField({ fieldKey, fieldLabel, fieldType, value, onChange,
 
               {/* Suggestions dropdown */}
               {showSuggestions && suggestions && suggestions.length > 0 && arrayInput && (
-                <div className="absolute z-10 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
+                <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
                   {suggestions
                     .filter(s => 
                       String(s).toLowerCase().includes(arrayInput.toLowerCase()) &&
@@ -252,7 +252,7 @@ export function DynamicField({ fieldKey, fieldLabel, fieldType, value, onChange,
             {/* Suggestions dropdown for string fields (exclude title and unique fields) */}
             {showSuggestions && suggestions && suggestions.length > 1 && 
              !['title', 'slug', 'permalink', 'url', 'description', 'excerpt', 'summary'].includes(fieldKey.toLowerCase()) && (
-              <div className="absolute z-10 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
+              <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
                 {suggestions.slice(0, 10).map((suggestion, index) => (
                   <button
                     key={index}

@@ -221,9 +221,10 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
   return (
     <div className="tiptap-editor-wrapper flex flex-col h-full bg-background">
       {/* Toolbar */}
-      <div className="toolbar sticky top-0 z-10 bg-background border-b">
+      <div className="toolbar sticky top-0 z-10 bg-background">
         {/* Tools */}
-        <div className="flex items-center justify-center gap-2 px-4 py-4">
+        <div className="w-full max-w-[680px] mx-auto px-4 py-4 border-b">
+          <div className="flex items-center justify-center gap-2">
           {/* Essential Tools */}
           <div className="flex items-center gap-1">
           {/* Bold */}
@@ -446,6 +447,7 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
                 </button>
               </div>
             )}
+          </div>
           </div>
           </div>
         </div>

@@ -30,27 +30,27 @@ export function Toast({
   const config = {
     success: {
       icon: CheckCircle,
-      bgColor: 'bg-green-500 dark:bg-green-600',
-      borderColor: 'border-green-600 dark:border-green-500',
-      textColor: 'text-white',
+      bgColor: 'bg-success',
+      borderColor: 'border-success',
+      textColor: 'text-success-foreground',
     },
     error: {
       icon: AlertCircle,
-      bgColor: 'bg-red-500 dark:bg-red-600',
-      borderColor: 'border-red-600 dark:border-red-500',
-      textColor: 'text-white',
+      bgColor: 'bg-destructive',
+      borderColor: 'border-destructive',
+      textColor: 'text-destructive-foreground',
     },
     warning: {
       icon: AlertTriangle,
-      bgColor: 'bg-yellow-500 dark:bg-yellow-600',
-      borderColor: 'border-yellow-600 dark:border-yellow-500',
-      textColor: 'text-white',
+      bgColor: 'bg-warning',
+      borderColor: 'border-warning',
+      textColor: 'text-warning-foreground',
     },
     info: {
       icon: Info,
-      bgColor: 'bg-blue-500 dark:bg-blue-600',
-      borderColor: 'border-blue-600 dark:border-blue-500',
-      textColor: 'text-white',
+      bgColor: 'bg-info',
+      borderColor: 'border-info',
+      textColor: 'text-info-foreground',
     },
   };
 

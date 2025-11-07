@@ -163,18 +163,18 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
                         key={`${index}-${lineIndex}`}
                         className={`flex min-w-0 ${
                           isAdded
-                            ? 'bg-green-50 dark:bg-green-950/30'
+                            ? 'bg-success/10'
                             : isRemoved
-                            ? 'bg-red-50 dark:bg-red-950/30'
+                            ? 'bg-destructive/10'
                             : ''
                         }`}
                       >
                         <span
                           className={`inline-block w-12 flex-shrink-0 px-2 py-0.5 text-right select-none border-r ${
                             isAdded
-                              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-300 dark:border-green-800'
+                              ? 'bg-success/20 text-success border-success/30'
                               : isRemoved
-                              ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-300 dark:border-red-800'
+                              ? 'bg-destructive/20 text-destructive border-destructive/30'
                               : 'bg-muted/30 text-muted-foreground/50 border-border'
                           }`}
                         >
@@ -183,9 +183,9 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
                         <span
                           className={`flex-1 min-w-0 px-3 py-0.5 whitespace-pre-wrap break-words overflow-wrap-anywhere ${
                             isAdded
-                              ? 'text-green-800 dark:text-green-200'
+                              ? 'text-success'
                               : isRemoved
-                              ? 'text-red-800 dark:text-red-200'
+                              ? 'text-destructive'
                               : ''
                           }`}
                         >
@@ -235,13 +235,13 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
                         <div
                           key={index}
                           className={`flex min-w-0 ${
-                            isRemoved ? 'bg-red-50 dark:bg-red-950/30' : ''
+                            isRemoved ? 'bg-destructive/10' : ''
                           }`}
                         >
                           <span
                             className={`inline-block w-12 flex-shrink-0 px-2 py-0.5 text-right select-none border-r ${
                               isRemoved
-                                ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-300 dark:border-red-800'
+                                ? 'bg-destructive/20 text-destructive border-destructive/30'
                                 : 'bg-muted/30 text-muted-foreground/50 border-border'
                             }`}
                           >
@@ -250,7 +250,7 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
                           <span
                             className={`flex-1 min-w-0 px-3 py-0.5 whitespace-pre-wrap break-words overflow-wrap-anywhere ${
                               isRemoved
-                                ? 'text-red-800 dark:text-red-200'
+                                ? 'text-destructive'
                                 : ''
                             }`}
                           >
@@ -266,7 +266,7 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
               {/* Edited (Right) */}
               <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/50">
-                  <h3 className="text-sm font-semibold text-green-700 dark:text-green-400">Edited (To Save)</h3>
+                  <h3 className="text-sm font-semibold text-success">Edited (To Save)</h3>
                   <button
                     onClick={handleCopy}
                     className="inline-flex items-center gap-2 px-3 py-1.5 text-xs rounded-md border border-input bg-background hover:bg-accent transition-colors"
@@ -298,13 +298,13 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
                         <div
                           key={index}
                           className={`flex min-w-0 ${
-                            isAdded ? 'bg-green-50 dark:bg-green-950/30' : ''
+                            isAdded ? 'bg-success/10' : ''
                           }`}
                         >
                           <span
                             className={`inline-block w-12 flex-shrink-0 px-2 py-0.5 text-right select-none border-r ${
                               isAdded
-                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-300 dark:border-green-800'
+                                ? 'bg-success/20 text-success border-success/30'
                                 : 'bg-muted/30 text-muted-foreground/50 border-border'
                             }`}
                           >
@@ -313,7 +313,7 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
                           <span
                             className={`flex-1 min-w-0 px-3 py-0.5 whitespace-pre-wrap break-words overflow-wrap-anywhere ${
                               isAdded
-                                ? 'text-green-800 dark:text-green-200'
+                                ? 'text-success'
                                 : ''
                             }`}
                           >

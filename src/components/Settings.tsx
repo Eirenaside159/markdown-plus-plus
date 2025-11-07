@@ -1,18 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings as SettingsIcon, X, FileText, Trash2, Download, Upload, FolderSync, Lightbulb, Package, AlertTriangle, LogOut, EyeOff, Eye, Save, Palette, Sun, Moon, Monitor } from 'lucide-react';
-import { Toast, useToast } from './ui/Toast';
+import { Settings as SettingsIcon, X, Trash2, Download, Upload, AlertTriangle, EyeOff, Eye, Save, Link2, Palette, FileText, ListTree, Archive, FolderOpen } from 'lucide-react';
+import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { getSettings, saveSettings } from '@/lib/settings';
 import { getHiddenFiles, unhideFile, clearHiddenFiles } from '@/lib/hiddenFiles';
 import { applyColorPalette, getPaletteDisplayName, PALETTE_CATEGORIES } from '@/lib/colorPalettes';
-import { setTheme } from '@/lib/theme';
-import type { AppSettings, ColorPalette, ThemeMode } from '@/types/settings';
-import { DEFAULT_SETTINGS } from '@/types/settings';
+import type { AppSettings, ColorPalette } from '@/types/settings';
 
 function UrlPreview({ baseUrl, urlFormat }: { baseUrl: string; urlFormat: string }) {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, '0');
   const tokens: Record<string, string> = {
-    SLUG: 'example-post',
+    SLUG: 'my-post-title',
     CATEGORY: 'news',
     YEAR: String(now.getFullYear()),
     MONTH: pad(now.getMonth() + 1),
@@ -29,79 +28,27 @@ function UrlPreview({ baseUrl, urlFormat }: { baseUrl: string; urlFormat: string
   const preview = base ? `${base}/${path}` : `/${path}`;
 
   return (
-    <div className="p-3 rounded-md text-xs sm:text-sm text-muted-foreground bg-muted/30">
-      <div className="flex items-center gap-1.5">
-        <span className="font-medium text-foreground">Preview:</span>
-        <code className="px-1.5 py-0.5 rounded bg-muted font-mono">{preview || '/'}</code>
-      </div>
+    <div className="p-4 rounded-md bg-muted/50 border border-border">
+      <div className="text-sm text-muted-foreground mb-2 font-medium">Preview URL</div>
+      <code className="text-sm font-mono text-foreground break-all">{preview || '/'}</code>
     </div>
   );
 }
 
 interface SettingsProps {
   onClose?: () => void;
-  onLogout?: () => void;
   directoryName?: string;
 }
 
-type SettingsTab = 'general' | 'appearance' | 'defaults' | 'import-export' | 'hidden-files';
-
-export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {}) {
+export function Settings({ onClose, directoryName }: SettingsProps = {}) {
   const [settings, setSettings] = useState<AppSettings>(getSettings());
-  const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [newMetaKey, setNewMetaKey] = useState('');
   const [newMetaValue, setNewMetaValue] = useState('');
   const [newMultiplicityKey, setNewMultiplicityKey] = useState('');
   const [newMultiplicityMode, setNewMultiplicityMode] = useState<'single' | 'multi'>('multi');
   const [hiddenFiles, setHiddenFiles] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast, showToast, hideToast } = useToast();
-
-  // URL builder state
-  const [urlMode, setUrlMode] = useState<'simple' | 'advanced'>(() => {
-    const format = (getSettings().urlFormat || '').trim();
-    return /^\s*[^{}]*\{SLUG\}\s*$/.test(format) ? 'simple' : 'advanced';
-  });
-  const [pathPrefix, setPathPrefix] = useState<string>(() => {
-    const format = (getSettings().urlFormat || '').trim();
-    const m = format.match(/^\s*([^{}]*)\{SLUG\}\s*$/);
-    const raw = m ? (m[1] || '') : '';
-    return raw.replace(/^\/+/, '').replace(/\/+$/, '');
-  });
   const urlFormatInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const format = (settings.urlFormat || '').trim();
-    const isSimple = /^\s*[^{}]*\{SLUG\}\s*$/.test(format);
-    setUrlMode(isSimple ? 'simple' : 'advanced');
-    if (isSimple) {
-      const m = format.match(/^\s*([^{}]*)\{SLUG\}\s*$/);
-      const raw = m ? (m[1] || '') : '';
-      setPathPrefix(raw.replace(/^\/+/, '').replace(/\/+$/, ''));
-    }
-  }, [settings.urlFormat]);
-
-  const insertToken = (token: string) => {
-    const input = urlFormatInputRef.current;
-    const current = settings.urlFormat || '';
-    if (!input) {
-      const updated = { ...settings, urlFormat: current + token };
-      setSettings(updated);
-      saveSettings(updated);
-      return;
-    }
-    const start = input.selectionStart ?? current.length;
-    const end = input.selectionEnd ?? start;
-    const next = current.slice(0, start) + token + current.slice(end);
-    const updated = { ...settings, urlFormat: next };
-    setSettings(updated);
-    saveSettings(updated);
-    requestAnimationFrame(() => {
-      const pos = start + token.length;
-      input.focus();
-      input.setSelectionRange(pos, pos);
-    });
-  };
 
   const Section = ({
     title,
@@ -116,18 +63,25 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
   }) => {
     const toneClasses =
       tone === 'danger'
-        ? 'bg-destructive/10 border border-destructive/20'
-        : 'border border-border bg-card';
+        ? 'bg-destructive/10 border border-destructive/20 shadow-sm'
+        : 'border border-border bg-card shadow-sm';
 
     return (
-      <section className={`p-4 rounded-lg ${toneClasses}`}>
-        <div className="mb-3">
-          <h3 className="text-base font-semibold leading-none tracking-tight">{title}</h3>
-          {description ? (
-            <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-          ) : null}
+      <section className={`p-5 rounded-lg ${toneClasses} hover:shadow-md transition-shadow`}>
+        <div className="space-y-4">
+          {/* Başlık ve Açıklama */}
+          <div className="space-y-2">
+            <h3 className="text-base font-semibold leading-tight text-foreground">{title}</h3>
+            {description && (
+              <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+            )}
+          </div>
+          
+          {/* İçerik */}
+          <div>
+            {children}
+          </div>
         </div>
-        <div className="space-y-3">{children}</div>
       </section>
     );
   };
@@ -146,7 +100,7 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
 
   const handleAddMeta = () => {
     if (!newMetaKey.trim()) {
-      showToast('Please enter a meta key', 'warning');
+      toast.warning('Please enter a meta key');
       return;
     }
     
@@ -162,7 +116,7 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
     saveSettings(updatedSettings);
     setNewMetaKey('');
     setNewMetaValue('');
-    showToast('Meta field added', 'success');
+    toast.success('Meta field added');
   };
 
   const handleRemoveMeta = (key: string) => {
@@ -175,7 +129,7 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
     
     setSettings(updatedSettings);
     saveSettings(updatedSettings);
-    showToast('Meta field removed', 'success');
+    toast.success('Meta field removed');
   };
 
   const handleUpdateMeta = (key: string, value: string) => {
@@ -202,7 +156,7 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
     };
     setSettings(updatedSettings);
     saveSettings(updatedSettings);
-    showToast(`'${key}' set to ${mode === 'multi' ? 'Multiple' : 'Single'}`, 'success');
+    toast.success(`'${key}' set to ${mode === 'multi' ? 'Multiple' : 'Single'}`);
   };
 
   const handleRemoveMultiplicity = (key: string) => {
@@ -214,12 +168,12 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
     };
     setSettings(updatedSettings);
     saveSettings(updatedSettings);
-    showToast(`Removed setting for '${key}'`, 'success');
+    toast.success(`Removed setting for '${key}'`);
   };
 
   const handleAddMultiplicity = () => {
     if (!newMultiplicityKey.trim()) {
-      showToast('Please enter a field name', 'warning');
+      toast.warning('Please enter a field name');
       return;
     }
     handleSetMultiplicity(newMultiplicityKey.trim(), newMultiplicityMode);
@@ -280,9 +234,9 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      showToast('Configuration exported', 'success');
+      toast.success('Configuration exported');
     } catch (error) {
-      showToast('Failed to export settings', 'error');
+      toast.error('Failed to export settings');
     }
   };
 
@@ -332,14 +286,14 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
         const newSettings = getSettings();
         setSettings(newSettings);
         
-        showToast(`Imported ${importedCount} setting(s). Reloading...`, 'success');
+        toast.success(`Imported ${importedCount} setting(s). Reloading...`);
         
         // Reload page to apply all changes
         setTimeout(() => {
           window.location.reload();
         }, 2000);
       } catch (error) {
-        showToast('Invalid config file format', 'error');
+        toast.error('Invalid config file format');
       }
     };
     reader.readAsText(file);
@@ -355,7 +309,7 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
     
     unhideFile(directoryName, filePath);
     setHiddenFiles(prev => prev.filter(path => path !== filePath));
-    showToast('File unhidden', 'success');
+    toast.success('File unhidden');
   };
 
   const handleClearAllHidden = () => {
@@ -364,59 +318,22 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
     if (window.confirm('Unhide all files? They will appear in the table again.')) {
       clearHiddenFiles(directoryName);
       setHiddenFiles([]);
-      showToast('All files unhidden', 'success');
+      toast.success('All files unhidden');
     }
   };
 
-  const tabs = [
-    {
-      id: 'general' as const,
-      label: 'General',
-      icon: SettingsIcon,
-    },
-    {
-      id: 'appearance' as const,
-      label: 'Appearance',
-      icon: Palette,
-    },
-    {
-      id: 'defaults' as const,
-      label: 'Defaults',
-      icon: FileText,
-    },
-    {
-      id: 'hidden-files' as const,
-      label: 'Hidden Files',
-      icon: EyeOff,
-      badge: hiddenFiles.length > 0 ? hiddenFiles.length : undefined,
-    },
-    {
-      id: 'import-export' as const,
-      label: 'Import / Export',
-      icon: FolderSync,
-    },
-  ];
-
   return (
-    <>
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        isOpen={toast.isOpen}
-        onClose={hideToast}
-      />
-      
-      <div className="space-y-6">
+      <div className="h-full flex flex-col max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
           <div className="flex items-center gap-2">
-            <SettingsIcon className="h-6 w-6 text-muted-foreground" />
-            <h2 className="text-2xl font-semibold leading-none tracking-tight">Settings</h2>
+            <SettingsIcon className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-xl font-semibold leading-none tracking-tight">Settings</h2>
           </div>
           {onClose && (
             <button
               onClick={onClose}
-              className="h-9 w-9 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors inline-flex items-center justify-center"
+              className="h-8 w-8 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors inline-flex items-center justify-center"
               title="Close Settings"
               aria-label="Close"
             >
@@ -425,263 +342,183 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
           )}
         </div>
 
-        {/* Layout */}
-        <div className="md:flex md:gap-6">
-          {/* Sidebar */}
-          <nav className="md:w-56 mb-4 md:mb-0">
-            <div className="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible scrollbar-hide">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`
-                      inline-flex items-center justify-between md:justify-start gap-2 h-10 px-3 rounded-md text-sm font-medium transition-colors whitespace-nowrap
-                      ${isActive 
-                        ? 'bg-muted text-foreground' 
-                        : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
-                      }
-                    `}
-                  >
-                    <span className="inline-flex items-center gap-2">
-                      <Icon className="h-4 w-4" />
-                      <span>{tab.label}</span>
-                    </span>
-                    {tab.badge !== undefined && tab.badge > 0 && (
-                      <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold rounded-full bg-muted text-muted-foreground">
-                        {tab.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </nav>
+        {/* Tabs Layout: Left sidebar tabs, Right content */}
+        <Tabs defaultValue="publishing" className="flex-1 flex flex-col md:flex-row gap-4 md:gap-6">
+          {/* Left Sidebar - Vertical Tabs */}
+          <TabsList className="flex md:flex-col h-fit w-full md:w-56 bg-muted/50 p-2 gap-1 rounded-lg border border-border overflow-x-auto md:overflow-x-visible scrollbar-hide">
+            <TabsTrigger 
+              value="publishing" 
+              className="flex-shrink-0 w-full md:w-full justify-center md:justify-start gap-2 md:gap-3 text-left px-3 py-2.5 rounded-md text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent hover:text-accent-foreground"
+            >
+              <Link2 className="h-4 w-4 shrink-0" />
+              <span className="hidden md:inline whitespace-nowrap">Website</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="appearance" 
+              className="flex-shrink-0 w-full md:w-full justify-center md:justify-start gap-2 md:gap-3 text-left px-3 py-2.5 rounded-md text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent hover:text-accent-foreground"
+            >
+              <Palette className="h-4 w-4 shrink-0" />
+              <span className="hidden md:inline whitespace-nowrap">Appearance</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="default-meta" 
+              className="flex-shrink-0 w-full md:w-full justify-center md:justify-start gap-2 md:gap-3 text-left px-3 py-2.5 rounded-md text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent hover:text-accent-foreground"
+            >
+              <FileText className="h-4 w-4 shrink-0" />
+              <span className="hidden md:inline whitespace-nowrap">Default Meta</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="field-types" 
+              className="flex-shrink-0 w-full md:w-full justify-center md:justify-start gap-2 md:gap-3 text-left px-3 py-2.5 rounded-md text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent hover:text-accent-foreground"
+            >
+              <ListTree className="h-4 w-4 shrink-0" />
+              <span className="hidden md:inline whitespace-nowrap">Field Types</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="hidden-files" 
+              className="flex-shrink-0 w-full md:w-full justify-center md:justify-start gap-2 md:gap-3 text-left px-3 py-2.5 rounded-md text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent hover:text-accent-foreground"
+            >
+              <FolderOpen className="h-4 w-4 shrink-0" />
+              <span className="hidden md:inline whitespace-nowrap">Hidden Files</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="backup" 
+              className="flex-shrink-0 w-full md:w-full justify-center md:justify-start gap-2 md:gap-3 text-left px-3 py-2.5 rounded-md text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent hover:text-accent-foreground"
+            >
+              <Archive className="h-4 w-4 shrink-0" />
+              <span className="hidden md:inline whitespace-nowrap">Backup</span>
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Content */}
-          <div className="flex-1 space-y-6">
-        {/* General Tab */}
-        {activeTab === 'general' && (
-          <div className="space-y-4">
-              <Section title="URL" description="Base and pattern.">
-                <div className="flex items-center justify-between">
-                  <div className="inline-flex rounded-md border border-input p-0.5 text-xs">
-                    <button
-                      className={`px-2 py-1 rounded ${urlMode === 'simple' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                      onClick={() => {
-                        setUrlMode('simple');
-                        const normalized = pathPrefix ? `${pathPrefix.replace(/^\/+|\/+$/g,'')}/{SLUG}` : '{SLUG}';
-                        const updated = { ...settings, urlFormat: normalized };
-                        setSettings(updated);
-                        saveSettings(updated);
-                      }}
-                    >
-                      Simple
-                    </button>
-                    <button
-                      className={`px-2 py-1 rounded ${urlMode === 'advanced' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                      onClick={() => setUrlMode('advanced')}
-                    >
-                      Advanced
-                    </button>
-                  </div>
-                  <button
-                    onClick={() => {
-                      const updatedSettings = {
-                        ...settings,
-                        baseUrl: DEFAULT_SETTINGS.baseUrl,
-                        urlFormat: DEFAULT_SETTINGS.urlFormat,
+          {/* Right Content Area */}
+          <div className="flex-1 overflow-y-auto md:pr-2">
+            {/* Website Tab */}
+            <TabsContent value="publishing" className="mt-0 space-y-6 max-w-2xl">
+          {/* URL Configuration */}
+          <Section 
+            title="URL Configuration" 
+            description="Set your website's base domain and customize how post URLs are structured. Use tokens like {SLUG}, {CATEGORY}, {YEAR}, {MONTH}, and {DAY} to create dynamic URL patterns. This helps generate canonical URLs and preview links for your posts."
+          >
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Complete URL Pattern</label>
+                <input
+                  ref={urlFormatInputRef}
+                  type="text"
+                  value={settings.baseUrl && settings.urlFormat 
+                    ? `${settings.baseUrl.replace(/\/+$/, '')}/${settings.urlFormat.replace(/^\/+/, '')}`
+                    : settings.baseUrl || settings.urlFormat || ''}
+                  onChange={(e) => {
+                    const fullUrl = e.target.value;
+                    // Parse the URL to extract domain and path
+                    try {
+                      const url = new URL(fullUrl);
+                      const baseUrl = `${url.protocol}//${url.host}`;
+                      const urlFormat = url.pathname.replace(/^\/+/, '');
+                      
+                      const updatedSettings = { 
+                        ...settings, 
+                        baseUrl: baseUrl,
+                        urlFormat: urlFormat 
                       };
                       setSettings(updatedSettings);
                       saveSettings(updatedSettings);
-                      setUrlMode('simple');
-                      setPathPrefix('');
-                      showToast('URL settings reset', 'info');
-                    }}
-                    className="text-xs rounded-md border border-input px-2 py-1 hover:bg-accent transition-colors"
-                  >
-                    Reset
-                  </button>
-                </div>
-
-                {urlMode === 'simple' ? (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Base URL</label>
-                      <input
-                        type="text"
-                        value={settings.baseUrl || ''}
-                        onChange={(e) => {
-                          const updatedSettings = { ...settings, baseUrl: e.target.value };
-                          setSettings(updatedSettings);
-                          saveSettings(updatedSettings);
-                        }}
-                        placeholder="https://example.com"
-                        className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Path Prefix</label>
-                      <input
-                        type="text"
-                        value={pathPrefix}
-                        onChange={(e) => {
-                          const nextPrefix = e.target.value.replace(/\s+/g, '-');
-                          setPathPrefix(nextPrefix);
-                          const normalized = nextPrefix ? `${nextPrefix.replace(/^\/+|\/+$/g,'')}/{SLUG}` : '{SLUG}';
-                          const updated = { ...settings, urlFormat: normalized };
-                          setSettings(updated);
-                          saveSettings(updated);
-                        }}
-                        placeholder="blog"
-                        className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">URL Format</label>
-                    <input
-                      ref={urlFormatInputRef}
-                      type="text"
-                      value={settings.urlFormat || ''}
-                      onChange={(e) => {
-                        const updated = { ...settings, urlFormat: e.target.value };
-                        setSettings(updated);
-                        saveSettings(updated);
-                      }}
-                      placeholder="blog/{CATEGORY}/{SLUG}"
-                      className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
-                    <div className="flex flex-wrap items-center gap-2">
-                      {['{SLUG}', '{CATEGORY}', '{YEAR}', '{MONTH}', '{DAY}'].map((t) => (
-                        <button
-                          key={t}
-                          onClick={() => insertToken(t)}
-                          className="text-xs rounded-md border border-input px-2 py-1 hover:bg-accent transition-colors"
-                        >
-                          <code className="font-mono">{t}</code>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <UrlPreview baseUrl={settings.baseUrl || ''} urlFormat={settings.urlFormat || ''} />
-              </Section>
-
-              {onLogout && (
-                <Section title="Log Out" description="Close current workspace." tone="danger">
-                  <button
-                    onClick={onLogout}
-                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Log Out
-                  </button>
-                </Section>
-              )}
-          </div>
-        )}
-
-        {/* Appearance Tab */}
-        {activeTab === 'appearance' && (
-          <div className="space-y-4">
-            <Section title="Theme Mode" description="Choose between light, dark, or system preference.">
-              <div className="flex flex-wrap gap-2">
-                {(['light', 'dark', 'system'] as ThemeMode[]).map((mode) => {
-                  const Icon = mode === 'light' ? Sun : mode === 'dark' ? Moon : Monitor;
-                  const label = mode.charAt(0).toUpperCase() + mode.slice(1);
-                  
-                  return (
-                    <button
-                      key={mode}
-                      onClick={() => {
-                        const updatedSettings = { ...settings, theme: mode };
+                    } catch {
+                      // If not a valid URL, try to split by first slash after protocol
+                      const match = fullUrl.match(/^(https?:\/\/[^\/]+)\/(.*)$/);
+                      if (match) {
+                        const updatedSettings = { 
+                          ...settings, 
+                          baseUrl: match[1],
+                          urlFormat: match[2]
+                        };
                         setSettings(updatedSettings);
                         saveSettings(updatedSettings);
-                        setTheme(mode);
-                        showToast(`Theme changed to ${label}`, 'success');
-                      }}
-                      className={`
-                        inline-flex items-center gap-2 px-4 py-3 rounded-md text-sm font-medium transition-all
-                        ${settings.theme === mode 
-                          ? 'bg-primary text-primary-foreground ring-2 ring-ring ring-offset-2 ring-offset-background' 
-                          : 'bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                        }
-                      `}
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span>{label}</span>
-                    </button>
-                  );
-                })}
+                      } else {
+                        // Just save as baseUrl if no slash found
+                        const updatedSettings = { 
+                          ...settings, 
+                          baseUrl: fullUrl,
+                          urlFormat: ''
+                        };
+                        setSettings(updatedSettings);
+                        saveSettings(updatedSettings);
+                      }
+                    }
+                  }}
+                  placeholder="https://myblog.com/blog/{SLUG}"
+                  className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring font-mono"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Use tokens: <code className="px-1.5 py-0.5 bg-muted rounded text-xs">{`{SLUG}`}</code> <code className="px-1.5 py-0.5 bg-muted rounded text-xs">{`{CATEGORY}`}</code> <code className="px-1.5 py-0.5 bg-muted rounded text-xs">{`{YEAR}`}</code> <code className="px-1.5 py-0.5 bg-muted rounded text-xs">{`{MONTH}`}</code> <code className="px-1.5 py-0.5 bg-muted rounded text-xs">{`{DAY}`}</code>
+                </p>
               </div>
-            </Section>
-
-            <Section title="Theme Colors" description="Choose a color palette for the interface.">
-              <div className="space-y-4">
-                {Object.entries(PALETTE_CATEGORIES).map(([categoryName, palettes]) => (
-                  <div key={categoryName}>
-                    <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                      {categoryName}
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {(palettes as readonly ColorPalette[]).map((palette) => (
-                        <button
-                          key={palette}
-                          onClick={() => {
-                            const updatedSettings = { ...settings, colorPalette: palette };
-                            setSettings(updatedSettings);
-                            saveSettings(updatedSettings);
-                            const isDark = document.documentElement.classList.contains('dark');
-                            applyColorPalette(palette, isDark);
-                            showToast(`Palette changed to ${getPaletteDisplayName(palette)}`, 'success');
-                          }}
-                          className={`
-                            px-3 py-2 rounded-md text-sm font-medium transition-all
-                            ${settings.colorPalette === palette 
-                              ? 'bg-primary text-primary-foreground ring-2 ring-ring ring-offset-2 ring-offset-background' 
-                              : 'bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                            }
-                          `}
-                        >
-                          {getPaletteDisplayName(palette)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Section>
-
-            <div className="p-3 bg-muted/30 rounded-md text-xs sm:text-sm text-muted-foreground">
-              <p className="flex items-start gap-1.5">
-                <Lightbulb className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>
-                  <strong>Theme Mode</strong> controls whether you see light or dark colors.
-                  <strong className="ml-1">Theme Colors</strong> change the accent colors used throughout the interface.
-                  All colors are from the shadcn/ui palette.
-                </span>
-              </p>
+              <UrlPreview baseUrl={settings.baseUrl || ''} urlFormat={settings.urlFormat || ''} />
             </div>
-          </div>
-        )}
+          </Section>
+            </TabsContent>
 
-        {/* Default Meta Tab */}
-        {activeTab === 'defaults' && (
-          <div className="space-y-4">
-            <Section title="Default Meta" description="Added to new posts.">
-              <div className="space-y-2">
-                {Object.entries(settings.defaultMeta).map(([key, value]) => (
-                  <div key={key} className="flex gap-2">
+            {/* Appearance Tab */}
+            <TabsContent value="appearance" className="mt-0 space-y-6 max-w-2xl">
+          {/* Color Palette */}
+          <Section 
+            title="Color Palette" 
+            description="Choose an accent color scheme for the interface. These colors affect buttons, links, highlights, and other interactive elements throughout the application. All palettes are carefully crafted with the shadcn/ui design system to ensure accessibility and visual consistency in both light and dark modes."
+          >
+            <div className="space-y-4">
+              {Object.entries(PALETTE_CATEGORIES).map(([categoryName, palettes]) => (
+                <div key={categoryName}>
+                  <h4 className="text-sm font-medium text-foreground mb-3">
+                    {categoryName}
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {(palettes as readonly ColorPalette[]).map((palette) => (
+                      <button
+                        key={palette}
+                        onClick={() => {
+                          const updatedSettings = { ...settings, colorPalette: palette };
+                          setSettings(updatedSettings);
+                          saveSettings(updatedSettings);
+                                    const isDark = document.documentElement.classList.contains('dark');
+                                    applyColorPalette(palette, isDark);
+                                    toast.success(`Palette changed to ${getPaletteDisplayName(palette)}`);
+                        }}
+                        className={`
+                          px-4 py-2 rounded-md text-sm font-medium transition-all
+                          ${settings.colorPalette === palette 
+                            ? 'bg-primary text-primary-foreground ring-2 ring-ring ring-offset-2 ring-offset-background' 
+                            : 'bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                          }
+                        `}
+                      >
+                        {getPaletteDisplayName(palette)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+            </TabsContent>
+
+            {/* Default Meta Tab */}
+            <TabsContent value="default-meta" className="mt-0 space-y-6 max-w-2xl">
+          {/* Default Meta */}
+          <Section 
+            title="Default Meta" 
+            description="Define default frontmatter fields that will be automatically added to every new post you create. This is useful for fields like author, status, layout, or any custom metadata your site requires. These values can be edited after the post is created."
+          >
+            <div className="space-y-3">
+              {Object.entries(settings.defaultMeta).length === 0 ? (
+                <div className="text-sm text-muted-foreground py-2">No default meta fields defined yet.</div>
+              ) : (
+                Object.entries(settings.defaultMeta).map(([key, value]) => (
+                  <div key={key} className="flex gap-2 items-center">
                     <input
                       type="text"
                       value={key}
                       disabled
-                      className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-muted cursor-not-allowed"
+                      className="w-40 px-3 py-2 text-sm rounded-md border border-input bg-muted cursor-not-allowed font-medium"
                     />
                     <input
                       type="text"
@@ -698,15 +535,17 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
-                ))}
+                ))
+              )}
 
-                <div className="flex gap-2">
+              <div className="pt-3 border-t border-border">
+                <div className="flex gap-2 items-center">
                   <input
                     type="text"
                     value={newMetaKey}
                     onChange={(e) => setNewMetaKey(e.target.value)}
-                    placeholder="Field (e.g., author)"
-                    className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="Field name (e.g., author)"
+                    className="w-40 px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
@@ -730,32 +569,41 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
                   />
                   <button
                     onClick={handleAddMeta}
-                    className="inline-flex items-center justify-center h-9 w-9 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
-                    title="Save field"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
+                    title="Add field"
                   >
                     <Save className="h-4 w-4" />
+                    <span>Add</span>
                   </button>
                 </div>
               </div>
-            </Section>
+            </div>
+          </Section>
+            </TabsContent>
 
-            <Section title="Meta Field Types" description="Force specific fields to Single value or Multiple values.">
-              <div className="space-y-2">
-                {Object.entries(settings.metaFieldMultiplicity || {}).length === 0 && (
-                  <div className="text-sm text-muted-foreground">No custom field type settings.</div>
-                )}
-                {Object.entries(settings.metaFieldMultiplicity || {}).map(([key, mode]) => (
+            {/* Field Types Tab */}
+            <TabsContent value="field-types" className="mt-0 space-y-6 max-w-2xl">
+          {/* Meta Field Types */}
+          <Section 
+            title="Meta Field Types" 
+            description="Control whether specific frontmatter fields accept single or multiple values. Single-value fields store a simple string, while multi-value fields store arrays (e.g., tags: ['tech', 'blog']). This setting affects how the editor displays and handles these fields."
+          >
+            <div className="space-y-3">
+              {Object.entries(settings.metaFieldMultiplicity || {}).length === 0 ? (
+                <div className="text-sm text-muted-foreground py-2">No custom field type settings defined yet.</div>
+              ) : (
+                Object.entries(settings.metaFieldMultiplicity || {}).map(([key, mode]) => (
                   <div key={key} className="flex items-center gap-2">
                     <input
                       type="text"
                       value={key}
                       disabled
-                      className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-muted cursor-not-allowed"
+                      className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-muted cursor-not-allowed font-medium"
                     />
-                    <div className="inline-flex rounded-md border border-input p-0.5 text-xs">
+                    <div className="inline-flex rounded-md border border-input p-0.5">
                       <button
                         type="button"
-                        className={`px-2 py-1 rounded ${mode === 'single' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                        className={`px-3 py-1.5 rounded text-sm ${mode === 'single' ? 'bg-accent text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'}`}
                         onClick={() => handleSetMultiplicity(key, 'single')}
                         title="Single value"
                       >
@@ -763,11 +611,11 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
                       </button>
                       <button
                         type="button"
-                        className={`px-2 py-1 rounded ${mode === 'multi' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                        className={`px-3 py-1.5 rounded text-sm ${mode === 'multi' ? 'bg-accent text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'}`}
                         onClick={() => handleSetMultiplicity(key, 'multi')}
                         title="Multiple values"
                       >
-                        Multiple
+                        Multi
                       </button>
                     </div>
                     <button
@@ -778,14 +626,16 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
-                ))}
+                ))
+              )}
 
-                <div className="flex gap-2">
+              <div className="pt-3 border-t border-border">
+                <div className="flex gap-2 items-center">
                   <input
                     type="text"
                     value={newMultiplicityKey}
                     onChange={(e) => setNewMultiplicityKey(e.target.value)}
-                    placeholder="Field name (e.g., categories)"
+                    placeholder="Field name (e.g., tags)"
                     className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
@@ -794,10 +644,10 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
                       }
                     }}
                   />
-                  <div className="inline-flex rounded-md border border-input p-0.5 text-xs">
+                  <div className="inline-flex rounded-md border border-input p-0.5">
                     <button
                       type="button"
-                      className={`px-2 py-1 rounded ${newMultiplicityMode === 'single' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                      className={`px-3 py-1.5 rounded text-sm ${newMultiplicityMode === 'single' ? 'bg-accent text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'}`}
                       onClick={() => setNewMultiplicityMode('single')}
                       title="Single value"
                     >
@@ -805,142 +655,127 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
                     </button>
                     <button
                       type="button"
-                      className={`px-2 py-1 rounded ${newMultiplicityMode === 'multi' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                      className={`px-3 py-1.5 rounded text-sm ${newMultiplicityMode === 'multi' ? 'bg-accent text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'}`}
                       onClick={() => setNewMultiplicityMode('multi')}
                       title="Multiple values"
                     >
-                      Multiple
+                      Multi
                     </button>
                   </div>
                   <button
                     onClick={handleAddMultiplicity}
-                    className="inline-flex items-center justify-center h-9 w-9 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
-                    title="Save field type"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
+                    title="Add field type"
                   >
                     <Save className="h-4 w-4" />
+                    <span>Add</span>
                   </button>
                 </div>
               </div>
-            </Section>
-
-            <div className="p-3 bg-muted/30 rounded-md text-xs sm:text-sm text-muted-foreground">
-              <p className="flex items-center gap-1.5">
-                <Lightbulb className="h-4 w-4 shrink-0" />
-                <span>Merged with standard meta when creating new posts.</span>
-              </p>
             </div>
-          </div>
-        )}
+          </Section>
+            </TabsContent>
 
-        {/* Hidden Files Tab */}
-        {activeTab === 'hidden-files' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">Files hidden from the table.</p>
-              {hiddenFiles.length > 0 && (
-                <button
-                  onClick={handleClearAllHidden}
-                  className="text-sm text-primary hover:text-primary/80 transition-colors px-3 py-1.5"
-                >
-                  Unhide All
-                </button>
-              )}
-            </div>
-
+            {/* Hidden Files Tab */}
+            <TabsContent value="hidden-files" className="mt-0 space-y-6 max-w-2xl">
+          {/* Hidden Files */}
+          <Section 
+            title={`Hidden Files ${hiddenFiles.length > 0 ? `(${hiddenFiles.length})` : ''}`}
+            description="Manage files that you've hidden from the main post table. Hidden files are stored per workspace and won't appear in your post list, but they remain in your file system. You can unhide them individually or all at once to restore them to the table view."
+          >
             {hiddenFiles.length > 0 ? (
-              <div className="space-y-2">
-                {hiddenFiles.map((filePath) => (
-                  <div 
-                    key={filePath} 
-                    className="flex items-center justify-between p-3 rounded-md border border-input bg-background hover:bg-accent/50 transition-colors group"
+              <div className="space-y-3">
+                <div className="flex justify-end">
+                  <button
+                    onClick={handleClearAllHidden}
+                    className="text-sm text-primary hover:text-primary/80 transition-colors font-medium"
                   >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <EyeOff className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <span className="text-sm truncate" title={filePath}>
-                        {filePath}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => handleUnhideFile(filePath)}
-                      className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
-                      title="Unhide file"
+                    Unhide All
+                  </button>
+                </div>
+                <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                  {hiddenFiles.map((filePath) => (
+                    <div 
+                      key={filePath} 
+                      className="flex items-center justify-between p-3 rounded-md border border-input bg-background hover:bg-accent/50 transition-colors group"
                     >
-                      <Eye className="h-4 w-4" />
-                      <span>Unhide</span>
-                    </button>
-                  </div>
-                ))}
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <EyeOff className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <span className="text-sm truncate font-mono" title={filePath}>
+                          {filePath}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleUnhideFile(filePath)}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0 font-medium"
+                        title="Unhide file"
+                      >
+                        <Eye className="h-4 w-4" />
+                        <span>Unhide</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : (
-              <div className="p-8 text-center space-y-2">
+              <div className="py-12 text-center space-y-3">
                 <div className="flex justify-center">
-                  <Eye className="h-8 w-8 text-muted-foreground/50" />
+                  <Eye className="h-12 w-12 text-muted-foreground/30" />
                 </div>
-                <p className="text-sm text-muted-foreground">No hidden files</p>
+                <p className="text-sm text-muted-foreground">No hidden files in this workspace</p>
               </div>
             )}
+          </Section>
+            </TabsContent>
 
-            <div className="p-3 bg-muted/30 rounded-md text-xs sm:text-sm text-muted-foreground">
-              <p className="flex items-center gap-1.5">
-                <Lightbulb className="h-4 w-4 shrink-0" />
-                <span>Hidden files are stored per workspace.</span>
-              </p>
-            </div>
-          </div>
-        )}
+            {/* Backup Tab */}
+            <TabsContent value="backup" className="mt-0 space-y-6 max-w-2xl">
+          {/* Export Configuration */}
+          <Section 
+            title="Export Configuration" 
+            description="Export all your application settings, preferences, and data to a JSON file. This includes default meta fields, recent folders, column settings, hidden files, file tree preferences, and UI state. Use this to backup your configuration or transfer it to another machine."
+          >
+            <button
+              onClick={handleExport}
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              <Download className="h-4 w-4" />
+              Export Configuration
+            </button>
+          </Section>
 
-        {/* Import/Export Tab */}
-        {activeTab === 'import-export' && (
-          <div className="space-y-4">
-            <Section title="Included in Export">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Package className="h-4 w-4" />
-                <span>
-                  Default Meta, Recent Folders, Column Settings, Hidden Files, File Tree Preferences, Warning Acknowledgement
-                </span>
-              </div>
-            </Section>
-
-            <Section title="Export Configuration" description="Download all data as JSON.">
+          {/* Import Configuration */}
+          <Section 
+            title="Import Configuration" 
+            description="Restore your settings from a previously exported JSON file. This will replace all current settings including default meta, recent folders, column preferences, and hidden files. The page will automatically reload after import to apply all changes."
+          >
+            <div className="space-y-2.5">
               <button
-                onClick={handleExport}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                onClick={handleImport}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md border-2 border-input bg-background hover:bg-accent hover:border-accent-foreground/20 transition-colors"
               >
-                <Download className="h-4 w-4" />
-                Export All
+                <Upload className="h-4 w-4" />
+                Choose Configuration File
               </button>
-            </Section>
-
-            <Section title="Import Configuration" description="Restore from JSON file.">
-              <div className="space-y-3">
-                <button
-                  onClick={handleImport}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent transition-colors"
-                >
-                  <Upload className="h-4 w-4" />
-                  Choose File
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".json,application/json"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-md text-xs sm:text-sm text-yellow-700 dark:text-yellow-500">
-                  <p className="flex items-start gap-1.5">
-                    <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                    <span>Import replaces current data and reloads the page.</span>
-                  </p>
-                </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json,application/json"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <div className="flex items-start gap-2 p-2.5 bg-warning/10 border border-warning/20 rounded-md">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-warning mt-0.5" />
+                <p className="text-xs text-foreground leading-relaxed">
+                  <strong>Warning:</strong> Importing will replace all current settings and reload the page.
+                </p>
               </div>
-            </Section>
+            </div>
+          </Section>
+            </TabsContent>
           </div>
-        )}
-          </div>
-        </div>
+        </Tabs>
       </div>
-    </>
   );
 }
 

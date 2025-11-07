@@ -1,25 +1,26 @@
 import { useState, useEffect } from 'react';
 import { MarkdownEditor } from '@/components/MarkdownEditor';
-import { DataTable } from '@/components/DataTable';
+import { PostsDataTable } from '@/components/PostsDataTable';
 import { RawMarkdownModal } from '@/components/RawMarkdownModal';
 import { PublishModal } from '@/components/PublishModal';
 import { SidebarTabs } from '@/components/SidebarTabs';
 import { Settings } from '@/components/Settings';
-import { Sheet } from '@/components/ui/Sheet';
-import { Toast, useToast } from '@/components/ui/Toast';
+import { Sheet, SheetContent } from '@/components/ui/Sheet';
+import { toast } from 'sonner';
 import { WelcomeWarningModal, shouldShowWarning } from '@/components/WelcomeWarningModal';
 import { FileBrowser } from '@/components/FileBrowser';
-import { selectDirectory, readDirectory, readFile, writeFile, deleteFile, renameFile, moveFile, isFileSystemAccessSupported } from '@/lib/fileSystem';
+import { selectDirectory, readFile, writeFile, deleteFile, renameFile, moveFile, isFileSystemAccessSupported } from '@/lib/fileSystem';
 import { parseMarkdown, stringifyMarkdown, updateFrontmatter } from '@/lib/markdown';
 import { getRecentFolders, addRecentFolder, clearRecentFolders, formatTimestamp } from '@/lib/recentFolders';
-import { getSettings } from '@/lib/settings';
+import { getSettings, saveSettings } from '@/lib/settings';
+import { setTheme } from '@/lib/theme';
 import { saveDirectoryHandle, loadDirectoryHandle, saveAppState, loadAppState, clearPersistedData } from '@/lib/persistedState';
 import { subscribePosts, initializePosts, refreshPosts, refreshFileTree, applyPostAdded, applyPostUpdated, applyPostDeleted, applyPostPathChanged } from '@/lib/postsStore';
 import { checkGitStatus, publishFile, generateCommitMessage, type GitStatus } from '@/lib/gitOperations';
 import { hideFile, getHiddenFiles } from '@/lib/hiddenFiles';
 import { updateFaviconBadge } from '@/lib/faviconBadge';
 import type { FileTreeItem, MarkdownFile } from '@/types';
-import { FolderOpen, Save, Clock, FileCode, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen, PanelLeftClose, PanelLeft, Loader2, BookOpen } from 'lucide-react';
+import { FolderOpen, Save, Clock, FileCode, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen, Loader2, BookOpen, Sun, Moon, Monitor, LogOut } from 'lucide-react';
 
 type ViewMode = 'table' | 'editor' | 'settings';
 
@@ -67,6 +68,7 @@ function App() {
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [gitStatus, setGitStatus] = useState<GitStatus | null>(null);
   const [showActionsDropdown, setShowActionsDropdown] = useState(false);
+  const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [showTitleInHeader, setShowTitleInHeader] = useState(false);
   const [fileTree, setFileTree] = useState<FileTreeItem[]>([]);
   const [selectedFolderPath, setSelectedFolderPath] = useState<string | null>(null);
@@ -92,7 +94,6 @@ function App() {
     return unsubscribe;
   }, []);
   const [isRefreshingPosts, setIsRefreshingPosts] = useState(false);
-  const { toast, showToast, hideToast } = useToast();
   
   // Always call the hook, but only use it when dirHandle is null
   const { displayedText } = useTypewriter('Markdown++', 80);
@@ -125,9 +126,6 @@ function App() {
     updateFaviconBadge(shouldShowBadge);
   }, [hasChanges, viewMode]);
 
-  const loadAllPosts = async (handle: FileSystemDirectoryHandle, fileTree: FileTreeItem[]) => {
-    await refreshPosts(handle, fileTree);
-  };
 
   // Fast, non-blocking reload helper: refresh posts without clearing UI
   const reloadPosts = async () => {
@@ -144,17 +142,14 @@ function App() {
   const handleSelectDirectory = async () => {
     // Check browser support first
     if (!isFileSystemAccessSupported()) {
-      showToast(
-        'File API not supported. Use desktop Chrome, Edge, or Safari 15.2+',
-        'error'
-      );
+      toast.error('File API not supported. Use desktop Chrome, Edge, or Safari 15.2+');
       return;
     }
     
     const handle = await selectDirectory();
     if (handle) {
       // Clear any existing toasts first
-      hideToast();
+      toast.dismiss();
       
       setDirHandle(handle);
       addRecentFolder(handle);
@@ -179,10 +174,7 @@ function App() {
         console.warn('⚠️ Git repository not found in:', handle.name);
         console.log('Selected folder:', handle.name);
         console.log('Error:', status.error);
-        showToast(
-          `Git not detected - publish limited`,
-          'info'
-        );
+        toast.info('Git not detected - publish limited');
       } else {
         console.log('✓ Git repository found in:', handle.name, '| Branch:', status.currentBranch);
       }
@@ -198,7 +190,7 @@ function App() {
 
         if (savedHandle) {
           // Clear any existing toasts
-          hideToast();
+          toast.dismiss();
 
           // Set handle first so UI can render app shell immediately
           setDirHandle(savedHandle);
@@ -240,7 +232,7 @@ function App() {
               const status = await checkGitStatus(savedHandle);
               setGitStatus(status);
             })();
-          } else if (savedState?.viewMode === 'settings') {
+          } else if (savedState?.viewMode && savedState.viewMode === 'settings') {
             // Fast path: open settings immediately without waiting for all posts
             setViewMode('settings');
             window.history.replaceState({ viewMode: 'settings' }, '', '#settings');
@@ -291,7 +283,7 @@ function App() {
     }
 
     // Clear any existing toasts
-    hideToast();
+    toast.dismiss();
 
     // Clear persisted data from IndexedDB
     await clearPersistedData();
@@ -331,9 +323,9 @@ function App() {
       setCurrentFile(parsed);
       setHasChanges(false);
       setHasPendingPublish(false); // Clear publish flag when discarding
-      showToast('Changes discarded', 'info');
+      toast.info('Changes discarded');
     } catch (error) {
-      showToast('Failed to discard changes', 'error');
+      toast.error('Failed to discard changes');
     }
   };
 
@@ -381,9 +373,9 @@ function App() {
         setHasPendingPublish(false);
       }
 
-      showToast('Post deleted', 'success');
+      toast.success('Post deleted');
     } catch (error) {
-      showToast('Failed to delete file', 'error');
+      toast.error('Failed to delete file');
       setIsLoadingPosts(false);
     }
   };
@@ -392,7 +384,7 @@ function App() {
     if (!dirHandle) return;
 
     hideFile(dirHandle.name, post.path);
-    showToast(`"${post.frontmatter.title || post.name}" hidden`, 'info');
+    toast.info(`"${post.frontmatter.title || post.name}" hidden`);
   };
 
   const handleCreatePost = async () => {
@@ -457,7 +449,7 @@ function App() {
       // Update file tree in background
       refreshFileTree(dirHandle).catch(() => {});
     } catch (error) {
-      showToast('Failed to create file', 'error');
+      toast.error('Failed to create file');
     } finally {
       setIsCreatingPost(false);
     }
@@ -480,7 +472,6 @@ function App() {
       
       // Update posts store
       await applyPostUpdated(dirHandle.name, updatedFile);
-      if (dirHandle) savePostsCache(dirHandle.name, updatedPosts).catch(() => {});
       
       // Update current file with new rawContent
       setCurrentFile(updatedFile);
@@ -489,9 +480,9 @@ function App() {
       setHasChanges(false);
       setHasPendingPublish(true);
       
-      showToast('Changes saved', 'success');
+      toast.success('Changes saved');
     } catch (error) {
-      showToast('Failed to save file', 'error');
+      toast.error('Failed to save file');
     } finally {
       setIsSaving(false);
     }
@@ -595,9 +586,9 @@ function App() {
       // Update browser history
       window.history.replaceState({ viewMode: 'editor', filePath: newPath }, '', '#editor');
 
-      showToast('File renamed successfully', 'success');
+      toast.success('File renamed successfully');
     } catch (error) {
-      showToast('Failed to rename file', 'error');
+      toast.error('Failed to rename file');
       console.error('Rename error:', error);
     }
   };
@@ -640,13 +631,13 @@ function App() {
       // Update file tree
       await refreshFileTree(dirHandle);
 
-      showToast(`"${fileName}" moved successfully`, 'success', 3000);
+      toast.success(`"${fileName}" moved successfully`, { duration: 3000 });
     } catch (error) {
       // Show error
       if (error instanceof Error) {
-        showToast(error.message, 'error');
+        toast.error(error.message);
       } else {
-        showToast(`Failed to move "${fileName}"`, 'error');
+        toast.error(`Failed to move "${fileName}"`);
       }
       console.error('Move error:', error);
     } finally {
@@ -869,11 +860,11 @@ function App() {
           {/* Browser Compatibility Warning */}
           {!isSupported && (
             <div className="mx-auto max-w-xl">
-              <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-4">
+              <div className="rounded-lg border border-warning/50 bg-warning/10 p-4">
                 <div className="flex gap-3">
-                  <AlertCircle className="h-5 w-5 text-yellow-500 shrink-0 mt-0.5" />
+                  <AlertCircle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
                   <div className="space-y-1 text-sm">
-                    <p className="font-medium text-yellow-500">Device Not Supported</p>
+                    <p className="font-medium text-warning">Device Not Supported</p>
                     <p className="text-muted-foreground">
                       Local folder access is not available on iOS or iPadOS devices. 
                       Please use a <strong>desktop computer</strong> with <strong>Chrome</strong>, <strong>Edge</strong>, or <strong>Safari</strong> to access your local files.
@@ -1001,14 +992,6 @@ function App() {
         onAccept={() => setShowWarningModal(false)}
       />
       
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        isOpen={toast.isOpen}
-        onClose={hideToast}
-        duration={toast.duration}
-      />
-      
       <div className="h-screen flex flex-col bg-background">
       {/* Header */}
       <div className="border-b">
@@ -1036,7 +1019,7 @@ function App() {
               } else if (viewMode === 'table' && dirHandle) {
                 // If in table view, refresh posts (cache-first)
                 await initializePosts(dirHandle);
-                showToast('Posts refreshed', 'success', 2000);
+                toast.success('Posts refreshed', { duration: 2000 });
               }
             }}
             className="flex items-center gap-1.5 text-base sm:text-lg font-semibold opacity-40 hover:opacity-100 transition-all duration-500 ease-in-out group cursor-pointer relative z-10"
@@ -1092,16 +1075,108 @@ function App() {
                   <span className="hidden sm:inline">New Post</span>
                 </button>
 
-                <button
-                  onClick={() => {
-                    setViewMode('settings');
-                    window.history.pushState({ viewMode: 'settings' }, '', '#settings');
-                  }}
-                  className="inline-flex items-center justify-center rounded-md bg-white dark:bg-white/10 h-9 w-9 hover:bg-white/90 dark:hover:bg-white/20 transition-colors shadow-sm"
-                  title="Settings"
-                >
-                  <SettingsIcon className="h-4 w-4" />
-                </button>
+                {/* Settings Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
+                    className={`inline-flex items-center gap-1.5 rounded-md px-3 h-9 text-sm font-medium transition-colors shadow-sm ${
+                      showSettingsDropdown
+                        ? 'bg-accent text-accent-foreground'
+                        : 'bg-white dark:bg-white/10 hover:bg-white/90 dark:hover:bg-white/20'
+                    }`}
+                  >
+                    <SettingsIcon className="h-4 w-4" />
+                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showSettingsDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {showSettingsDropdown && (
+                    <>
+                      {/* Backdrop */}
+                      <div
+                        className="fixed inset-0 z-[999]"
+                        onClick={() => setShowSettingsDropdown(false)}
+                      />
+                      
+                      {/* Dropdown Menu */}
+                      <div className="absolute right-0 top-full mt-2 w-64 bg-background/95 backdrop-blur-sm border border-border rounded-lg shadow-xl z-[1000] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                        {/* Header */}
+                        <div className="px-4 py-3 bg-muted/80 border-b border-border">
+                          <div className="flex items-center gap-2">
+                            <SettingsIcon className="h-4 w-4 text-primary" />
+                            <h3 className="text-sm font-semibold">Settings</h3>
+                          </div>
+                        </div>
+
+                        {/* Theme Section */}
+                        <div className="p-3">
+                          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-1">
+                            Appearance
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            {[
+                              { value: 'light', label: 'Light', icon: Sun },
+                              { value: 'dark', label: 'Dark', icon: Moon },
+                              { value: 'system', label: 'System', icon: Monitor }
+                            ].map(({ value, label, icon: Icon }) => {
+                              const settings = getSettings();
+                              const isActive = settings.theme === value;
+                              
+                              return (
+                                <button
+                                  key={value}
+                                  onClick={() => {
+                                    const updatedSettings = { ...settings, theme: value as 'light' | 'dark' | 'system' };
+                                    saveSettings(updatedSettings);
+                                    setTheme(value as 'light' | 'dark' | 'system');
+                                    toast.success(`Theme: ${label}`);
+                                    setShowSettingsDropdown(false);
+                                  }}
+                                  className={`flex flex-col items-center gap-2 px-2 py-3 rounded-lg border-2 transition-all ${
+                                    isActive
+                                      ? 'border-primary bg-primary/10 text-primary shadow-sm'
+                                      : 'border-border hover:border-primary/50 hover:bg-accent'
+                                  }`}
+                                >
+                                  <Icon className={`h-5 w-5 ${isActive ? '' : 'text-muted-foreground'}`} />
+                                  <span className="text-xs font-medium">{label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Divider */}
+                        <div className="h-px bg-border" />
+
+                        {/* Actions */}
+                        <div className="p-2">
+                          <button
+                            onClick={() => {
+                              setShowSettingsDropdown(false);
+                              setViewMode('settings');
+                              window.history.pushState({ viewMode: 'settings' }, '', '#settings');
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground transition-colors group"
+                          >
+                            <SettingsIcon className="h-4 w-4 text-muted-foreground group-hover:text-accent-foreground" />
+                            <span>Advanced Settings</span>
+                          </button>
+                          
+                          <button
+                            onClick={() => {
+                              setShowSettingsDropdown(false);
+                              handleLogout();
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors group"
+                          >
+                            <LogOut className="h-4 w-4 text-muted-foreground group-hover:text-destructive" />
+                            <span className="text-muted-foreground group-hover:text-destructive">Log Out</span>
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               </>
             )}
 
@@ -1210,61 +1285,19 @@ function App() {
       {/* Main Content */}
       {viewMode === 'settings' ? (
         <div className="flex-1 overflow-auto">
-          <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+          <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 h-full">
             <Settings 
               onClose={async () => {
                 setViewMode('table');
                 window.history.pushState({ viewMode: 'table' }, '', '#table');
                 await reloadPosts();
               }} 
-              onLogout={handleLogout}
               directoryName={dirHandle?.name}
             />
           </div>
         </div>
       ) : viewMode === 'table' ? (
         <div className="flex-1 overflow-hidden flex flex-col">
-          {/* Header with toggle button */}
-          <div className="p-3 sm:p-4 border-b text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsFileTreeVisible(!isFileTreeVisible)}
-                className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent transition-colors"
-                title={isFileTreeVisible ? 'Hide file tree' : 'Show file tree'}
-              >
-                {isFileTreeVisible ? (
-                  <PanelLeftClose className="h-4 w-4" />
-                ) : (
-                  <PanelLeft className="h-4 w-4" />
-                )}
-              </button>
-              <div className="h-4 w-px bg-border" />
-              <h2 className="font-semibold text-base sm:text-lg text-foreground">
-                {selectedFolderPath ? selectedFolderPath : 'All Posts'}
-              </h2>
-              <span className="text-xs sm:text-sm text-muted-foreground">
-                ({(() => {
-                  const filteredPosts = allPosts.filter(post => {
-                    if (!dirHandle) return true;
-                    const hiddenFiles = getHiddenFiles(dirHandle.name);
-                    if (hiddenFiles.includes(post.path)) return false;
-                    if (selectedFolderPath && !post.path.startsWith(selectedFolderPath + '/')) return false;
-                    return true;
-                  });
-                  return `${filteredPosts.length} ${filteredPosts.length === 1 ? 'post' : 'posts'}`;
-                })()})
-              </span>
-              {selectedFolderPath && (
-                <button
-                  onClick={() => setSelectedFolderPath(null)}
-                  className="text-sm text-primary hover:underline px-3 py-1.5"
-                >
-                  Clear filter
-                </button>
-              )}
-            </div>
-          </div>
-          
           {/* Two-column layout */}
           <div className="flex-1 overflow-hidden flex">
             {/* File Tree Sidebar */}
@@ -1363,7 +1396,7 @@ function App() {
             
             {/* Main Content - Data Table */}
             <div className="flex-1 overflow-hidden p-3 sm:p-4">
-              <DataTable
+              <PostsDataTable
                 posts={allPosts.filter(post => {
                   if (!dirHandle) return true;
                   const hiddenFiles = getHiddenFiles(dirHandle.name);
@@ -1376,6 +1409,10 @@ function App() {
                 onEdit={handleEditPost}
                 onDelete={handleDeletePost}
                 onHide={handleHidePost}
+                title={selectedFolderPath || 'All Posts'}
+                onClearFilter={selectedFolderPath ? () => setSelectedFolderPath(null) : undefined}
+                onToggleSidebar={() => setIsFileTreeVisible(!isFileTreeVisible)}
+                isSidebarVisible={isFileTreeVisible}
               />
             </div>
           </div>
@@ -1415,21 +1452,19 @@ function App() {
 
       {/* Sidebar Sheet */}
       {viewMode === 'editor' && (
-        <Sheet
-          isOpen={isMobileSidebarOpen}
-          onClose={() => setIsMobileSidebarOpen(false)}
-          side="right"
-        >
-          <SidebarTabs
-            currentFile={currentFile}
-            allPosts={allPosts}
-            onMetaChange={handleMetaChange}
-            onPostClick={(post) => {
-              handleEditPost(post);
-              setIsMobileSidebarOpen(false);
-            }}
-            onFileNameChange={handleFileNameChange}
-          />
+        <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
+          <SheetContent side="right" className="w-full sm:max-w-md p-0">
+            <SidebarTabs
+              currentFile={currentFile}
+              allPosts={allPosts}
+              onMetaChange={handleMetaChange}
+              onPostClick={(post) => {
+                handleEditPost(post);
+                setIsMobileSidebarOpen(false);
+              }}
+              onFileNameChange={handleFileNameChange}
+            />
+          </SheetContent>
         </Sheet>
       )}
 

@@ -1029,6 +1029,31 @@ export function applyColorPalette(palette: ColorPalette, isDark: boolean = false
     const cssVarName = key.replace(/([A-Z])/g, '-$1').toLowerCase();
     root.style.setProperty(`--${cssVarName}`, value);
   });
+  
+  // Keep semantic colors consistent across all palettes
+  // These colors are universal and shouldn't change with palette
+  const semanticColors = isDark 
+    ? {
+        success: '142 71% 45%',
+        successForeground: '0 0% 98%',
+        warning: '48 96% 53%',
+        warningForeground: '0 0% 9%',
+        info: '217 91% 60%',
+        infoForeground: '0 0% 98%',
+      }
+    : {
+        success: '142 76% 36%',
+        successForeground: '0 0% 98%',
+        warning: '38 92% 50%',
+        warningForeground: '0 0% 9%',
+        info: '221 83% 53%',
+        infoForeground: '0 0% 98%',
+      };
+  
+  Object.entries(semanticColors).forEach(([key, value]) => {
+    const cssVarName = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+    root.style.setProperty(`--${cssVarName}`, value);
+  });
 }
 
 export function getPaletteDisplayName(palette: ColorPalette): string {

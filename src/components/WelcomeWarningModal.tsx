@@ -46,8 +46,8 @@ export function WelcomeWarningModal({ isOpen, onAccept }: WelcomeWarningModalPro
         >
           {/* Header */}
           <div className="flex items-center gap-4 p-4 border-b">
-            <div className="flex-shrink-0 w-12 h-12 rounded-md bg-yellow-500/10 flex items-center justify-center">
-              <AlertTriangle className="h-6 w-6 text-yellow-500" />
+            <div className="flex-shrink-0 w-12 h-12 rounded-md bg-warning/10 flex items-center justify-center">
+              <AlertTriangle className="h-6 w-6 text-warning" />
             </div>
             <div className="flex-1">
               <h2 className="text-lg font-semibold">Disclaimer</h2>
@@ -61,12 +61,12 @@ export function WelcomeWarningModal({ isOpen, onAccept }: WelcomeWarningModalPro
                 <strong>Markdown++</strong> is a new project and is actively under development.
               </p>
               
-              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-md p-4 space-y-2">
-                <p className="font-semibold text-yellow-700 dark:text-yellow-500 flex items-center gap-2">
+              <div className="bg-warning/10 border border-warning/20 rounded-md p-4 space-y-2">
+                <p className="font-semibold text-warning flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 shrink-0" />
                   Please be aware:
                 </p>
-                <ul className="space-y-1.5 text-yellow-800 dark:text-yellow-400 pl-4 list-disc">
+                <ul className="space-y-1.5 text-warning-foreground pl-4 list-disc">
                   <li>This application is in beta stage</li>
                   <li>Unexpected errors may occur</li>
                   <li>Data loss in your files is possible</li>
@@ -74,7 +74,7 @@ export function WelcomeWarningModal({ isOpen, onAccept }: WelcomeWarningModalPro
               </div>
 
               <p className="text-foreground font-medium">
-                Before you start using, <span className="text-red-500">make sure to backup all your files!</span>
+                Before you start using, <span className="text-destructive">make sure to backup all your files!</span>
               </p>
 
               <p className="text-muted-foreground text-xs">

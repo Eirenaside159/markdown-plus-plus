@@ -77,13 +77,11 @@ export function MetaEditor({ frontmatter, onChange, allPosts, fileName, onFileNa
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* File Name Editor */}
       {fileName && onFileNameChange && (
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-foreground cursor-pointer">
-            File Name
-          </label>
+          <label className="block text-sm font-medium">File Name</label>
           
           {editingFileName !== '' ? (
             <div className="space-y-2">
@@ -92,7 +90,7 @@ export function MetaEditor({ frontmatter, onChange, allPosts, fileName, onFileNa
                 value={editingFileName}
                 onChange={(e) => setEditingFileName(e.target.value)}
                 placeholder="Enter new file name"
-                className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleFileNameSave();
@@ -103,14 +101,14 @@ export function MetaEditor({ frontmatter, onChange, allPosts, fileName, onFileNa
                 <button
                   onClick={handleFileNameSave}
                   disabled={!editingFileName.trim()}
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
                 >
                   <Check className="h-4 w-4" />
-                  Rename
+                  Save
                 </button>
                 <button
                   onClick={handleFileNameCancel}
-                  className="inline-flex items-center justify-center h-8 w-8 text-sm rounded-md border border-input bg-background hover:bg-accent transition-colors"
+                  className="inline-flex items-center justify-center h-8 w-8 rounded-md border hover:bg-accent transition-colors"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -119,11 +117,10 @@ export function MetaEditor({ frontmatter, onChange, allPosts, fileName, onFileNa
           ) : (
             <button
               onClick={() => {
-                // Remove .md extension for editing
                 const nameWithoutExt = fileName.replace(/\.md$/, '');
                 setEditingFileName(nameWithoutExt);
               }}
-              className="w-full text-left px-3 py-2 text-sm rounded-md border border-input bg-background text-foreground hover:bg-accent transition-colors font-mono focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full text-left px-3 py-2 text-sm rounded-md border bg-background hover:bg-accent transition-colors font-mono"
             >
               {fileName}
             </button>
@@ -131,71 +128,66 @@ export function MetaEditor({ frontmatter, onChange, allPosts, fileName, onFileNa
         </div>
       )}
 
-      {fields.map((key) => {
-        const value = frontmatter[key];
-        // Determine field type with settings override for multiplicity
-        const settings = getSettings();
-        const override = settings.metaFieldMultiplicity?.[key];
-        let fieldType = inferFieldType(value);
-        if (override === 'multi' && (fieldType === 'string' || fieldType === 'array')) {
-          fieldType = 'array';
-        } else if (override === 'single' && (fieldType === 'string' || fieldType === 'array')) {
-          fieldType = 'string';
-        }
-        const suggestions = getFieldValues(allPosts, key);
-        const label = formatFieldLabel(key);
-        
-        return (
-          <DynamicField
-            key={key}
-            fieldKey={key}
-            fieldLabel={label}
-            fieldType={fieldType}
-            value={value}
-            onChange={handleFieldChange}
-            suggestions={suggestions}
-          />
-        );
-      })}
+      {/* Meta Fields */}
+      <div className="space-y-4">
+        {fields.map((key) => {
+          const value = frontmatter[key];
+          const settings = getSettings();
+          const override = settings.metaFieldMultiplicity?.[key];
+          let fieldType = inferFieldType(value);
+          if (override === 'multi' && (fieldType === 'string' || fieldType === 'array')) {
+            fieldType = 'array';
+          } else if (override === 'single' && (fieldType === 'string' || fieldType === 'array')) {
+            fieldType = 'string';
+          }
+          const suggestions = getFieldValues(allPosts, key);
+          const label = formatFieldLabel(key);
+          
+          return (
+            <DynamicField
+              key={key}
+              fieldKey={key}
+              fieldLabel={label}
+              fieldType={fieldType}
+              value={value}
+              onChange={handleFieldChange}
+              suggestions={suggestions}
+            />
+          );
+        })}
+      </div>
 
-      {/* Show a message if no fields found */}
       {fields.length === 0 && (
-        <div className="text-center py-4">
-          <p className="text-sm text-muted-foreground">
-            No meta fields found
-          </p>
+        <div className="text-center py-8">
+          <p className="text-sm text-muted-foreground">No meta fields found</p>
         </div>
       )}
 
-      {/* Add Field Section */}
+      {/* Add Field */}
       {isAddingField ? (
-        <div className="space-y-3 p-4 border border-primary/50 rounded-md bg-accent/30">
-          <div className="space-y-2">
-            <label htmlFor="new-field-name" className="text-xs font-medium text-foreground cursor-pointer">
-              Field Name
-            </label>
+        <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
+          <div className="space-y-1.5">
+            <label htmlFor="new-field-name" className="text-sm font-medium">Field Name</label>
             <input
               id="new-field-name"
               type="text"
               value={newFieldName}
               onChange={(e) => setNewFieldName(e.target.value)}
-              placeholder="e.g., custom_field"
-              className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              placeholder="e.g., author"
+              className="w-full px-3 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
               autoFocus
             />
           </div>
           
-          <div className="space-y-2">
-            <label htmlFor="new-field-value" className="text-xs font-medium text-foreground cursor-pointer">
-              Field Value
-            </label>
+          <div className="space-y-1.5">
+            <label htmlFor="new-field-value" className="text-sm font-medium">Field Value</label>
             <input
               id="new-field-value"
               type="text"
               value={newFieldValue}
               onChange={(e) => setNewFieldValue(e.target.value)}
               placeholder="Enter value"
-              className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full px-3 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleAddField();
                 if (e.key === 'Escape') handleCancelAddField();
@@ -207,14 +199,14 @@ export function MetaEditor({ frontmatter, onChange, allPosts, fileName, onFileNa
             <button
               onClick={handleAddField}
               disabled={!newFieldName.trim()}
-              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
               <Check className="h-4 w-4" />
-              Add Field
+              Add
             </button>
             <button
               onClick={handleCancelAddField}
-              className="inline-flex items-center justify-center h-9 w-9 text-sm rounded-md border border-input bg-background hover:bg-accent transition-colors"
+              className="inline-flex items-center justify-center h-8 w-8 rounded-md border hover:bg-accent transition-colors"
             >
               <X className="h-4 w-4" />
             </button>
@@ -223,10 +215,10 @@ export function MetaEditor({ frontmatter, onChange, allPosts, fileName, onFileNa
       ) : (
         <button
           onClick={() => setIsAddingField(true)}
-          className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md border-2 border-dashed border-input hover:border-primary hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+          className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-md border-2 border-dashed hover:border-primary hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
         >
           <Plus className="h-4 w-4" />
-          Add Custom Field
+          Add Field
         </button>
       )}
     </div>
