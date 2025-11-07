@@ -457,7 +457,7 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                                 e.stopPropagation();
                                 setOpenDropdown(openDropdown === post.path ? null : post.path);
                               }}
-                              className="inline-flex items-center justify-center h-7 w-7 rounded-md hover:bg-accent transition-colors opacity-0 group-hover:opacity-100"
+                              className="inline-flex items-center justify-center h-7 w-7 rounded-md bg-accent/60 hover:bg-accent transition-colors text-foreground hover:text-primary"
                               title="More actions"
                             >
                               <MoreVertical className="h-4 w-4" />
@@ -588,7 +588,7 @@ export function DataTable({ posts, isLoading = false, onEdit, onDelete, onHide }
                         e.stopPropagation();
                         setOpenDropdown(openDropdown === post.path ? null : post.path);
                       }}
-                      className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent transition-colors"
+                      className="inline-flex items-center justify-center h-9 w-9 rounded-md bg-accent/60 hover:bg-accent transition-colors text-foreground hover:text-primary"
                       title="More actions"
                     >
                       <MoreVertical className="h-4 w-4" />
