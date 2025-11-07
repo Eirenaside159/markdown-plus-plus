@@ -527,7 +527,7 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
           font-size: 2.125rem; /* 34px */
           font-weight: 700;
           line-height: 1.2;
-          margin-top: 1.5em;
+          margin-top: 0.95em;
           margin-bottom: 0.5em;
           letter-spacing: -0.025em;
         }
@@ -536,7 +536,7 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
           font-size: 1.5rem; /* 24px */
           font-weight: 600;
           line-height: 1.3;
-          margin-top: 1.5em;
+          margin-top: 0.95em;
           margin-bottom: 0.5em;
           letter-spacing: -0.0125em;
         }
@@ -545,7 +545,7 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
           font-size: 1.25rem; /* 20px */
           font-weight: 600;
           line-height: 1.4;
-          margin-top: 1.5em;
+          margin-top: 0.95em;
           margin-bottom: 0.5em;
         }
 
