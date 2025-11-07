@@ -228,20 +228,31 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
 
   const handleExport = () => {
     try {
-      // Collect all localStorage data
+      // Collect all relevant localStorage data
       const allData: Record<string, any> = {};
-      
-      // Get all mdplusplus-related keys
-      const keys = [
-        'mdplusplus-settings',
-        'mdplusplus_recent_folders',
-        'mdplusplus-visible-columns',
-        'mdplusplus-hidden-files',
-      ];
-      
-      keys.forEach(key => {
+
+      // Build list of keys to include:
+      // - Any key that starts with "mdplusplus"
+      // - Specific UI/consent flags that don't use the prefix
+      const includeKeys = new Set<string>();
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k) continue;
+        if (k.startsWith('mdplusplus')) {
+          includeKeys.add(k);
+        }
+      }
+
+      [
+        'isFileTreeVisible',
+        'fileTreeWidth',
+        'markdown-plus-plus-warning-accepted',
+      ].forEach(k => includeKeys.add(k));
+
+      includeKeys.forEach(key => {
         const value = localStorage.getItem(key);
-        if (value) {
+        if (value !== null) {
           try {
             allData[key] = JSON.parse(value);
           } catch {
@@ -252,7 +263,7 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
 
       // Create export object with metadata
       const exportData = {
-        version: '1.0',
+        version: '1.1',
         exportDate: new Date().toISOString(),
         data: allData,
       };
@@ -793,7 +804,9 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
             <Section title="Included in Export">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Package className="h-4 w-4" />
-                <span>Default Meta, Recent Folders, Column Settings, Hidden Files</span>
+                <span>
+                  Default Meta, Recent Folders, Column Settings, Hidden Files, File Tree Preferences, Warning Acknowledgement
+                </span>
               </div>
             </Section>
 
