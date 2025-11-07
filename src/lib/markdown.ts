@@ -1,15 +1,27 @@
 import matter from 'gray-matter';
+import yaml from 'js-yaml';
 import type { MarkdownFile, FrontMatter } from '@/types';
 import { getSettings } from '@/lib/settings';
 
 export function parseMarkdown(content: string, path: string, name: string): MarkdownFile {
   try {
-    // Clean up content - remove extra blank lines at the start
-    const cleanedContent = content.trim();
+    // Preserve content exactly as-is to avoid unintended diffs
+    const cleanedContent = content;
     
+    const yamlEngine = {
+      parse: (src: string) => yaml.load(src, { schema: yaml.FAILSAFE_SCHEMA }) as any,
+      stringify: (obj: any) => yaml.dump(obj, {
+        schema: yaml.FAILSAFE_SCHEMA,
+        lineWidth: -1,
+        noRefs: true,
+        styles: { '!!str': 'plain' },
+      }),
+    };
     const { data, content: markdownContent } = matter(cleanedContent, {
       // More tolerant parsing - supports UTF-8 characters (Arabic, Turkish, etc.)
       excerpt: false,
+      // Preserve scalar types exactly as written (avoid auto-casting numbers/dates) and avoid reformatting
+      engines: { yaml: yamlEngine as any },
     });
     
     // Convert null values to empty strings
@@ -23,32 +35,25 @@ export function parseMarkdown(content: string, path: string, name: string): Mark
     }
     
     // Preserve ALL existing frontmatter fields
-    // Only set defaults for missing standard fields
+    // Do not auto-add standard fields unless explicitly present in source
     const frontmatter: FrontMatter = {
       ...cleanedData, // Keep all existing fields first
     };
     
-    // Set standard fields only if they don't exist
+    // Set derived title only for in-memory use when missing
     if (!frontmatter.title) frontmatter.title = name.replace(/\.md$/, '');
-    if (frontmatter.author === undefined) frontmatter.author = '';
-    if (frontmatter.date === undefined) frontmatter.date = '';
-    if (frontmatter.description === undefined) frontmatter.description = '';
     
     // Handle both 'category' (singular) and 'categories' (plural)
     if (frontmatter.categories === undefined) {
       if (cleanedData.category !== undefined) {
         // Convert single category to array
         frontmatter.categories = Array.isArray(cleanedData.category) ? cleanedData.category : [cleanedData.category];
-      } else {
-        frontmatter.categories = [];
       }
     } else if (!Array.isArray(frontmatter.categories)) {
       frontmatter.categories = frontmatter.categories ? [frontmatter.categories] : [];
     }
     
-    if (frontmatter.tags === undefined) {
-      frontmatter.tags = [];
-    } else if (!Array.isArray(frontmatter.tags)) {
+    if (frontmatter.tags !== undefined && !Array.isArray(frontmatter.tags)) {
       frontmatter.tags = frontmatter.tags ? [frontmatter.tags] : [];
     }
     
@@ -78,11 +83,6 @@ export function parseMarkdown(content: string, path: string, name: string): Mark
       content: cleanContent,
       frontmatter: {
         title: name.replace(/\.md$/, ''),
-        author: '',
-        date: '',
-        description: '',
-        categories: [],
-        tags: [],
       },
       rawContent: content,
     };
@@ -92,7 +92,6 @@ export function parseMarkdown(content: string, path: string, name: string): Mark
 export function stringifyMarkdown(file: MarkdownFile): string {
   // Preserve all fields, only skip null/undefined
   const cleanedFrontmatter: Record<string, unknown> = {};
-  const settings = getSettings();
   
   for (const key in file.frontmatter) {
     const value = file.frontmatter[key as keyof FrontMatter];
@@ -102,20 +101,48 @@ export function stringifyMarkdown(file: MarkdownFile): string {
       continue;
     }
     
-    const multiplicity = settings.metaFieldMultiplicity?.[key];
-    if (multiplicity === 'single' && Array.isArray(value)) {
-      // Convert array to single value (keep first if exists, else empty string)
-      cleanedFrontmatter[key] = (value as unknown[]).length > 0 ? (value as unknown[])[0] : '';
-    } else if (multiplicity === 'multi' && typeof value === 'string') {
-      // Convert single string to array
-      const trimmed = (value as string).trim();
-      cleanedFrontmatter[key] = trimmed ? [trimmed] : [];
-    } else {
-      cleanedFrontmatter[key] = value;
-    }
+    // Do not coerce or transform user-provided types
+    cleanedFrontmatter[key] = value;
   }
   
-  return matter.stringify(file.content, cleanedFrontmatter);
+  // Use a YAML engine that preserves strings plainly and avoids wrapping lines
+  const yamlEngine = {
+    parse: (src: string) => yaml.load(src, { schema: yaml.FAILSAFE_SCHEMA }) as any,
+    stringify: (obj: any) => yaml.dump(obj, {
+      schema: yaml.FAILSAFE_SCHEMA,
+      lineWidth: -1, // do not fold long lines (avoids >-)
+      noRefs: true,
+      styles: {
+        '!!str': 'plain', // avoid quoting strings like '1' or 'Normal, Fairy'
+      },
+    }),
+  };
+  let output = matter.stringify(file.content, cleanedFrontmatter, { engines: { yaml: yamlEngine as any } });
+
+  // Preserve original trailing newline presence/style to avoid spurious diffs
+  const original = typeof file.rawContent === 'string' ? file.rawContent : '';
+  const originalEndsWithCRLF = /\r\n$/.test(original);
+  const originalEndsWithLF = /\n$/.test(original);
+  const originalHasTrailingNewline = originalEndsWithLF; // LF covers CRLF as well
+
+  if (originalHasTrailingNewline) {
+    // Ensure output ends with the same newline style
+    if (!/\n$/.test(output)) {
+      output += originalEndsWithCRLF ? '\r\n' : '\n';
+    } else if (originalEndsWithCRLF && !/\r\n$/.test(output)) {
+      // Convert trailing single LF to CRLF
+      output = output.replace(/\n$/, '\r\n');
+    }
+  } else {
+    // Original had no trailing newline, remove one if serializer added it
+    if (/\r\n$/.test(output)) {
+      output = output.slice(0, -2);
+    } else if (/\n$/.test(output)) {
+      output = output.slice(0, -1);
+    }
+  }
+
+  return output;
 }
 
 export function updateFrontmatter(file: MarkdownFile, updates: Partial<FrontMatter>): MarkdownFile {

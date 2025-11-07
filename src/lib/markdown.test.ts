@@ -26,7 +26,7 @@ describe('markdown lib', () => {
     expect(file.frontmatter['seo-title']).toBe('SEO Title');
   });
 
-  it('parseMarkdown sets defaults and falls back to raw content on invalid frontmatter', () => {
+  it('parseMarkdown falls back to raw content on invalid frontmatter without auto-adding metas', () => {
     const invalid = `---\n: :\n---\nBody`;
     const file = parseMarkdown(invalid, '/p/invalid.md', 'invalid.md');
 
@@ -35,9 +35,9 @@ describe('markdown lib', () => {
     expect(file.path).toBe('/p/invalid.md');
     expect(typeof file.content).toBe('string');
     expect(file.frontmatter.title).toBe('invalid.md'.replace(/\.md$/, ''));
-    expect(file.frontmatter.author).toBe('');
-    expect(file.frontmatter.categories).toEqual([]);
-    expect(file.frontmatter.tags).toEqual([]);
+    expect(file.frontmatter.author).toBeUndefined();
+    expect(file.frontmatter.categories).toBeUndefined();
+    expect(file.frontmatter.tags).toBeUndefined();
   });
 
   it('parseMarkdown handles singular category field and converts to array', () => {
@@ -62,15 +62,15 @@ describe('markdown lib', () => {
     expect(file.frontmatter.tags).toEqual(['tag1']);
   });
 
-  it('parseMarkdown fills defaults when frontmatter is missing', () => {
+  it('parseMarkdown does not auto-add meta when frontmatter is missing', () => {
     const bodyOnly = `Hello content`;
     const file = parseMarkdown(bodyOnly, '/p/no-front.md', 'no-front.md');
     expect(file.frontmatter.title).toBe('no-front');
-    expect(file.frontmatter.author).toBe('');
-    expect(file.frontmatter.date).toBe('');
-    expect(file.frontmatter.description).toBe('');
-    expect(file.frontmatter.categories).toEqual([]);
-    expect(file.frontmatter.tags).toEqual([]);
+    expect(file.frontmatter.author).toBeUndefined();
+    expect(file.frontmatter.date).toBeUndefined();
+    expect(file.frontmatter.description).toBeUndefined();
+    expect(file.frontmatter.categories).toBeUndefined();
+    expect(file.frontmatter.tags).toBeUndefined();
   });
 
   it('stringifyMarkdown omits null/undefined but keeps empty strings/arrays', () => {

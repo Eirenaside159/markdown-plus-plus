@@ -411,20 +411,14 @@ function App() {
       const settings = getSettings();
       const defaultMeta = settings.defaultMeta || {};
       
-      // Create new post with default frontmatter
-      const today = new Date().toISOString().split('T')[0];
+      // Create new post with minimal frontmatter (user-configured defaults only)
       const newPost: MarkdownFile = {
         name: baseFilename,
         path: filePath,
         content: '',
         frontmatter: {
           title: title,
-          date: today,
-          author: '',
-          description: '',
-          categories: [],
-          tags: [],
-          // Merge in default meta from settings
+          // Merge in default meta from settings (explicit user intent)
           ...defaultMeta,
         },
         rawContent: '',
@@ -1457,7 +1451,7 @@ function App() {
         <RawMarkdownModal
           isOpen={showRawModal}
           onClose={() => setShowRawModal(false)}
-          content={stringifyMarkdown(currentFile)}
+          content={hasChanges ? stringifyMarkdown(currentFile) : currentFile.rawContent}
           originalContent={currentFile.rawContent}
           filename={currentFile.path}
         />
