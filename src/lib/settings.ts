@@ -13,6 +13,10 @@ export function getSettings(): AppSettings {
         defaultMeta: { ...DEFAULT_SETTINGS.defaultMeta, ...parsed.defaultMeta },
         baseUrl: parsed.baseUrl ?? DEFAULT_SETTINGS.baseUrl,
         urlFormat: parsed.urlFormat ?? DEFAULT_SETTINGS.urlFormat,
+        metaFieldMultiplicity: {
+          ...DEFAULT_SETTINGS.metaFieldMultiplicity,
+          ...(parsed.metaFieldMultiplicity || {}),
+        },
       };
     }
   } catch (error) {

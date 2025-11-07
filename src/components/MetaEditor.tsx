@@ -4,6 +4,7 @@ import { DynamicField } from './DynamicField';
 import { getFieldValues } from '@/lib/metaAnalyzer';
 import { formatFieldLabel, inferFieldType } from '@/lib/fieldUtils';
 import { Plus, X, Check } from 'lucide-react';
+import { getSettings } from '@/lib/settings';
 
 export interface MetaEditorProps {
   frontmatter: MarkdownFile['frontmatter'];
@@ -132,7 +133,15 @@ export function MetaEditor({ frontmatter, onChange, allPosts, fileName, onFileNa
 
       {fields.map((key) => {
         const value = frontmatter[key];
-        const fieldType = inferFieldType(value);
+        // Determine field type with settings override for multiplicity
+        const settings = getSettings();
+        const override = settings.metaFieldMultiplicity?.[key];
+        let fieldType = inferFieldType(value);
+        if (override === 'multi' && (fieldType === 'string' || fieldType === 'array')) {
+          fieldType = 'array';
+        } else if (override === 'single' && (fieldType === 'string' || fieldType === 'array')) {
+          fieldType = 'string';
+        }
         const suggestions = getFieldValues(allPosts, key);
         const label = formatFieldLabel(key);
         

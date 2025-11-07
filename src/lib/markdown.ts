@@ -1,5 +1,6 @@
 import matter from 'gray-matter';
 import type { MarkdownFile, FrontMatter } from '@/types';
+import { getSettings } from '@/lib/settings';
 
 export function parseMarkdown(content: string, path: string, name: string): MarkdownFile {
   try {
@@ -91,6 +92,7 @@ export function parseMarkdown(content: string, path: string, name: string): Mark
 export function stringifyMarkdown(file: MarkdownFile): string {
   // Preserve all fields, only skip null/undefined
   const cleanedFrontmatter: Record<string, unknown> = {};
+  const settings = getSettings();
   
   for (const key in file.frontmatter) {
     const value = file.frontmatter[key as keyof FrontMatter];
@@ -100,7 +102,17 @@ export function stringifyMarkdown(file: MarkdownFile): string {
       continue;
     }
     
-    cleanedFrontmatter[key] = value;
+    const multiplicity = settings.metaFieldMultiplicity?.[key];
+    if (multiplicity === 'single' && Array.isArray(value)) {
+      // Convert array to single value (keep first if exists, else empty string)
+      cleanedFrontmatter[key] = (value as unknown[]).length > 0 ? (value as unknown[])[0] : '';
+    } else if (multiplicity === 'multi' && typeof value === 'string') {
+      // Convert single string to array
+      const trimmed = (value as string).trim();
+      cleanedFrontmatter[key] = trimmed ? [trimmed] : [];
+    } else {
+      cleanedFrontmatter[key] = value;
+    }
   }
   
   return matter.stringify(file.content, cleanedFrontmatter);

@@ -49,6 +49,8 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [newMetaKey, setNewMetaKey] = useState('');
   const [newMetaValue, setNewMetaValue] = useState('');
+  const [newMultiplicityKey, setNewMultiplicityKey] = useState('');
+  const [newMultiplicityMode, setNewMultiplicityMode] = useState<'single' | 'multi'>('multi');
   const [hiddenFiles, setHiddenFiles] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast, showToast, hideToast } = useToast();
@@ -185,6 +187,42 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
     
     setSettings(updatedSettings);
     saveSettings(updatedSettings);
+  };
+
+  const handleSetMultiplicity = (key: string, mode: 'single' | 'multi') => {
+    const current = settings.metaFieldMultiplicity || {};
+    const updatedSettings = {
+      ...settings,
+      metaFieldMultiplicity: {
+        ...current,
+        [key]: mode,
+      },
+    };
+    setSettings(updatedSettings);
+    saveSettings(updatedSettings);
+    showToast(`'${key}' set to ${mode === 'multi' ? 'Multiple' : 'Single'}`, 'success');
+  };
+
+  const handleRemoveMultiplicity = (key: string) => {
+    const current = { ...(settings.metaFieldMultiplicity || {}) };
+    delete current[key];
+    const updatedSettings = {
+      ...settings,
+      metaFieldMultiplicity: current,
+    };
+    setSettings(updatedSettings);
+    saveSettings(updatedSettings);
+    showToast(`Removed setting for '${key}'`, 'success');
+  };
+
+  const handleAddMultiplicity = () => {
+    if (!newMultiplicityKey.trim()) {
+      showToast('Please enter a field name', 'warning');
+      return;
+    }
+    handleSetMultiplicity(newMultiplicityKey.trim(), newMultiplicityMode);
+    setNewMultiplicityKey('');
+    setNewMultiplicityMode('multi');
   };
 
 
@@ -592,6 +630,90 @@ export function Settings({ onClose, onLogout, directoryName }: SettingsProps = {
                     onClick={handleAddMeta}
                     className="inline-flex items-center justify-center h-9 w-9 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
                     title="Save field"
+                  >
+                    <Save className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </Section>
+
+            <Section title="Meta Field Types" description="Force specific fields to Single value or Multiple values.">
+              <div className="space-y-2">
+                {Object.entries(settings.metaFieldMultiplicity || {}).length === 0 && (
+                  <div className="text-sm text-muted-foreground">No custom field type settings.</div>
+                )}
+                {Object.entries(settings.metaFieldMultiplicity || {}).map(([key, mode]) => (
+                  <div key={key} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={key}
+                      disabled
+                      className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-muted cursor-not-allowed"
+                    />
+                    <div className="inline-flex rounded-md border border-input p-0.5 text-xs">
+                      <button
+                        type="button"
+                        className={`px-2 py-1 rounded ${mode === 'single' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                        onClick={() => handleSetMultiplicity(key, 'single')}
+                        title="Single value"
+                      >
+                        Single
+                      </button>
+                      <button
+                        type="button"
+                        className={`px-2 py-1 rounded ${mode === 'multi' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                        onClick={() => handleSetMultiplicity(key, 'multi')}
+                        title="Multiple values"
+                      >
+                        Multiple
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => handleRemoveMultiplicity(key)}
+                      className="inline-flex items-center justify-center h-9 w-9 rounded-md text-destructive hover:bg-destructive hover:text-white transition-colors shrink-0"
+                      title="Remove setting"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newMultiplicityKey}
+                    onChange={(e) => setNewMultiplicityKey(e.target.value)}
+                    placeholder="Field name (e.g., categories)"
+                    className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddMultiplicity();
+                      }
+                    }}
+                  />
+                  <div className="inline-flex rounded-md border border-input p-0.5 text-xs">
+                    <button
+                      type="button"
+                      className={`px-2 py-1 rounded ${newMultiplicityMode === 'single' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                      onClick={() => setNewMultiplicityMode('single')}
+                      title="Single value"
+                    >
+                      Single
+                    </button>
+                    <button
+                      type="button"
+                      className={`px-2 py-1 rounded ${newMultiplicityMode === 'multi' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                      onClick={() => setNewMultiplicityMode('multi')}
+                      title="Multiple values"
+                    >
+                      Multiple
+                    </button>
+                  </div>
+                  <button
+                    onClick={handleAddMultiplicity}
+                    className="inline-flex items-center justify-center h-9 w-9 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
+                    title="Save field type"
                   >
                     <Save className="h-4 w-4" />
                   </button>
