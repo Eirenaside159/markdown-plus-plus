@@ -117,7 +117,7 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
     content,
     editorProps: {
       attributes: {
-        class: 'prose prose-lg dark:prose-invert max-w-none focus:outline-none min-h-[500px] py-6 px-8',
+        class: 'prose prose-lg dark:prose-invert max-w-none focus:outline-none min-h-[500px] py-6',
       },
     },
     onUpdate: ({ editor }) => {
@@ -453,14 +453,14 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
 
       {/* Title Input (if provided) */}
       {title !== undefined && onTitleChange && (
-        <div className="px-8 pt-6 -mb-2">
+        <div className="pt-6 -mb-2">
           <textarea
             ref={titleTextareaRef}
             value={title === 'Untitled Post' ? '' : title}
             onChange={(e) => onTitleChange(e.target.value || 'Untitled Post')}
             placeholder="Untitled"
             rows={1}
-            className="w-full text-4xl font-semibold border-none outline-none bg-transparent placeholder:text-muted-foreground/30 focus:ring-0 p-0 leading-tight text-center resize-none overflow-hidden"
+            className="title-textarea text-4xl font-semibold border-none outline-none bg-transparent placeholder:text-muted-foreground/30 focus:ring-0 p-0 leading-tight text-left resize-none overflow-hidden"
           />
         </div>
       )}
@@ -505,12 +505,19 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
         /* Editor Base Styles */
         .ProseMirror {
           outline: none;
-          max-width: 42rem; /* comfortable ~70-75ch at 18px */
+          max-width: 680px;
           margin: 0 auto;
           -webkit-font-smoothing: antialiased;
           text-rendering: optimizeLegibility;
           font-kerning: normal;
           caret-color: hsl(var(--primary));
+        }
+
+        /* Title Textarea */
+        .title-textarea {
+          width: 680px;
+          margin: 0 auto;
+          display: block;
         }
 
         /* Placeholder */
