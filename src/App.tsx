@@ -14,6 +14,7 @@ import { parseMarkdown, stringifyMarkdown, updateFrontmatter } from '@/lib/markd
 import { getRecentFolders, addRecentFolder, clearRecentFolders, formatTimestamp } from '@/lib/recentFolders';
 import { getSettings } from '@/lib/settings';
 import { saveDirectoryHandle, loadDirectoryHandle, saveAppState, loadAppState, clearPersistedData } from '@/lib/persistedState';
+import { subscribePosts, initializePosts, refreshPosts, refreshFileTree, applyPostAdded, applyPostUpdated, applyPostDeleted, applyPostPathChanged } from '@/lib/postsStore';
 import { checkGitStatus, publishFile, generateCommitMessage, type GitStatus } from '@/lib/gitOperations';
 import { hideFile, getHiddenFiles } from '@/lib/hiddenFiles';
 import { updateFaviconBadge } from '@/lib/faviconBadge';
@@ -80,6 +81,17 @@ function App() {
   const [isResizing, setIsResizing] = useState(false);
   const [shouldAutoFocus, setShouldAutoFocus] = useState(false);
   const [isMovingFile, setIsMovingFile] = useState(false);
+  
+  // Centralized posts subscription (cache-first, serialized scanning)
+  useEffect(() => {
+    const unsubscribe = subscribePosts(({ posts, isLoading, fileTree }) => {
+      setAllPosts(posts);
+      setIsLoadingPosts(isLoading);
+      setFileTree(fileTree);
+    });
+    return unsubscribe;
+  }, []);
+  const [isRefreshingPosts, setIsRefreshingPosts] = useState(false);
   const { toast, showToast, hideToast } = useToast();
   
   // Always call the hook, but only use it when dirHandle is null
@@ -114,38 +126,18 @@ function App() {
   }, [hasChanges, viewMode]);
 
   const loadAllPosts = async (handle: FileSystemDirectoryHandle, fileTree: FileTreeItem[]) => {
+    await refreshPosts(handle, fileTree);
+  };
+
+  // Fast, non-blocking reload helper: refresh posts without clearing UI
+  const reloadPosts = async () => {
+    if (!dirHandle || isRefreshingPosts) return;
+    setIsRefreshingPosts(true);
     try {
-      const posts: MarkdownFile[] = [];
-      
-      const loadFile = async (item: FileTreeItem) => {
-        if (!item.isDirectory) {
-          try {
-            const content = await readFile(handle, item.path);
-            const parsed = parseMarkdown(content, item.path, item.name);
-            posts.push(parsed);
-          } catch (error) {
-            // Silently skip files that can't be loaded
-          }
-        } else if (item.children) {
-          for (const child of item.children) {
-            await loadFile(child);
-          }
-        }
-      };
-
-      for (const item of fileTree) {
-        await loadFile(item);
-      }
-
-      // Minimum loading time for better UX (500ms)
-      const minLoadTime = new Promise(resolve => setTimeout(resolve, 500));
-      await minLoadTime;
-
-      setAllPosts(posts);
-    } catch (error) {
-      // Silently handle error
+      const tree = await refreshFileTree(dirHandle);
+      await refreshPosts(dirHandle, tree);
     } finally {
-      setIsLoadingPosts(false);
+      setIsRefreshingPosts(false);
     }
   };
 
@@ -164,19 +156,16 @@ function App() {
       // Clear any existing toasts first
       hideToast();
       
-      // Clear posts and start loading immediately
-      setAllPosts([]);
-      setIsLoadingPosts(true);
-      
       setDirHandle(handle);
       addRecentFolder(handle);
-      
       // Save to IndexedDB for persistence
       await saveDirectoryHandle(handle);
       
-      const fileTree = await readDirectory(handle);
-      setFileTree(fileTree);
-      await loadAllPosts(handle, fileTree);
+      // Centralized posts init (cache-first, serialized scan)
+      await initializePosts(handle);
+      
+      const tree = await refreshFileTree(handle);
+      await refreshPosts(handle, tree);
       
       // Initialize browser history with table view
       window.history.replaceState({ viewMode: 'table' }, '', '#table');
@@ -206,66 +195,97 @@ function App() {
       try {
         // Try to load persisted directory handle
         const savedHandle = await loadDirectoryHandle();
-        
+
         if (savedHandle) {
           // Clear any existing toasts
           hideToast();
-          
-          // Clear posts and start loading
-          setAllPosts([]);
-          setIsLoadingPosts(true);
-          
+
+          // Set handle first so UI can render app shell immediately
           setDirHandle(savedHandle);
           addRecentFolder(savedHandle);
-          
-          // Load posts
-          const fileTree = await readDirectory(savedHandle);
-          setFileTree(fileTree);
-          await loadAllPosts(savedHandle, fileTree);
-          
-          // Load app state
+
+          // Prefill posts from cache if available for instant list
+          await initializePosts(savedHandle);
+
+          // Load saved app state to choose fast path
           const savedState = await loadAppState();
-          if (savedState) {
-            if (savedState.viewMode) {
-              setViewMode(savedState.viewMode);
-              
-              // Initialize browser history based on restored state
-              const hash = savedState.viewMode === 'editor' ? '#editor' : savedState.viewMode === 'settings' ? '#settings' : '#table';
-              const historyState = savedState.viewMode === 'editor' && savedState.selectedFilePath 
-                ? { viewMode: savedState.viewMode, filePath: savedState.selectedFilePath }
-                : { viewMode: savedState.viewMode };
-              window.history.replaceState(historyState, '', hash);
+
+          if (savedState?.viewMode === 'editor' && savedState.selectedFilePath) {
+            // Fast path: open editor immediately without waiting for all posts
+            window.history.replaceState(
+              { viewMode: 'editor', filePath: savedState.selectedFilePath },
+              '',
+              '#editor'
+            );
+
+            // Load the currently edited file right away
+            try {
+              const fileContent = await readFile(savedHandle, savedState.selectedFilePath);
+              const fileName = savedState.selectedFilePath.split('/').pop() || savedState.selectedFilePath;
+              const parsed = parseMarkdown(fileContent, savedState.selectedFilePath, fileName);
+              setCurrentFile(parsed);
+              setSelectedFilePath(savedState.selectedFilePath);
+              setShouldAutoFocus(false);
+              setViewMode('editor');
+            } catch (error) {
+              // If file cannot be restored, fall back to table view
+              console.warn('Could not restore file:', savedState.selectedFilePath);
+              setViewMode('table');
+              window.history.replaceState({ viewMode: 'table' }, '', '#table');
             }
-            
-            // Restore selected file if in editor mode
-            if (savedState.selectedFilePath && savedState.viewMode === 'editor') {
+
+            // Load directory and posts in the background
+            (async () => {
               try {
-                const fileContent = await readFile(savedHandle, savedState.selectedFilePath);
-                const fileName = savedState.selectedFilePath.split('/').pop() || savedState.selectedFilePath;
-                const parsed = parseMarkdown(fileContent, savedState.selectedFilePath, fileName);
-                setCurrentFile(parsed);
-                setSelectedFilePath(savedState.selectedFilePath);
-                setShouldAutoFocus(false); // Don't auto-focus on restored files
-              } catch (error) {
-                // File might not exist anymore, silently fail
-                console.warn('Could not restore file:', savedState.selectedFilePath);
-              }
-            }
+                const tree = await refreshFileTree(savedHandle);
+                await refreshPosts(savedHandle, tree);
+              } catch {}
+            })();
+
+            // Check git status in the background
+            (async () => {
+              const status = await checkGitStatus(savedHandle);
+              setGitStatus(status);
+            })();
+          } else if (savedState?.viewMode === 'settings') {
+            // Fast path: open settings immediately without waiting for all posts
+            setViewMode('settings');
+            window.history.replaceState({ viewMode: 'settings' }, '', '#settings');
+
+            // Load directory and posts in the background
+            (async () => {
+              try {
+                const tree = await refreshFileTree(savedHandle);
+                await refreshPosts(savedHandle, tree);
+              } catch {}
+            })();
+
+            // Check git status in the background
+            (async () => {
+              const status = await checkGitStatus(savedHandle);
+              setGitStatus(status);
+            })();
           } else {
-            // No saved state, initialize with table view
-            window.history.replaceState({ viewMode: 'table' }, '', '#table');
+            // Default path: load posts then apply view (table/settings)
+            const tree = await refreshFileTree(savedHandle);
+            await refreshPosts(savedHandle, tree);
+
+            if (savedState?.viewMode) {
+              setViewMode(savedState.viewMode);
+              const hash = savedState.viewMode === 'settings' ? '#settings' : '#table';
+              window.history.replaceState({ viewMode: savedState.viewMode }, '', hash);
+            } else {
+              // No saved state, initialize with table view
+              window.history.replaceState({ viewMode: 'table' }, '', '#table');
+            }
+
+            // Check git status
+            const status = await checkGitStatus(savedHandle);
+            setGitStatus(status);
+            if (!status.isGitRepo) {
+              console.warn('⚠️ Restored folder is not a Git repository');
+            }
           }
-          
-          // Check git status
-          const status = await checkGitStatus(savedHandle);
-          setGitStatus(status);
-          
-          if (!status.isGitRepo) {
-            console.warn('⚠️ Restored folder is not a Git repository');
-          }
-          
-          // Don't show toast on restore - it's confusing during other operations
-          // showToast('Workspace restored', 'success', 2000);
         }
       } catch (error) {
         console.error('Failed to restore state:', error);
@@ -362,11 +382,9 @@ function App() {
     try {
       await deleteFile(dirHandle, post.path);
 
-      // Show loading and refresh posts
-      setIsLoadingPosts(true);
-      const fileTree = await readDirectory(dirHandle);
-      setFileTree(fileTree);
-      await loadAllPosts(dirHandle, fileTree);
+      // Update centralized posts store and refresh file tree
+      await applyPostDeleted(dirHandle.name, post.path);
+      await refreshFileTree(dirHandle);
 
       // Clear current file if it was deleted
       if (currentFile?.path === post.path) {
@@ -446,15 +464,11 @@ function App() {
       });
       window.history.pushState({ viewMode: 'editor', filePath: filePath }, '', '#editor');
       
-      // Update allPosts in background without showing loading
-      setAllPosts(prev => [...prev, newPost]);
+      // Update posts store immediately
+      await applyPostAdded(dirHandle.name, newPost);
       
       // Update file tree in background
-      readDirectory(dirHandle).then(fileTree => {
-        setFileTree(fileTree);
-      }).catch(() => {
-        // Silently fail - file tree will update on next refresh
-      });
+      refreshFileTree(dirHandle).catch(() => {});
     } catch (error) {
       showToast('Failed to create file', 'error');
     } finally {
@@ -477,11 +491,9 @@ function App() {
         rawContent: content,
       };
       
-      // Update the post in allPosts
-      const updatedPosts = allPosts.map(post => 
-        post.path === currentFile.path ? updatedFile : post
-      );
-      setAllPosts(updatedPosts);
+      // Update posts store
+      await applyPostUpdated(dirHandle.name, updatedFile);
+      if (dirHandle) savePostsCache(dirHandle.name, updatedPosts).catch(() => {});
       
       // Update current file with new rawContent
       setCurrentFile(updatedFile);
@@ -581,15 +593,12 @@ function App() {
       setCurrentFile(updatedFile);
       setSelectedFilePath(newPath);
 
-      // Update allPosts
-      const updatedPosts = allPosts.map(post =>
-        post.path === selectedFilePath ? updatedFile : post
-      );
-      setAllPosts(updatedPosts);
+      // Update posts store
+      await applyPostPathChanged(dirHandle.name, selectedFilePath, newPath);
+      if (dirHandle) savePostsCache(dirHandle.name, updatedPosts).catch(() => {});
 
       // Update file tree
-      const fileTree = await readDirectory(dirHandle);
-      setFileTree(fileTree);
+      await refreshFileTree(dirHandle);
 
       // Save state with new path
       saveAppState({
@@ -620,17 +629,9 @@ function App() {
       // Move the file (this is slow due to browser API: read + write + delete)
       const newPath = await moveFile(dirHandle, sourcePath, targetDirPath);
 
-      // Update allPosts
-      const updatedPosts = allPosts.map(post => {
-        if (post.path === sourcePath) {
-          return {
-            ...post,
-            path: newPath,
-          };
-        }
-        return post;
-      });
-      setAllPosts(updatedPosts);
+      // Update posts store
+      await applyPostPathChanged(dirHandle.name, sourcePath, newPath);
+      if (dirHandle) savePostsCache(dirHandle.name, updatedPosts).catch(() => {});
 
       // Update current file if it was the moved file
       if (currentFile?.path === sourcePath) {
@@ -652,8 +653,7 @@ function App() {
       }
 
       // Update file tree
-      const fileTree = await readDirectory(dirHandle);
-      setFileTree(fileTree);
+      await refreshFileTree(dirHandle);
 
       showToast(`"${fileName}" moved successfully`, 'success', 3000);
     } catch (error) {
@@ -713,6 +713,8 @@ function App() {
         setSelectedFilePath(null);
         setHasChanges(false);
         setHasPendingPublish(false);
+        // Ensure posts are loaded when navigating back to table (non-blocking if already present)
+        await reloadPosts();
       } else if (state.viewMode === 'settings') {
         setViewMode('settings');
       } else if (state.viewMode === 'editor' && state.filePath && dirHandle) {
@@ -1032,7 +1034,7 @@ function App() {
               if (hasChanges && !window.confirm('You have unsaved changes. Discard them?')) {
                 return;
               }
-              // If in editor mode, go to table view
+              // If in editor mode, go to table view and ensure posts are loaded
               if (viewMode === 'editor') {
                 setViewMode('table');
                 setCurrentFile(null);
@@ -1040,10 +1042,12 @@ function App() {
                 setHasChanges(false);
                 setHasPendingPublish(false);
                 window.history.pushState({ viewMode: 'table' }, '', '#table');
+                await reloadPosts();
               } else if (viewMode === 'settings') {
-                // If in settings, go to table view
+                // If in settings, go to table view and ensure posts are loaded
                 setViewMode('table');
                 window.history.pushState({ viewMode: 'table' }, '', '#table');
+                await reloadPosts();
               } else if (viewMode === 'table' && dirHandle) {
                 // If in table view, refresh posts
                 setIsLoadingPosts(true);
@@ -1226,9 +1230,10 @@ function App() {
         <div className="flex-1 overflow-auto">
           <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
             <Settings 
-              onClose={() => {
+              onClose={async () => {
                 setViewMode('table');
                 window.history.pushState({ viewMode: 'table' }, '', '#table');
+                await reloadPosts();
               }} 
               onLogout={handleLogout}
               directoryName={dirHandle?.name}

@@ -1,9 +1,11 @@
-// IndexedDB helper for persisting FileSystem handles and app state
+// IndexedDB helper for persisting FileSystem handles, app state and cached posts
+import type { MarkdownFile } from '@/types';
 
 const DB_NAME = 'mdplusplus-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // bump for posts cache store
 const HANDLE_STORE = 'directory-handles';
 const STATE_STORE = 'app-state';
+const POSTS_STORE = 'posts-cache';
 
 interface AppState {
   selectedFilePath: string | null;
@@ -28,6 +30,9 @@ function openDB(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(STATE_STORE)) {
         db.createObjectStore(STATE_STORE);
+      }
+      if (!db.objectStoreNames.contains(POSTS_STORE)) {
+        db.createObjectStore(POSTS_STORE);
       }
     };
   });
@@ -185,10 +190,11 @@ export async function loadAppState(): Promise<AppState | null> {
 export async function clearPersistedData(): Promise<void> {
   try {
     const db = await openDB();
-    const transaction = db.transaction([HANDLE_STORE, STATE_STORE], 'readwrite');
+    const transaction = db.transaction([HANDLE_STORE, STATE_STORE, POSTS_STORE], 'readwrite');
     
     transaction.objectStore(HANDLE_STORE).clear();
     transaction.objectStore(STATE_STORE).clear();
+    transaction.objectStore(POSTS_STORE).clear();
     
     return new Promise((resolve, reject) => {
       transaction.oncomplete = () => {
@@ -202,6 +208,88 @@ export async function clearPersistedData(): Promise<void> {
     });
   } catch (error) {
     console.error('Failed to clear persisted data:', error);
+  }
+}
+
+// Normalize MarkdownFile for caching (convert Date to ISO string)
+function normalizePostForCache(post: MarkdownFile): MarkdownFile {
+  const normalizedFrontmatter: MarkdownFile['frontmatter'] = { ...post.frontmatter };
+  const date = normalizedFrontmatter.date;
+  if (date instanceof Date) {
+    normalizedFrontmatter.date = date.toISOString();
+  }
+  return {
+    ...post,
+    frontmatter: normalizedFrontmatter,
+  };
+}
+
+// Save posts list to cache for a project (keyed by directory name)
+export async function savePostsCache(projectKey: string, posts: MarkdownFile[]): Promise<void> {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction([POSTS_STORE], 'readwrite');
+    const store = transaction.objectStore(POSTS_STORE);
+    const normalized = posts.map(normalizePostForCache);
+    store.put({ posts: normalized, updatedAt: Date.now() }, projectKey);
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      transaction.onerror = () => {
+        db.close();
+        reject(transaction.error);
+      };
+    });
+  } catch (error) {
+    // Silently ignore cache errors
+  }
+}
+
+// Load cached posts for a project (keyed by directory name)
+export async function loadPostsCache(projectKey: string): Promise<MarkdownFile[] | null> {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction([POSTS_STORE], 'readonly');
+    const store = transaction.objectStore(POSTS_STORE);
+    return await new Promise<MarkdownFile[] | null>((resolve, reject) => {
+      const request = store.get(projectKey);
+      request.onsuccess = () => {
+        db.close();
+        const result = request.result as { posts: MarkdownFile[]; updatedAt: number } | undefined;
+        if (!result) return resolve(null);
+        resolve(result.posts);
+      };
+      request.onerror = () => {
+        db.close();
+        reject(request.error);
+      };
+    });
+  } catch {
+    return null;
+  }
+}
+
+// Clear cached posts for a project
+export async function clearPostsCache(projectKey: string): Promise<void> {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction([POSTS_STORE], 'readwrite');
+    const store = transaction.objectStore(POSTS_STORE);
+    store.delete(projectKey);
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      transaction.onerror = () => {
+        db.close();
+        reject(transaction.error);
+      };
+    });
+  } catch (error) {
+    // Silently ignore
   }
 }
 
