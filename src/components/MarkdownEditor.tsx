@@ -27,7 +27,10 @@ const turndownService = new TurndownService({
 });
 
 export function MarkdownEditor({ content, onChange, title, onTitleChange, autoFocus = false }: MarkdownEditorProps) {
-  const [htmlContent, setHtmlContent] = useState('');
+  const [htmlContent, setHtmlContent] = useState(() => {
+    // Initialize with converted HTML content if content exists
+    return content ? (marked(content) as string) : '';
+  });
   const [editorMode, setEditorMode] = useState<EditorMode>('tiptap');
   const [rawMarkdown, setRawMarkdown] = useState(content);
   const isUpdatingFromEditor = useRef(false);
