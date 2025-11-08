@@ -7,6 +7,9 @@ export default {
   ],
   theme: {
     extend: {
+      screens: {
+        'xs': '475px',
+      },
       fontFamily: {
         sans: ['Geist', 'system-ui', 'sans-serif'],
       },

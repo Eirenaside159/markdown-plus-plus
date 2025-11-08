@@ -265,17 +265,17 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
   }
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-3 sm:space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 sm:justify-between">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           {onToggleSidebar && (
             <>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={onToggleSidebar}
-                className="h-9 w-9"
+                className="h-8 w-8 sm:h-9 sm:w-9 shrink-0 touch-target"
                 title={isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
               >
                 {isSidebarVisible ? (
@@ -284,11 +284,11 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
                   <PanelLeft className="h-4 w-4" />
                 )}
               </Button>
-              <div className="h-4 w-px bg-border" />
+              <div className="h-4 w-px bg-border hidden sm:block" />
             </>
           )}
-          <h2 className="text-lg font-semibold">{title}</h2>
-          <span className="text-sm text-muted-foreground">
+          <h2 className="text-base sm:text-lg font-semibold">{title}</h2>
+          <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
             ({table.getFilteredRowModel().rows.length} {table.getFilteredRowModel().rows.length === 1 ? 'post' : 'posts'})
           </span>
           {onClearFilter && title !== 'All Posts' && (
@@ -296,7 +296,7 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
               variant="ghost"
               size="sm"
               onClick={onClearFilter}
-              className="h-8 text-primary hover:text-primary hover:underline"
+              className="h-7 sm:h-8 text-xs sm:text-sm text-primary hover:text-primary hover:underline touch-target"
             >
               Clear filter
             </Button>
@@ -305,12 +305,12 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         <Input
           placeholder="Search all columns..."
           value={globalFilter ?? ''}
           onChange={(event) => setGlobalFilter(event.target.value)}
-          className="max-w-xs"
+          className="w-full sm:max-w-xs text-sm"
         />
         <ColumnSelector 
           key={visibilityKey}
@@ -320,14 +320,14 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
       </div>
 
       {/* Table */}
-      <div className="rounded-md border">
-        <Table>
+      <div className="rounded-md border overflow-x-auto">
+        <Table className="min-w-[800px]">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} className="text-xs sm:text-sm">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -348,7 +348,7 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
                   data-state={row.getIsSelected() && 'selected'}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="text-xs sm:text-sm">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -363,7 +363,7 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs sm:text-sm text-muted-foreground">
                     {globalFilter ? 'No posts match your search.' : 'No posts found.'}
                   </div>
                 </TableCell>
@@ -374,9 +374,9 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between py-4">
-        <div className="flex items-center gap-2">
-          <p className="text-sm text-muted-foreground">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 py-3 sm:py-4">
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{" "}
             {Math.min(
               (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
@@ -385,15 +385,15 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
             of {table.getFilteredRowModel().rows.length}
           </p>
         </div>
-        <div className="flex items-center gap-6">
+        <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6 w-full sm:w-auto">
           <div className="flex items-center gap-2">
-            <p className="text-sm font-medium">Rows per page</p>
+            <p className="text-xs sm:text-sm font-medium whitespace-nowrap">Rows per page</p>
             <select
               value={table.getState().pagination.pageSize}
               onChange={(e) => {
                 table.setPageSize(Number(e.target.value));
               }}
-              className="h-8 w-[70px] rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 appearance-none bg-[length:16px_16px] bg-[position:right_0.25rem_center] bg-no-repeat px-2 pr-6"
+              className="h-8 w-16 sm:w-[70px] rounded-md border border-input bg-background text-xs sm:text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 appearance-none bg-[length:16px_16px] bg-[position:right_0.25rem_center] bg-no-repeat px-2 pr-6"
               style={{
                 backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`
               }}
@@ -405,10 +405,10 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
               ))}
             </select>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-center">
             <Button
               variant="outline"
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 touch-target"
               onClick={() => table.setPageIndex(0)}
               disabled={!table.getCanPreviousPage()}
             >
@@ -421,7 +421,7 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="h-4 w-4"
+                className="h-3.5 w-3.5 sm:h-4 sm:w-4"
               >
                 <polyline points="11 17 6 12 11 7" />
                 <polyline points="18 17 13 12 18 7" />
@@ -429,7 +429,7 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
             </Button>
             <Button
               variant="outline"
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 touch-target"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
@@ -442,7 +442,7 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="h-4 w-4"
+                className="h-3.5 w-3.5 sm:h-4 sm:w-4"
               >
                 <polyline points="15 18 9 12 15 6" />
               </svg>
@@ -478,7 +478,7 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
               return pages.map((page, index) => {
                 if (page === '...') {
                   return (
-                    <span key={`ellipsis-${index}`} className="px-2 text-sm text-muted-foreground">
+                    <span key={`ellipsis-${index}`} className="px-1 sm:px-2 text-xs sm:text-sm text-muted-foreground">
                       ...
                     </span>
                   );
@@ -491,7 +491,7 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
                   <Button
                     key={pageNum}
                     variant={isActive ? 'default' : 'outline'}
-                    className="h-8 w-8 p-0"
+                    className="h-8 w-8 p-0 text-xs sm:text-sm touch-target"
                     onClick={() => table.setPageIndex(pageNum)}
                   >
                     {pageNum + 1}
@@ -502,7 +502,7 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
             
             <Button
               variant="outline"
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 touch-target"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
@@ -515,14 +515,14 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="h-4 w-4"
+                className="h-3.5 w-3.5 sm:h-4 sm:w-4"
               >
                 <polyline points="9 18 15 12 9 6" />
               </svg>
             </Button>
             <Button
               variant="outline"
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 touch-target"
               onClick={() => table.setPageIndex(table.getPageCount() - 1)}
               disabled={!table.getCanNextPage()}
             >
@@ -535,7 +535,7 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="h-4 w-4"
+                className="h-3.5 w-3.5 sm:h-4 sm:w-4"
               >
                 <polyline points="13 17 18 12 13 7" />
                 <polyline points="6 17 11 12 6 7" />

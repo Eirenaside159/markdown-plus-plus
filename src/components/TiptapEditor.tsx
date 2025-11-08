@@ -225,10 +225,10 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
       {/* Toolbar */}
       <div className="toolbar sticky top-0 z-10 bg-background">
         {/* Tools */}
-        <div className="w-full max-w-[680px] mx-auto px-4 py-4 border-b">
-          <div className="flex items-center justify-center gap-2">
+        <div className="w-full max-w-[680px] mx-auto px-3 sm:px-4 py-3 sm:py-4 border-b">
+          <div className="flex items-center justify-center gap-1 sm:gap-2 overflow-x-auto scrollbar-hide">
           {/* Essential Tools */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1">
           {/* Bold */}
           <button
             onClick={() => editor.chain().focus().toggleBold().run()}
@@ -471,20 +471,20 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
 
       {/* Title Input (if provided) */}
       {title !== undefined && onTitleChange && (
-        <div className="pt-6 -mb-2">
+        <div className="pt-4 sm:pt-6 -mb-2 px-4 sm:px-6">
           <textarea
             ref={titleTextareaRef}
             value={title === 'Untitled Post' ? '' : title}
             onChange={(e) => onTitleChange(e.target.value || 'Untitled Post')}
             placeholder="Untitled"
             rows={1}
-            className="title-textarea text-4xl font-semibold border-none outline-none bg-transparent placeholder:text-muted-foreground/30 focus:ring-0 p-0 leading-tight text-left resize-none overflow-hidden"
+            className="title-textarea w-full max-w-[680px] mx-auto text-3xl sm:text-4xl font-semibold border-none outline-none bg-transparent placeholder:text-muted-foreground/30 focus:ring-0 p-0 leading-tight text-left resize-none overflow-hidden"
           />
         </div>
       )}
 
       {/* Editor Content */}
-      <div className="flex-1 overflow-auto editor-content-wrapper">
+      <div className="flex-1 overflow-auto editor-content-wrapper px-4 sm:px-6">
         <EditorContent editor={editor} />
       </div>
 
@@ -492,7 +492,7 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
       <style>{`
         /* Toolbar Styles */
         .toolbar-btn {
-          padding: 0.5rem 0.625rem;
+          padding: 0.5rem 0.5rem;
           border-radius: 0.375rem;
           transition: all 150ms ease;
           display: flex;
@@ -502,6 +502,16 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
           border: none;
           cursor: pointer;
           color: hsl(var(--foreground));
+          min-width: 38px;
+          min-height: 38px;
+        }
+        
+        @media (min-width: 640px) {
+          .toolbar-btn {
+            padding: 0.5rem 0.625rem;
+            min-width: 44px;
+            min-height: 44px;
+          }
         }
 
         .toolbar-btn:hover:not(:disabled) {
@@ -524,6 +534,7 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
         .ProseMirror {
           outline: none;
           max-width: 680px;
+          width: 100%;
           margin: 0 auto;
           -webkit-font-smoothing: antialiased;
           text-rendering: optimizeLegibility;
@@ -533,8 +544,6 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
 
         /* Title Textarea */
         .title-textarea {
-          width: 680px;
-          margin: 0 auto;
           display: block;
         }
 
@@ -549,38 +558,62 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
 
         /* Headings */
         .ProseMirror h1 {
-          font-size: 2.125rem; /* 34px */
+          font-size: 1.75rem; /* 28px mobile */
           font-weight: 700;
           line-height: 1.2;
           margin-top: 0.95em;
           margin-bottom: 0.5em;
           letter-spacing: -0.025em;
         }
+        
+        @media (min-width: 640px) {
+          .ProseMirror h1 {
+            font-size: 2.125rem; /* 34px desktop */
+          }
+        }
 
         .ProseMirror h2 {
-          font-size: 1.5rem; /* 24px */
+          font-size: 1.25rem; /* 20px mobile */
           font-weight: 600;
           line-height: 1.3;
           margin-top: 0.95em;
           margin-bottom: 0.5em;
           letter-spacing: -0.0125em;
         }
+        
+        @media (min-width: 640px) {
+          .ProseMirror h2 {
+            font-size: 1.5rem; /* 24px desktop */
+          }
+        }
 
         .ProseMirror h3 {
-          font-size: 1.25rem; /* 20px */
+          font-size: 1.125rem; /* 18px mobile */
           font-weight: 600;
           line-height: 1.4;
           margin-top: 0.95em;
           margin-bottom: 0.5em;
+        }
+        
+        @media (min-width: 640px) {
+          .ProseMirror h3 {
+            font-size: 1.25rem; /* 20px desktop */
+          }
         }
 
         /* Paragraphs */
         .ProseMirror p {
           margin-bottom: 0.95em;
           line-height: 1.68;
-          font-size: 1.125rem; /* 18px */
+          font-size: 1rem; /* 16px mobile */
           letter-spacing: normal;
           color: hsl(var(--foreground));
+        }
+        
+        @media (min-width: 640px) {
+          .ProseMirror p {
+            font-size: 1.125rem; /* 18px desktop */
+          }
         }
 
         /* Text Formatting */
@@ -616,12 +649,20 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
           background: hsl(var(--muted));
           border: 1px solid hsl(var(--border));
           border-radius: 0.5rem;
-          padding: 1rem;
-          margin: 1.5rem 0;
+          padding: 0.75rem;
+          margin: 1rem 0;
           overflow-x: auto;
           font-family: 'JetBrains Mono', 'Fira Code', 'IBM Plex Mono', 'SF Mono', 'Roboto Mono', monospace;
-          font-size: 0.9375rem; /* 15px */
+          font-size: 0.875rem; /* 14px mobile */
           line-height: 1.6;
+        }
+        
+        @media (min-width: 640px) {
+          .ProseMirror pre {
+            padding: 1rem;
+            margin: 1.5rem 0;
+            font-size: 0.9375rem; /* 15px desktop */
+          }
         }
 
         .ProseMirror pre code {
@@ -634,19 +675,35 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
 
         /* Blockquote */
         .ProseMirror blockquote {
-          border-left: 4px solid hsl(var(--primary));
-          padding-left: 1.5rem;
-          margin: 1.5rem 0;
+          border-left: 3px solid hsl(var(--primary));
+          padding-left: 1rem;
+          margin: 1rem 0;
           font-style: italic;
           color: hsl(var(--muted-foreground));
-          font-size: 1.125rem;
+          font-size: 1rem;
+        }
+        
+        @media (min-width: 640px) {
+          .ProseMirror blockquote {
+            border-left-width: 4px;
+            padding-left: 1.5rem;
+            margin: 1.5rem 0;
+            font-size: 1.125rem;
+          }
         }
 
         /* Lists */
         .ProseMirror ul,
         .ProseMirror ol {
-          padding-left: 1.75rem;
+          padding-left: 1.25rem;
           margin: 1rem 0;
+        }
+        
+        @media (min-width: 640px) {
+          .ProseMirror ul,
+          .ProseMirror ol {
+            padding-left: 1.75rem;
+          }
         }
 
         .ProseMirror ul {
@@ -717,22 +774,41 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
         /* Tables */
         .ProseMirror table {
           border-collapse: collapse;
-          table-layout: fixed;
+          table-layout: auto;
           width: 100%;
-          margin: 1.5rem 0;
+          margin: 1rem 0;
           overflow: hidden;
           border: 1px solid hsl(var(--border));
           border-radius: 0.5rem;
+          display: block;
+          overflow-x: auto;
+        }
+        
+        @media (min-width: 640px) {
+          .ProseMirror table {
+            margin: 1.5rem 0;
+            table-layout: fixed;
+            display: table;
+          }
         }
 
         .ProseMirror table td,
         .ProseMirror table th {
           min-width: 1em;
           border: 1px solid hsl(var(--border));
-          padding: 0.75rem 1rem;
+          padding: 0.5rem 0.75rem;
           vertical-align: top;
           box-sizing: border-box;
           position: relative;
+          font-size: 0.875rem;
+        }
+        
+        @media (min-width: 640px) {
+          .ProseMirror table td,
+          .ProseMirror table th {
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+          }
         }
 
         .ProseMirror table th {

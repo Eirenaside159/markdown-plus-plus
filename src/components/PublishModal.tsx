@@ -160,7 +160,7 @@ export function PublishModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4"
       onClick={isPublishing || publishSuccess ? undefined : handleClose}
     >
       <div 
@@ -168,54 +168,54 @@ export function PublishModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <div className="flex items-center gap-3">
-            <div className={`flex items-center justify-center w-10 h-10 rounded-md ${
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <div className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-md shrink-0 ${
               publishSuccess 
                 ? publishResult?.pushed 
                   ? 'bg-success/10 text-success' 
                   : 'bg-info/10 text-info'
                 : 'bg-primary/10 text-primary'
             }`}>
-              {publishSuccess ? <CheckCircle className="h-5 w-5" /> : <Upload className="h-5 w-5" />}
+              {publishSuccess ? <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" /> : <Upload className="h-4 w-4 sm:h-5 sm:w-5" />}
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-lg font-semibold">
+              <h2 className="text-base sm:text-lg font-semibold">
                 {publishSuccess 
                   ? publishResult?.pushed 
                     ? 'Published Successfully' 
                     : 'Commit Created'
                   : 'Publish Changes'}
               </h2>
-              <p className="text-sm text-muted-foreground truncate">{fileName}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">{fileName}</p>
             </div>
           </div>
           <button
             onClick={handleClose}
             disabled={isPublishing}
-            className="h-9 w-9 rounded-md hover:bg-accent transition-colors inline-flex items-center justify-center disabled:opacity-50"
+            className="h-8 w-8 sm:h-9 sm:w-9 rounded-md hover:bg-accent transition-colors inline-flex items-center justify-center disabled:opacity-50 shrink-0 touch-target"
             aria-label="Close"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-4 space-y-4">
+        <div className="flex-1 overflow-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
             {/* Success State */}
             {publishSuccess ? (
               <>
                 {/* Success Message */}
-                <div className={`rounded-lg border p-4 ${
+                <div className={`rounded-lg border p-3 sm:p-4 ${
                   publishResult?.pushed 
                     ? 'border-success/50 bg-success/10' 
                     : 'border-info/50 bg-info/10'
                 }`}>
-                  <div className="flex gap-3">
-                    <CheckCircle className={`h-5 w-5 shrink-0 mt-0.5 ${
+                  <div className="flex gap-2 sm:gap-3">
+                    <CheckCircle className={`h-4 w-4 sm:h-5 sm:w-5 shrink-0 mt-0.5 ${
                       publishResult?.pushed ? 'text-success' : 'text-info'
                     }`} />
-                    <div className="space-y-2 text-sm flex-1">
+                    <div className="space-y-2 text-xs sm:text-sm flex-1">
                       {publishResult?.pushed ? (
                         <>
                           <p className="font-medium text-success">
@@ -332,9 +332,9 @@ export function PublishModal({
             {/* Git Status */}
             {gitStatus && (
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-2 text-xs sm:text-sm">
                   <div className="flex items-center gap-2">
-                    <GitBranch className="h-4 w-4 text-muted-foreground" />
+                    <GitBranch className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
                     <span className="text-muted-foreground">Branch:</span>
                     <span className="font-mono font-medium">
                       {gitStatus.currentBranch || 'main'}
@@ -345,7 +345,7 @@ export function PublishModal({
                       console.log('Current Git Status:', gitStatus);
                       console.log('Press F12 and check Console tab for detailed logs');
                     }}
-                    className="text-xs text-muted-foreground hover:text-foreground underline px-3 py-1.5"
+                    className="text-xs text-muted-foreground hover:text-foreground underline px-2 py-1 sm:px-3 sm:py-1.5 self-start xs:self-auto touch-target"
                     title="Show debug info in console"
                   >
                     Debug Info
@@ -396,7 +396,7 @@ export function PublishModal({
 
             {/* Commit Message */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label className="text-xs sm:text-sm font-medium">
                 Commit Message <span className="text-destructive">*</span>
               </label>
               <textarea
@@ -404,12 +404,12 @@ export function PublishModal({
                 onChange={(e) => setCommitMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
                 disabled={isPublishing}
-                className="w-full min-h-[120px] px-3 py-2 rounded-md border border-input bg-background text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                className="w-full min-h-[100px] sm:min-h-[120px] px-3 py-2 rounded-md border border-input bg-background text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
                 placeholder="Enter commit message..."
                 autoFocus
               />
               <p className="text-xs text-muted-foreground">
-                Describe your changes. Press <kbd className="px-2 py-1 rounded-md bg-muted border text-xs">⌘/Ctrl+Enter</kbd> to publish.
+                Describe your changes. Press <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md bg-muted border text-[10px] sm:text-xs">⌘/Ctrl+Enter</kbd> to publish.
               </p>
             </div>
 
@@ -455,7 +455,7 @@ export function PublishModal({
           </div>
 
         {/* Footer */}
-        <div className="flex flex-col gap-3 p-4 border-t bg-muted/30">
+        <div className="flex flex-col gap-2 sm:gap-3 p-3 sm:p-4 border-t bg-muted/30">
             {publishSuccess ? (
               /* Success Footer */
               <div className="flex items-center justify-end gap-3">
@@ -506,21 +506,21 @@ export function PublishModal({
             )}
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3">
               <button
                 onClick={onClose}
                 disabled={isPublishing}
-                className="px-4 py-2 rounded-md border border-input bg-background hover:bg-accent transition-colors text-sm font-medium disabled:opacity-50"
+                className="px-4 py-2 rounded-md border border-input bg-background hover:bg-accent transition-colors text-sm font-medium disabled:opacity-50 touch-target"
               >
                 Cancel
               </button>
               
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2 sm:gap-3">
                 {terminalCommand && gitStatus?.isGitRepo && (
                   <button
                     onClick={handleCopyAndShowInstructions}
                     disabled={isPublishing || !commitMessage.trim()}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-md border-2 border-primary bg-background hover:bg-primary/10 transition-colors text-sm font-medium disabled:opacity-50 disabled:pointer-events-none text-primary"
+                    className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-md border-2 border-primary bg-background hover:bg-primary/10 transition-colors text-sm font-medium disabled:opacity-50 disabled:pointer-events-none text-primary touch-target"
                     title="Open iTerm2 with command"
                   >
                     <Terminal className="h-4 w-4" />
@@ -532,7 +532,7 @@ export function PublishModal({
                 <button
                   onClick={handlePublish}
                   disabled={!commitMessage.trim() || isPublishing || !gitStatus?.isGitRepo}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed touch-target"
                   title={
                     !gitStatus?.isGitRepo 
                       ? 'Git repository not found' 
@@ -544,7 +544,8 @@ export function PublishModal({
                   {isPublishing ? (
                     <>
                       <div className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                      Publishing...
+                      <span className="hidden xs:inline">Publishing...</span>
+                      <span className="xs:hidden">...</span>
                     </>
                   ) : (
                     <>

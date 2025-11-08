@@ -1772,23 +1772,23 @@ function App() {
     const isSupported = isFileSystemAccessSupported();
     
     return (
-      <div className="flex h-screen items-center justify-center bg-background p-3 sm:p-4">
+      <div className="flex h-screen items-center justify-center bg-background p-4 sm:p-6">
         <div className="w-full max-w-2xl space-y-6 sm:space-y-8">
           {/* Header */}
               <div className="text-center space-y-2 sm:space-y-3">
                 <button 
                   onClick={() => window.location.reload()}
-                  className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 mb-2 cursor-pointer hover:scale-105 transition-transform"
+                  className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 mb-2 cursor-pointer hover:scale-105 transition-transform touch-target"
                   title="Markdown++"
                 >
                   <img src="/logo-white.png" alt="Markdown++" className="w-full h-full object-contain dark:hidden" />
                   <img src="/logo.png" alt="Markdown++" className="w-full h-full object-contain hidden dark:block" />
                 </button>
-                <h1 className="text-3xl sm:text-4xl font-bold">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">
                   {displayedText}
                   <span className="font-thin animate-cursor-blink">|</span>
                 </h1>
-                <p className="text-muted-foreground text-base sm:text-lg px-4">
+                <p className="text-muted-foreground text-sm sm:text-base md:text-lg px-4">
                   Select a folder to start editing your markdown files
                 </p>
               </div>
@@ -1796,17 +1796,17 @@ function App() {
           {/* Browser Compatibility Warning */}
           {!isSupported && (
             <div className="mx-auto max-w-xl">
-              <div className="rounded-lg border border-warning/50 bg-warning/10 p-4">
-                <div className="flex gap-3">
-                  <AlertCircle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
-                  <div className="space-y-1 text-sm">
+              <div className="rounded-lg border border-warning/50 bg-warning/10 p-3 sm:p-4">
+                <div className="flex gap-2 sm:gap-3">
+                  <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-warning shrink-0 mt-0.5" />
+                  <div className="space-y-1 text-xs sm:text-sm">
                     <p className="font-medium text-warning">Device Not Supported</p>
-                    <p className="text-muted-foreground">
+                    <p className="text-muted-foreground leading-relaxed">
                       Local folder access is not available on iOS or iPadOS devices. 
                       Please use a <strong>desktop computer</strong> with <strong>Chrome</strong>, <strong>Edge</strong>, or <strong>Safari</strong> to access your local files.
                     </p>
                     <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
-                      <Lightbulb className="h-3.5 w-3.5 shrink-0" />
+                      <Lightbulb className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                       <span><strong>Tip:</strong> Works on Android with Chrome/Edge</span>
                     </p>
                   </div>
@@ -1820,17 +1820,17 @@ function App() {
             <button
               onClick={handleSelectDirectory}
               disabled={!isSupported}
-              className="inline-flex items-center gap-3 rounded-md bg-primary px-6 py-2.5 text-base font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg hover:shadow-xl touch-target disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary disabled:hover:shadow-lg"
+              className="inline-flex items-center justify-center gap-2 sm:gap-3 rounded-md bg-primary px-6 py-3 sm:py-2.5 text-sm sm:text-base font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg hover:shadow-xl touch-target disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary disabled:hover:shadow-lg"
             >
-              <FolderOpen className="h-5 w-5" />
+              <FolderOpen className="h-4 w-4 sm:h-5 sm:w-5" />
               Select Folder
             </button>
             
             <button
               onClick={handleStartDemo}
-              className="inline-flex items-center gap-3 rounded-md bg-white dark:bg-white/10 border-2 border-primary/20 px-6 py-2.5 text-base font-medium text-foreground hover:bg-accent hover:border-primary/40 transition-colors shadow-lg hover:shadow-xl touch-target"
+              className="inline-flex items-center justify-center gap-2 sm:gap-3 rounded-md bg-white dark:bg-white/10 border-2 border-primary/20 px-6 py-3 sm:py-2.5 text-sm sm:text-base font-medium text-foreground hover:bg-accent hover:border-primary/40 transition-colors shadow-lg hover:shadow-xl touch-target"
             >
-              <Eye className="h-5 w-5 text-primary" />
+              <Eye className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               Try Demo
             </button>
           </div>
@@ -1838,14 +1838,14 @@ function App() {
           {/* Recent Folders */}
           {recentFolders.length > 0 && (
             <div className="space-y-3 sm:space-y-4">
-              <div className="flex items-center justify-between px-2">
-                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                  <Clock className="h-4 w-4" />
+              <div className="flex items-center justify-between px-1 sm:px-2">
+                <div className="flex items-center gap-2 text-xs sm:text-sm font-medium text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   Recent Folders
                 </div>
                 <button
                   onClick={handleClearRecent}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5"
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 sm:px-3 py-1.5 touch-target"
                 >
                   Clear
                 </button>
@@ -1857,11 +1857,11 @@ function App() {
                     key={folder.name + folder.timestamp}
                     onClick={handleSelectDirectory}
                     disabled={!isSupported}
-                    className="flex items-center justify-between p-4 rounded-md border border-border bg-card hover:bg-accent active:bg-accent/80 transition-colors text-left group touch-target disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-card"
+                    className="flex items-center justify-between p-3 sm:p-4 rounded-md border border-border bg-card hover:bg-accent active:bg-accent/80 transition-colors text-left group touch-target disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-card"
                   >
                     <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                       <div className="shrink-0">
-                        <FolderOpen className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                        <FolderOpen className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate text-sm sm:text-base">{folder.name}</div>
@@ -1877,50 +1877,53 @@ function App() {
           )}
 
           {/* Footer with GitHub Link */}
-          <div className="pt-6 border-t border-border space-y-4">
+          <div className="pt-4 sm:pt-6 border-t border-border space-y-3 sm:space-y-4">
             {/* Privacy Statement */}
-            <div className="text-center px-4">
-              <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
+            <div className="text-center px-3 sm:px-4">
+              <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl mx-auto leading-relaxed">
                 Markdown++ works fully in your browser. No servers, no tracking, no data stored anywhere.
-                <br />
+                <br className="hidden sm:block" />
+                <span className="sm:hidden"> </span>
                 We cannot see what you write or what you do here. Your privacy stays with you.
               </p>
             </div>
             
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col items-center justify-center gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4">
                 <a
                   href="https://github.com/emir/markdown-plus-plus"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 hover:text-foreground transition-colors px-4 py-2 rounded-md hover:bg-accent"
+                  className="inline-flex items-center gap-1.5 sm:gap-2 hover:text-foreground transition-colors px-3 sm:px-4 py-2 rounded-md hover:bg-accent touch-target"
                 >
-                  <Github className="h-4 w-4" />
-                  <span>View on GitHub</span>
+                  <Github className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden xs:inline">View on GitHub</span>
+                  <span className="xs:hidden">GitHub</span>
                 </a>
-                <span className="text-muted-foreground/50">•</span>
+                <span className="text-muted-foreground/50 hidden xs:inline">•</span>
                 <a
                   href="https://github.com/emir/markdown-plus-plus?tab=readme-ov-file#readme"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 hover:text-foreground transition-colors px-4 py-2 rounded-md hover:bg-accent"
+                  className="inline-flex items-center gap-1.5 sm:gap-2 hover:text-foreground transition-colors px-3 sm:px-4 py-2 rounded-md hover:bg-accent touch-target"
                 >
-                  <BookOpen className="h-4 w-4" />
-                  <span>Documentation</span>
+                  <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden xs:inline">Documentation</span>
+                  <span className="xs:hidden">Docs</span>
                 </a>
-                <span className="text-muted-foreground/50">•</span>
+                <span className="text-muted-foreground/50 hidden xs:inline">•</span>
                 <a
                   href="https://buymeacoffee.com/emirkarsiyakali"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 hover:text-foreground transition-colors px-4 py-2 rounded-md hover:bg-accent"
+                  className="inline-flex items-center gap-1.5 sm:gap-2 hover:text-foreground transition-colors px-3 sm:px-4 py-2 rounded-md hover:bg-accent touch-target"
                 >
                   <span>☕</span>
-                  <span>Support Me</span>
+                  <span className="hidden xs:inline">Support Me</span>
+                  <span className="xs:hidden">Support</span>
                 </a>
               </div>
-              <span className="hidden sm:inline text-muted-foreground/50">•</span>
-              <span>v0.7.0-beta</span>
+              <span className="text-xs">v0.7.0-beta</span>
             </div>
           </div>
 
@@ -1939,9 +1942,9 @@ function App() {
       <div className="h-screen flex flex-col bg-background">
       {/* Header */}
       <div className="border-b">
-        <div className="relative flex items-center px-2 sm:px-4 gap-2 sm:gap-4 h-14">
+        <div className="relative flex items-center px-3 sm:px-4 gap-2 sm:gap-4 h-12 sm:h-14">
           {/* Logo and Title */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               onClick={async () => {
                 if (hasChanges && !window.confirm('You have unsaved changes. Discard them?')) {
@@ -1967,43 +1970,45 @@ function App() {
                   toast.success('Posts refreshed', { duration: 2000 });
                 }
               }}
-              className="flex items-center gap-1.5 text-base sm:text-lg font-semibold opacity-40 hover:opacity-100 transition-all duration-500 ease-in-out group cursor-pointer relative z-10"
+              className="flex items-center gap-1.5 text-sm sm:text-base md:text-lg font-semibold opacity-40 hover:opacity-100 transition-all duration-500 ease-in-out group cursor-pointer relative z-10 touch-target"
             >
-              <img src="/logo-white.png" alt="Markdown++" className="w-6 h-6 sm:w-7 sm:h-7 object-contain group-hover:scale-105 transition-transform duration-500 dark:hidden" />
-              <img src="/logo.png" alt="Markdown++" className="w-6 h-6 sm:w-7 sm:h-7 object-contain group-hover:scale-105 transition-transform duration-500 hidden dark:block" />
-              <span>Markdown++</span>
+              <img src="/logo-white.png" alt="Markdown++" className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 object-contain group-hover:scale-105 transition-transform duration-500 dark:hidden" />
+              <img src="/logo.png" alt="Markdown++" className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 object-contain group-hover:scale-105 transition-transform duration-500 hidden dark:block" />
+              <span className="hidden xs:inline">Markdown++</span>
+              <span className="xs:hidden">MD++</span>
             </button>
             
             {isDemoMode && (
               <button
                 onClick={handleExitDemo}
-                className="px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded-full hover:bg-primary/20 hover:border-primary/30 transition-colors cursor-pointer"
+                className="px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded-full hover:bg-primary/20 hover:border-primary/30 transition-colors cursor-pointer whitespace-nowrap"
                 title="Click to exit demo"
               >
-                Demo ✕
+                <span className="hidden xs:inline">Demo ✕</span>
+                <span className="xs:hidden">✕</span>
               </button>
             )}
           </div>
           
           {/* Unsaved Changes Indicator */}
           {viewMode === 'editor' && hasChanges && (
-            <span className="h-2 w-2 rounded-full bg-yellow-500 animate-pulse -ml-1 relative z-10" title="Unsaved changes" />
+            <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-yellow-500 animate-pulse -ml-1 relative z-10" title="Unsaved changes" />
           )}
 
           {/* Title in Header (when scrolled in editor) - Absolutely positioned to center */}
           {showTitleInHeader && viewMode === 'editor' && currentFile && (
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto">
-              <div className="w-[720px] px-4">
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto max-w-[calc(100%-120px)] sm:max-w-[calc(100%-200px)]">
+              <div className="px-2 sm:px-4">
                 <div 
                   onClick={scrollToTop}
                   className={`font-bold text-center leading-tight truncate cursor-pointer hover:opacity-80 transition-opacity ${
                     (() => {
                       const title = currentFile.frontmatter.title === 'Untitled Post' ? 'Untitled' : (currentFile.frontmatter.title || 'Untitled');
                       const length = title.length;
-                      if (length > 60) return 'text-sm';
-                      if (length > 40) return 'text-base';
-                      if (length > 25) return 'text-lg';
-                      return 'text-xl';
+                      if (length > 60) return 'text-xs sm:text-sm';
+                      if (length > 40) return 'text-sm sm:text-base';
+                      if (length > 25) return 'text-sm sm:text-lg';
+                      return 'text-base sm:text-xl';
                     })()
                   } ${currentFile.frontmatter.title === 'Untitled Post' ? 'opacity-40' : ''}`}
                   title={currentFile.frontmatter.title === 'Untitled Post' ? 'Untitled' : (currentFile.frontmatter.title || 'Untitled')}
@@ -2016,13 +2021,13 @@ function App() {
           
           <div className="flex-1 min-w-0"></div>
           
-          <div className="ml-auto flex items-center gap-2 relative z-10">
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-2 relative z-10">
             {viewMode !== 'editor' && (
               <>
                 <button
                   onClick={handleCreatePost}
                   disabled={isCreatingPost}
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-1.5 sm:gap-2 rounded-md bg-primary px-3 sm:px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-target"
                 >
                   {isCreatingPost ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -2030,20 +2035,21 @@ function App() {
                     <Plus className="h-4 w-4" />
                   )}
                   <span className="hidden sm:inline">New Post</span>
+                  <span className="sm:hidden">New</span>
                 </button>
 
                 {/* Settings Dropdown */}
                 <div className="relative">
                   <button
                     onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
-                    className={`inline-flex items-center gap-1.5 rounded-md px-3 h-9 text-sm font-medium transition-colors shadow-sm ${
+                    className={`inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-2 sm:px-3 h-9 text-sm font-medium transition-colors shadow-sm touch-target ${
                       showSettingsDropdown
                         ? 'bg-accent text-accent-foreground'
                         : 'bg-white dark:bg-white/10 hover:bg-white/90 dark:hover:bg-white/20'
                     }`}
                   >
                     <SettingsIcon className="h-4 w-4" />
-                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showSettingsDropdown ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`h-3 w-3 sm:h-3.5 sm:w-3.5 transition-transform ${showSettingsDropdown ? 'rotate-180' : ''}`} />
                   </button>
 
                   {showSettingsDropdown && (
@@ -2160,7 +2166,7 @@ function App() {
                   <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="inline-flex items-center gap-1.5 rounded-l-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-1 sm:gap-1.5 rounded-l-md bg-primary px-2 sm:px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-target"
                     title="Save Changes"
                   >
                     {isSaving ? (
@@ -2168,16 +2174,16 @@ function App() {
                     ) : (
                       <Save className="h-4 w-4" />
                     )}
-                    <span>Save</span>
+                    <span className="hidden xs:inline">Save</span>
                   </button>
                   
                   {/* Dropdown Toggle */}
                   <button
                     onClick={() => setShowActionsDropdown(!showActionsDropdown)}
-                    className="inline-flex items-center justify-center rounded-r-md bg-primary px-3 py-2 text-primary-foreground hover:bg-primary/90 transition-colors border-l border-primary-foreground/20"
+                    className="inline-flex items-center justify-center rounded-r-md bg-primary px-2 sm:px-3 py-2 text-primary-foreground hover:bg-primary/90 transition-colors border-l border-primary-foreground/20 touch-target"
                     title="More actions"
                   >
-                    <ChevronDown className="h-4 w-4" />
+                    <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
 
                   {/* Dropdown Menu */}
@@ -2243,7 +2249,7 @@ function App() {
                 {/* Sidebar Icon Button */}
                 <button
                   onClick={() => setIsMobileSidebarOpen(true)}
-                  className="inline-flex items-center justify-center rounded-md bg-white dark:bg-white/10 h-9 w-9 hover:bg-white/90 dark:hover:bg-white/20 transition-colors shadow-sm"
+                  className="inline-flex items-center justify-center rounded-md bg-white dark:bg-white/10 h-9 w-9 hover:bg-white/90 dark:hover:bg-white/20 transition-colors shadow-sm touch-target"
                   title="Open Sidebar"
                 >
                   <PanelRightOpen className="h-4 w-4" />
