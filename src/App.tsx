@@ -1918,7 +1918,7 @@ function App() {
                 </a>
               </div>
               <span className="hidden sm:inline text-muted-foreground/50">•</span>
-              <span>v0.6.0-beta</span>
+              <span>v0.7.0-beta</span>
             </div>
           </div>
 

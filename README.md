@@ -3,7 +3,7 @@
 **A powerful, browser-based content management panel for static site generators. Edit, organize, and publish Markdown files with a beautiful UI. No backend, no database, no complexity.**
 
 [![Use in your browser](https://img.shields.io/badge/Use%20in%20your%20browser-Click%20Here-blue)](https://markdown-plus-plus.com/)
-![Version](https://img.shields.io/badge/version-0.6.0--beta-blue.svg)
+![Version](https://img.shields.io/badge/version-0.7.0--beta-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 ## 🎬 Demo
