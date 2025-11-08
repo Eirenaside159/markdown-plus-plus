@@ -55,6 +55,7 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
   const moreToolsRef = useRef<HTMLDivElement>(null);
   const headingMenuRef = useRef<HTMLDivElement>(null);
   const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const previousContentRef = useRef<string>(content);
 
   const editor = useEditor({
     extensions: [
@@ -123,21 +124,30 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
       },
     },
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      const newContent = editor.getHTML();
+      previousContentRef.current = newContent;
+      onChange(newContent);
     },
   });
 
   useEffect(() => {
-    if (editor && content !== editor.getHTML()) {
-      const { from, to } = editor.state.selection;
-      editor.commands.setContent(content);
-      try {
-        editor.commands.setTextSelection({
-          from: Math.min(from, editor.state.doc.content.size),
-          to: Math.min(to, editor.state.doc.content.size),
-        });
-      } catch {
-        // Ignore cursor position errors
+    // Only update editor content if the change came from outside (not from the editor itself)
+    // Compare with previousContentRef to avoid updating when the change originated from the editor
+    if (editor && content !== previousContentRef.current) {
+      const currentEditorContent = editor.getHTML();
+      // Only update if the content is actually different from what's in the editor
+      if (content !== currentEditorContent) {
+        const { from, to } = editor.state.selection;
+        editor.commands.setContent(content);
+        previousContentRef.current = content;
+        try {
+          editor.commands.setTextSelection({
+            from: Math.min(from, editor.state.doc.content.size),
+            to: Math.min(to, editor.state.doc.content.size),
+          });
+        } catch {
+          // Ignore cursor position errors
+        }
       }
     }
   }, [content, editor]);

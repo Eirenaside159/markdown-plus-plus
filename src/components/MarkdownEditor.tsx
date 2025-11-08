@@ -30,52 +30,53 @@ export function MarkdownEditor({ content, onChange, title, onTitleChange, autoFo
   const [htmlContent, setHtmlContent] = useState('');
   const [editorMode, setEditorMode] = useState<EditorMode>('tiptap');
   const [rawMarkdown, setRawMarkdown] = useState(content);
-  const isInitialMount = useRef(true);
+  const isUpdatingFromEditor = useRef(false);
   const lastContent = useRef(content);
   const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
   const rawTextareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Convert markdown to HTML on initial load
+  // Convert markdown to HTML on initial load or when content changes from outside
   useEffect(() => {
-    if (content) {
-      const html = marked(content) as string;
-      setHtmlContent(html);
-      setRawMarkdown(content);
-    } else {
-      setHtmlContent('');
-      setRawMarkdown('');
+    // Only update if the change came from outside (not from the editor itself)
+    if (!isUpdatingFromEditor.current && content !== lastContent.current) {
+      if (content) {
+        const html = marked(content) as string;
+        setHtmlContent(html);
+        setRawMarkdown(content);
+      } else {
+        setHtmlContent('');
+        setRawMarkdown('');
+      }
+      lastContent.current = content;
     }
-    lastContent.current = content;
   }, [content]);
 
   const handleChange = (html: string) => {
-    // Skip change on initial mount
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-
     // Convert HTML back to markdown
     const markdown = turndownService.turndown(html);
     
     // Only trigger onChange if content actually changed
     if (markdown !== lastContent.current) {
+      isUpdatingFromEditor.current = true;
       lastContent.current = markdown;
       setRawMarkdown(markdown);
       onChange(markdown);
+      // Reset flag after parent component updates
+      setTimeout(() => {
+        isUpdatingFromEditor.current = false;
+      }, 0);
     }
   };
 
   const handleRawChange = (markdown: string) => {
+    isUpdatingFromEditor.current = true;
     setRawMarkdown(markdown);
     lastContent.current = markdown;
     onChange(markdown);
+    setTimeout(() => {
+      isUpdatingFromEditor.current = false;
+    }, 0);
   };
-
-  // Reset initial mount flag when content prop changes (new file selected)
-  useEffect(() => {
-    isInitialMount.current = true;
-  }, [content]);
 
   // Auto-resize title textarea in raw mode
   useEffect(() => {
