@@ -795,7 +795,7 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
           margin-top: 0.75em;
         }
 
-        /* Syntax highlighting for code blocks */
+        /* Syntax highlighting for code blocks - Light Mode */
         .hljs-comment,
         .hljs-quote {
           color: #6a737d;
@@ -859,6 +859,73 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
         }
 
         .hljs-strong {
+          font-weight: bold;
+        }
+
+        /* Syntax highlighting for code blocks - Dark Mode */
+        .dark .hljs-comment,
+        .dark .hljs-quote {
+          color: #8b949e;
+          font-style: italic;
+        }
+
+        .dark .hljs-keyword,
+        .dark .hljs-selector-tag,
+        .dark .hljs-addition {
+          color: #ff7b72;
+        }
+
+        .dark .hljs-number,
+        .dark .hljs-string,
+        .dark .hljs-meta .hljs-meta-string,
+        .dark .hljs-literal,
+        .dark .hljs-doctag,
+        .dark .hljs-regexp {
+          color: #a5d6ff;
+        }
+
+        .dark .hljs-title,
+        .dark .hljs-section,
+        .dark .hljs-name,
+        .dark .hljs-selector-id,
+        .dark .hljs-selector-class {
+          color: #d2a8ff;
+        }
+
+        .dark .hljs-attribute,
+        .dark .hljs-attr,
+        .dark .hljs-variable,
+        .dark .hljs-template-variable,
+        .dark .hljs-class .hljs-title,
+        .dark .hljs-type {
+          color: #ffa657;
+        }
+
+        .dark .hljs-symbol,
+        .dark .hljs-bullet,
+        .dark .hljs-subst,
+        .dark .hljs-meta,
+        .dark .hljs-meta .hljs-keyword,
+        .dark .hljs-selector-attr,
+        .dark .hljs-selector-pseudo,
+        .dark .hljs-link {
+          color: #79c0ff;
+        }
+
+        .dark .hljs-built_in,
+        .dark .hljs-deletion {
+          color: #ffa198;
+        }
+
+        .dark .hljs-formula {
+          background-color: rgba(110, 118, 129, 0.4);
+        }
+
+        .dark .hljs-emphasis {
+          font-style: italic;
+        }
+
+        .dark .hljs-strong {
           font-weight: bold;
         }
       `}</style>
