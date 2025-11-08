@@ -9,6 +9,7 @@ import { Sheet, SheetContent } from '@/components/ui/Sheet';
 import { toast } from 'sonner';
 import { WelcomeWarningModal, shouldShowWarning } from '@/components/WelcomeWarningModal';
 import { FileBrowser } from '@/components/FileBrowser';
+import confetti from 'canvas-confetti';
 import { selectDirectory, readFile, writeFile, deleteFile, renameFile, moveFile, isFileSystemAccessSupported } from '@/lib/fileSystem';
 import { parseMarkdown, stringifyMarkdown, updateFrontmatter } from '@/lib/markdown';
 import { getRecentFolders, addRecentFolder, clearRecentFolders, formatTimestamp } from '@/lib/recentFolders';
@@ -657,6 +658,13 @@ function App() {
       setHasPendingPublish(true);
       
       toast.success('Changes saved');
+      
+      // Celebrate with confetti! 🎉
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
     } catch (error) {
       toast.error('Failed to save file');
     } finally {
