@@ -20,9 +20,139 @@ import { checkGitStatus, publishFile, generateCommitMessage, type GitStatus } fr
 import { hideFile, getHiddenFiles } from '@/lib/hiddenFiles';
 import { updateFaviconBadge } from '@/lib/faviconBadge';
 import type { FileTreeItem, MarkdownFile } from '@/types';
-import { FolderOpen, Save, Clock, FileCode, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen, Loader2, BookOpen, Sun, Moon, Monitor, LogOut } from 'lucide-react';
+import { FolderOpen, Save, Clock, FileCode, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen, Loader2, BookOpen, Sun, Moon, Monitor, LogOut, Eye } from 'lucide-react';
 
 type ViewMode = 'table' | 'editor' | 'settings';
+
+// Demo sample posts
+const DEMO_POSTS: MarkdownFile[] = [
+  {
+    name: 'sample.md',
+    path: 'sample.md',
+    content: `# Welcome to Markdown++
+
+This is a **sample markdown document** to demonstrate the features of the Markdown++ application.
+
+## Features
+
+- Edit markdown content with live preview
+- Manage frontmatter metadata
+- Categories and tags support
+- Beautiful UI with Shadcn components
+
+## Code Example
+
+\`\`\`javascript
+function hello() {
+  console.log("Hello, World!");
+}
+\`\`\`
+
+## Lists
+
+### Unordered List
+- Item 1
+- Item 2
+- Item 3
+
+### Ordered List
+1. First
+2. Second
+3. Third
+
+## Blockquote
+
+> This is a blockquote example.
+> It can span multiple lines.
+
+## Links and Images
+
+[Visit OpenAI](https://openai.com)
+
+## Table
+
+| Feature | Status |
+|---------|--------|
+| Edit | ✅ |
+| Preview | ✅ |
+| Metadata | ✅ |
+
+## Conclusion
+
+Enjoy using Markdown++!
+`,
+    frontmatter: {
+      title: "Sample Markdown Document",
+      author: "John Doe",
+      date: "2025-11-02",
+      description: "A sample markdown file for testing the markdown admin interface",
+      image: "https://picsum.photos/400/300",
+      thumbnail: "https://via.placeholder.com/150.png",
+      categories: ["Tutorial", "Documentation"],
+      tags: ["markdown", "sample", "test"]
+    },
+    rawContent: ''
+  },
+  {
+    name: 'another-doc.md',
+    path: 'another-doc.md',
+    content: `# Another Document
+
+This is another document for testing the file browser.
+
+## Content
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+`,
+    frontmatter: {
+      title: "Another Document",
+      author: "Jane Smith",
+      date: "2025-11-02",
+      featured_image: "https://picsum.photos/seed/another/300/200.jpg",
+      categories: ["Blog"],
+      tags: ["writing"]
+    },
+    rawContent: ''
+  },
+  {
+    name: 'date-test.md',
+    path: 'date-test.md',
+    content: `# Date Format Testing
+
+This document tests various date formats to ensure they are automatically detected and formatted correctly in the post listing screen.
+
+## Different Date Formats
+
+The frontmatter contains various date fields with different formats:
+
+- **ISO 8601**: \`2025-01-15\`
+- **Text format**: \`January 15, 2025\`
+- **ISO with time**: \`2024-12-01T10:30:00Z\`
+- **European format**: \`15/01/2025\`
+- **Alternative format**: \`2025/03/20\`
+
+All these dates should be:
+1. **Detected automatically** using pattern matching
+2. **Formatted consistently** for display (e.g., "Jan 15, 2025")
+3. **Normalized for sorting/filtering** to ISO format internally
+
+This ensures proper sorting by date regardless of how users store their dates.
+`,
+    frontmatter: {
+      title: "Date Format Test Document",
+      author: "Test User",
+      date: "2025-01-15",
+      publishDate: "January 15, 2025",
+      createdAt: "2024-12-01T10:30:00Z",
+      lastModified: "15/01/2025",
+      eventDate: "2025/03/20",
+      description: "Testing various date formats for automatic formatting",
+      categories: ["Testing"],
+      tags: ["dates", "formats"]
+    },
+    rawContent: ''
+  }
+];
 
 // Typewriter hook for animated text
 function useTypewriter(text: string, speed: number = 100) {
@@ -83,6 +213,7 @@ function App() {
   const [isResizing, setIsResizing] = useState(false);
   const [shouldAutoFocus, setShouldAutoFocus] = useState(false);
   const [isMovingFile, setIsMovingFile] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   
   // Centralized posts subscription (cache-first, serialized scanning)
   useEffect(() => {
@@ -137,6 +268,41 @@ function App() {
     } finally {
       setIsRefreshingPosts(false);
     }
+  };
+
+  const handleStartDemo = () => {
+    // Clear any existing toasts
+    toast.dismiss();
+    
+    // Set demo mode
+    setIsDemoMode(true);
+    setAllPosts(DEMO_POSTS);
+    setViewMode('table');
+    
+    // Set a mock directory handle name for UI
+    setDirHandle({ name: 'Demo Workspace' } as FileSystemDirectoryHandle);
+    
+    // Initialize browser history with table view
+    window.history.replaceState({ viewMode: 'table' }, '', '#table');
+    
+    toast.success('Welcome to the demo! 👋', { duration: 3000 });
+  };
+
+  const handleExitDemo = () => {
+    if (hasChanges && !window.confirm('You have unsaved changes. Exit demo?')) {
+      return;
+    }
+    
+    // Clear demo state
+    setIsDemoMode(false);
+    setDirHandle(null);
+    setAllPosts([]);
+    setCurrentFile(null);
+    setSelectedFilePath(null);
+    setHasChanges(false);
+    setViewMode('table');
+    
+    toast.info('Demo exited');
   };
 
   const handleSelectDirectory = async () => {
@@ -388,6 +554,11 @@ function App() {
   };
 
   const handleCreatePost = async () => {
+    if (isDemoMode) {
+      toast.info('Creating posts is disabled in demo mode');
+      return;
+    }
+    
     if (!dirHandle || isCreatingPost) return;
 
     try {
@@ -456,6 +627,11 @@ function App() {
   };
 
   const handleSave = async () => {
+    if (isDemoMode) {
+      toast.info('Saving is disabled in demo mode');
+      return;
+    }
+    
     if (!dirHandle || !currentFile || !selectedFilePath || isSaving) return;
     
     try {
@@ -879,8 +1055,8 @@ function App() {
             </div>
           )}
 
-          {/* Main Button */}
-          <div className="flex justify-center">
+          {/* Main Buttons */}
+          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
             <button
               onClick={handleSelectDirectory}
               disabled={!isSupported}
@@ -888,6 +1064,14 @@ function App() {
             >
               <FolderOpen className="h-5 w-5" />
               Select Folder
+            </button>
+            
+            <button
+              onClick={handleStartDemo}
+              className="inline-flex items-center gap-3 rounded-md bg-white dark:bg-white/10 border-2 border-primary/20 px-6 py-2.5 text-base font-medium text-foreground hover:bg-accent hover:border-primary/40 transition-colors shadow-lg hover:shadow-xl touch-target"
+            >
+              <Eye className="h-5 w-5 text-primary" />
+              Try Demo
             </button>
           </div>
 
@@ -997,36 +1181,48 @@ function App() {
       <div className="border-b">
         <div className="relative flex items-center px-2 sm:px-4 gap-2 sm:gap-4 h-14">
           {/* Logo and Title */}
-          <button
-            onClick={async () => {
-              if (hasChanges && !window.confirm('You have unsaved changes. Discard them?')) {
-                return;
-              }
-              // If in editor mode, go to table view and ensure posts are loaded
-              if (viewMode === 'editor') {
-                setViewMode('table');
-                setCurrentFile(null);
-                setSelectedFilePath(null);
-                setHasChanges(false);
-                setHasPendingPublish(false);
-                window.history.pushState({ viewMode: 'table' }, '', '#table');
-                await reloadPosts();
-              } else if (viewMode === 'settings') {
-                // If in settings, go to table view and ensure posts are loaded
-                setViewMode('table');
-                window.history.pushState({ viewMode: 'table' }, '', '#table');
-                await reloadPosts();
-              } else if (viewMode === 'table' && dirHandle) {
-                // If in table view, refresh posts (cache-first)
-                await initializePosts(dirHandle);
-                toast.success('Posts refreshed', { duration: 2000 });
-              }
-            }}
-            className="flex items-center gap-1.5 text-base sm:text-lg font-semibold opacity-40 hover:opacity-100 transition-all duration-500 ease-in-out group cursor-pointer relative z-10"
-          >
-            <img src="/logo.png" alt="Markdown++" className="w-6 h-6 sm:w-7 sm:h-7 object-contain group-hover:scale-105 transition-transform duration-500" />
-            <span>Markdown++</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={async () => {
+                if (hasChanges && !window.confirm('You have unsaved changes. Discard them?')) {
+                  return;
+                }
+                // If in editor mode, go to table view and ensure posts are loaded
+                if (viewMode === 'editor') {
+                  setViewMode('table');
+                  setCurrentFile(null);
+                  setSelectedFilePath(null);
+                  setHasChanges(false);
+                  setHasPendingPublish(false);
+                  window.history.pushState({ viewMode: 'table' }, '', '#table');
+                  if (!isDemoMode) await reloadPosts();
+                } else if (viewMode === 'settings') {
+                  // If in settings, go to table view and ensure posts are loaded
+                  setViewMode('table');
+                  window.history.pushState({ viewMode: 'table' }, '', '#table');
+                  if (!isDemoMode) await reloadPosts();
+                } else if (viewMode === 'table' && dirHandle && !isDemoMode) {
+                  // If in table view, refresh posts (cache-first)
+                  await initializePosts(dirHandle);
+                  toast.success('Posts refreshed', { duration: 2000 });
+                }
+              }}
+              className="flex items-center gap-1.5 text-base sm:text-lg font-semibold opacity-40 hover:opacity-100 transition-all duration-500 ease-in-out group cursor-pointer relative z-10"
+            >
+              <img src="/logo.png" alt="Markdown++" className="w-6 h-6 sm:w-7 sm:h-7 object-contain group-hover:scale-105 transition-transform duration-500" />
+              <span>Markdown++</span>
+            </button>
+            
+            {isDemoMode && (
+              <button
+                onClick={handleExitDemo}
+                className="px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded-full hover:bg-primary/20 hover:border-primary/30 transition-colors cursor-pointer"
+                title="Click to exit demo"
+              >
+                Demo ✕
+              </button>
+            )}
+          </div>
           
           {/* Unsaved Changes Indicator */}
           {viewMode === 'editor' && hasChanges && (
@@ -1150,28 +1346,43 @@ function App() {
 
                         {/* Actions */}
                         <div className="p-2">
-                          <button
-                            onClick={() => {
-                              setShowSettingsDropdown(false);
-                              setViewMode('settings');
-                              window.history.pushState({ viewMode: 'settings' }, '', '#settings');
-                            }}
-                            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground transition-colors group"
-                          >
-                            <SettingsIcon className="h-4 w-4 text-muted-foreground group-hover:text-accent-foreground" />
-                            <span>Advanced Settings</span>
-                          </button>
+                          {!isDemoMode && (
+                            <button
+                              onClick={() => {
+                                setShowSettingsDropdown(false);
+                                setViewMode('settings');
+                                window.history.pushState({ viewMode: 'settings' }, '', '#settings');
+                              }}
+                              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground transition-colors group"
+                            >
+                              <SettingsIcon className="h-4 w-4 text-muted-foreground group-hover:text-accent-foreground" />
+                              <span>Advanced Settings</span>
+                            </button>
+                          )}
                           
-                          <button
-                            onClick={() => {
-                              setShowSettingsDropdown(false);
-                              handleLogout();
-                            }}
-                            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors group"
-                          >
-                            <LogOut className="h-4 w-4 text-muted-foreground group-hover:text-destructive" />
-                            <span className="text-muted-foreground group-hover:text-destructive">Log Out</span>
-                          </button>
+                          {isDemoMode ? (
+                            <button
+                              onClick={() => {
+                                setShowSettingsDropdown(false);
+                                handleExitDemo();
+                              }}
+                              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors group"
+                            >
+                              <LogOut className="h-4 w-4 text-muted-foreground group-hover:text-destructive" />
+                              <span className="text-muted-foreground group-hover:text-destructive">Exit Demo</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setShowSettingsDropdown(false);
+                                handleLogout();
+                              }}
+                              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors group"
+                            >
+                              <LogOut className="h-4 w-4 text-muted-foreground group-hover:text-destructive" />
+                              <span className="text-muted-foreground group-hover:text-destructive">Log Out</span>
+                            </button>
+                          )}
                         </div>
                       </div>
                     </>
@@ -1301,7 +1512,7 @@ function App() {
           {/* Two-column layout */}
           <div className="flex-1 overflow-hidden flex">
             {/* File Tree Sidebar */}
-            {isFileTreeVisible && (
+            {isFileTreeVisible && !isDemoMode && (
               <div className="relative border-r overflow-y-auto overflow-x-hidden p-3 hidden sm:block text-muted-foreground" style={{ width: `${fileTreeWidth}px` }}>
                 {/* Loading Overlay */}
                 {isMovingFile && (
@@ -1407,11 +1618,11 @@ function App() {
                 })}
                 isLoading={isLoadingPosts}
                 onEdit={handleEditPost}
-                onDelete={handleDeletePost}
-                onHide={handleHidePost}
+                onDelete={isDemoMode ? () => toast.info('Deleting is disabled in demo mode') : handleDeletePost}
+                onHide={isDemoMode ? () => toast.info('Hiding is disabled in demo mode') : handleHidePost}
                 title={selectedFolderPath || 'All Posts'}
                 onClearFilter={selectedFolderPath ? () => setSelectedFolderPath(null) : undefined}
-                onToggleSidebar={() => setIsFileTreeVisible(!isFileTreeVisible)}
+                onToggleSidebar={isDemoMode ? undefined : () => setIsFileTreeVisible(!isFileTreeVisible)}
                 isSidebarVisible={isFileTreeVisible}
               />
             </div>
