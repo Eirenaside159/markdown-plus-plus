@@ -28,11 +28,9 @@ type ViewMode = 'table' | 'editor' | 'settings';
 // Demo sample posts
 const DEMO_POSTS: MarkdownFile[] = [
   {
-    name: 'sample.md',
-    path: 'sample.md',
-    content: `# Welcome to Markdown++
-
-This is a **sample markdown document** to demonstrate the features of the Markdown++ application.
+    name: 'welcome.md',
+    path: 'welcome.md',
+    content: `This is a **sample markdown document** to demonstrate the features of the Markdown++ application.
 
 ## Features
 
@@ -40,6 +38,7 @@ This is a **sample markdown document** to demonstrate the features of the Markdo
 - Manage frontmatter metadata
 - Categories and tags support
 - Beautiful UI with Shadcn components
+- Multi-language support
 
 ## Code Example
 
@@ -83,75 +82,798 @@ function hello() {
 Enjoy using Markdown++!
 `,
     frontmatter: {
-      title: "Sample Markdown Document",
+      title: "Welcome to Markdown++",
       author: "John Doe",
-      date: "2025-11-02",
+      date: "2025-11-08",
       description: "A sample markdown file for testing the markdown admin interface",
       image: "https://picsum.photos/400/300",
-      thumbnail: "https://via.placeholder.com/150.png",
       categories: ["Tutorial", "Documentation"],
-      tags: ["markdown", "sample", "test"]
+      tags: ["markdown", "sample", "welcome"]
     },
     rawContent: ''
   },
   {
-    name: 'another-doc.md',
-    path: 'another-doc.md',
-    content: `# Another Document
+    name: 'getting-started.md',
+    path: 'guides/getting-started.md',
+    content: `Learn how to use Markdown++ effectively.
 
-This is another document for testing the file browser.
+## Quick Start
 
-## Content
+1. Select or create a folder
+2. Browse your markdown files
+3. Edit and save changes
+4. Publish to Git when ready
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+## Tips
+
+- Use the file tree to organize content
+- Leverage frontmatter for metadata
+- Save with Cmd/Ctrl + S
 `,
     frontmatter: {
-      title: "Another Document",
+      title: "Getting Started Guide",
+      author: "John Doe",
+      date: "2025-11-07",
+      description: "Quick start guide for Markdown++",
+      categories: ["Tutorial", "Guide"],
+      tags: ["getting-started", "tutorial"]
+    },
+    rawContent: ''
+  },
+  {
+    name: 'advanced-features.md',
+    path: 'guides/advanced-features.md',
+    content: `Explore the advanced capabilities of Markdown++.
+
+## Git Integration
+
+- Automatic commit messages
+- Branch management
+- Push to remote
+
+## File Organization
+
+- Nested folders
+- Drag and drop
+- Search and filter
+
+## Metadata Management
+
+- Custom fields
+- Date formatting
+- Category organization
+`,
+    frontmatter: {
+      title: "Advanced Features",
       author: "Jane Smith",
-      date: "2025-11-02",
-      featured_image: "https://picsum.photos/seed/another/300/200.jpg",
-      categories: ["Blog"],
-      tags: ["writing"]
+      date: "2025-11-06",
+      categories: ["Tutorial", "Advanced"],
+      tags: ["advanced", "features", "git"]
     },
     rawContent: ''
   },
   {
-    name: 'date-test.md',
-    path: 'date-test.md',
-    content: `# Date Format Testing
+    name: 'willkommen.md',
+    path: 'de/willkommen.md',
+    content: `Dies ist ein **Beispiel-Markdown-Dokument** auf Deutsch.
 
-This document tests various date formats to ensure they are automatically detected and formatted correctly in the post listing screen.
+## Funktionen
 
-## Different Date Formats
+- Markdown-Inhalte mit Live-Vorschau bearbeiten
+- Frontmatter-Metadaten verwalten
+- Kategorien und Tags unterstützen
+- Schöne Benutzeroberfläche
 
-The frontmatter contains various date fields with different formats:
+## Beispielcode
 
-- **ISO 8601**: \`2025-01-15\`
-- **Text format**: \`January 15, 2025\`
-- **ISO with time**: \`2024-12-01T10:30:00Z\`
-- **European format**: \`15/01/2025\`
-- **Alternative format**: \`2025/03/20\`
+\`\`\`javascript
+function hallo() {
+  console.log("Hallo Welt!");
+}
+\`\`\`
 
-All these dates should be:
-1. **Detected automatically** using pattern matching
-2. **Formatted consistently** for display (e.g., "Jan 15, 2025")
-3. **Normalized for sorting/filtering** to ISO format internally
+## Listen
 
-This ensures proper sorting by date regardless of how users store their dates.
+### Unsortierte Liste
+- Punkt 1
+- Punkt 2
+- Punkt 3
+
+## Fazit
+
+Viel Spaß mit Markdown++!
 `,
     frontmatter: {
-      title: "Date Format Test Document",
-      author: "Test User",
-      date: "2025-01-15",
-      publishDate: "January 15, 2025",
-      createdAt: "2024-12-01T10:30:00Z",
-      lastModified: "15/01/2025",
-      eventDate: "2025/03/20",
-      description: "Testing various date formats for automatic formatting",
-      categories: ["Testing"],
-      tags: ["dates", "formats"]
+      title: "Willkommen bei Markdown++",
+      author: "Hans Mueller",
+      date: "2025-11-05",
+      description: "Ein Beispiel-Markdown-Dokument auf Deutsch",
+      language: "de",
+      categories: ["Tutorial", "Deutsch"],
+      tags: ["markdown", "beispiel", "deutsch"]
     },
     rawContent: ''
+  },
+  {
+    name: 'anleitung.md',
+    path: 'de/anleitung.md',
+    content: `Eine umfassende Anleitung zur Verwendung von Markdown++.
+
+## Erste Schritte
+
+1. Ordner auswählen oder erstellen
+2. Markdown-Dateien durchsuchen
+3. Änderungen bearbeiten und speichern
+4. Bei Bedarf in Git veröffentlichen
+
+## Wichtige Funktionen
+
+- **Dateibaum**: Organisieren Sie Ihre Inhalte
+- **Metadaten**: Verwalten Sie Frontmatter
+- **Vorschau**: Live-Vorschau beim Bearbeiten
+
+## Tastenkombinationen
+
+- Speichern: Cmd/Strg + S
+- Vorschau: Live während der Eingabe
+`,
+    frontmatter: {
+      title: "Anleitung für Markdown++",
+      author: "Anna Schmidt",
+      date: "2025-11-04",
+      description: "Vollständige Anleitung auf Deutsch",
+      language: "de",
+      categories: ["Anleitung", "Tutorial"],
+      tags: ["anleitung", "hilfe", "tutorial"]
+    },
+    rawContent: ''
+  },
+  {
+    name: 'bienvenue.md',
+    path: 'fr/bienvenue.md',
+    content: `Ceci est un **exemple de document Markdown** en français.
+
+## Fonctionnalités
+
+- Éditer du contenu Markdown avec aperçu en direct
+- Gérer les métadonnées frontmatter
+- Support des catégories et tags
+- Belle interface utilisateur
+
+## Exemple de Code
+
+\`\`\`javascript
+function bonjour() {
+  console.log("Bonjour le monde!");
+}
+\`\`\`
+
+## Listes
+
+### Liste non ordonnée
+- Élément 1
+- Élément 2
+- Élément 3
+
+## Citation
+
+> Ceci est un exemple de citation.
+> Elle peut s'étendre sur plusieurs lignes.
+
+## Conclusion
+
+Profitez de Markdown++!
+`,
+    frontmatter: {
+      title: "Bienvenue dans Markdown++",
+      author: "Marie Dubois",
+      date: "2025-11-03",
+      description: "Un exemple de document Markdown en français",
+      language: "fr",
+      categories: ["Tutoriel", "Français"],
+      tags: ["markdown", "exemple", "français"]
+    },
+    rawContent: ''
+  },
+  {
+    name: 'guide-utilisateur.md',
+    path: 'fr/guide-utilisateur.md',
+    content: `Un guide complet pour utiliser Markdown++.
+
+## Démarrage Rapide
+
+1. Sélectionner ou créer un dossier
+2. Parcourir vos fichiers Markdown
+3. Éditer et enregistrer les modifications
+4. Publier sur Git si nécessaire
+
+## Fonctionnalités Principales
+
+- **Arborescence**: Organisez votre contenu
+- **Métadonnées**: Gérez le frontmatter
+- **Aperçu**: Aperçu en direct pendant l'édition
+
+## Raccourcis Clavier
+
+- Enregistrer: Cmd/Ctrl + S
+- Aperçu: En direct pendant la saisie
+`,
+    frontmatter: {
+      title: "Guide de l'utilisateur",
+      author: "Pierre Martin",
+      date: "2025-11-02",
+      description: "Guide complet en français",
+      language: "fr",
+      categories: ["Guide", "Documentation"],
+      tags: ["guide", "aide", "documentation"]
+    },
+    rawContent: ''
+  },
+  {
+    name: 'giris.md',
+    path: 'tr/giris.md',
+    content: `Bu, Türkçe **örnek bir Markdown belgesidir**.
+
+## Özellikler
+
+- Canlı önizleme ile Markdown içeriği düzenleme
+- Frontmatter metadata yönetimi
+- Kategori ve etiket desteği
+- Güzel kullanıcı arayüzü
+
+## Kod Örneği
+
+\`\`\`javascript
+function merhaba() {
+  console.log("Merhaba Dünya!");
+}
+\`\`\`
+
+## Listeler
+
+### Sırasız Liste
+- Öğe 1
+- Öğe 2
+- Öğe 3
+
+### Sıralı Liste
+1. Birinci
+2. İkinci
+3. Üçüncü
+
+## Alıntı
+
+> Bu bir alıntı örneğidir.
+> Birden fazla satıra yayılabilir.
+
+## Sonuç
+
+Markdown++ ile keyifli çalışmalar!
+`,
+    frontmatter: {
+      title: "Markdown++ 'a Hoş Geldiniz",
+      author: "Ahmet Yılmaz",
+      date: "2025-11-01",
+      description: "Türkçe örnek Markdown belgesi",
+      language: "tr",
+      categories: ["Eğitim", "Türkçe"],
+      tags: ["markdown", "örnek", "türkçe"]
+    },
+    rawContent: ''
+  },
+  {
+    name: 'kullanim-klavuzu.md',
+    path: 'tr/kullanim-klavuzu.md',
+    content: `Markdown++ uygulamasını etkin bir şekilde kullanmayı öğrenin.
+
+## Hızlı Başlangıç
+
+1. Klasör seçin veya oluşturun
+2. Markdown dosyalarınıza göz atın
+3. Değişiklikleri düzenleyin ve kaydedin
+4. Hazır olduğunuzda Git'e yayınlayın
+
+## Ana Özellikler
+
+- **Dosya Ağacı**: İçeriğinizi organize edin
+- **Metadata**: Frontmatter yönetin
+- **Önizleme**: Düzenleme sırasında canlı önizleme
+
+## Kısayol Tuşları
+
+- Kaydet: Cmd/Ctrl + S
+- Önizleme: Yazarken canlı
+`,
+    frontmatter: {
+      title: "Kullanım Kılavuzu",
+      author: "Ayşe Demir",
+      date: "2025-10-31",
+      description: "Türkçe kullanım kılavuzu",
+      language: "tr",
+      categories: ["Kılavuz", "Dokümantasyon"],
+      tags: ["kılavuz", "yardım", "dokümantasyon"]
+    },
+    rawContent: ''
+  },
+  {
+    name: 'bienvenido.md',
+    path: 'es/bienvenido.md',
+    content: `Este es un **documento de ejemplo en Markdown** en español.
+
+## Características
+
+- Editar contenido Markdown con vista previa en vivo
+- Gestionar metadatos frontmatter
+- Soporte para categorías y etiquetas
+- Hermosa interfaz de usuario
+
+## Ejemplo de Código
+
+\`\`\`javascript
+function hola() {
+  console.log("¡Hola Mundo!");
+}
+\`\`\`
+
+## Listas
+
+### Lista desordenada
+- Elemento 1
+- Elemento 2
+- Elemento 3
+
+## Cita
+
+> Este es un ejemplo de cita.
+> Puede abarcar múltiples líneas.
+
+## Conclusión
+
+¡Disfruta de Markdown++!
+`,
+    frontmatter: {
+      title: "Bienvenido a Markdown++",
+      author: "Carlos García",
+      date: "2025-10-30",
+      description: "Un documento de ejemplo en español",
+      language: "es",
+      categories: ["Tutorial", "Español"],
+      tags: ["markdown", "ejemplo", "español"]
+    },
+    rawContent: ''
+  },
+  {
+    name: 'web-development.md',
+    path: 'blog/web-development.md',
+    content: `The landscape of web development continues to evolve rapidly.
+
+## Key Trends
+
+- **React & Next.js**: Still dominating the frontend
+- **TypeScript**: Now the standard
+- **AI Integration**: ChatGPT and AI assistants everywhere
+- **Edge Computing**: Faster, closer to users
+
+## Best Practices
+
+1. Use TypeScript for type safety
+2. Implement proper error handling
+3. Optimize for performance
+4. Focus on accessibility
+
+## Tools We Love
+
+- Vite for fast builds
+- Tailwind CSS for styling
+- Shadcn/ui for components
+`,
+    frontmatter: {
+      title: "Modern Web Development in 2025",
+      author: "Sarah Johnson",
+      date: "2025-10-28",
+      description: "Exploring the current state of web development",
+      categories: ["Blog", "Technology", "Web Development"],
+      tags: ["webdev", "react", "typescript", "2025"]
+    },
+    rawContent: ''
+  },
+  {
+    name: 'productivity-tips.md',
+    path: 'blog/productivity-tips.md',
+    content: `Boost your productivity with these proven strategies.
+
+## 1. Use the Right Tools
+
+Choose tools that enhance your workflow, not complicate it.
+
+## 2. Organize Your Files
+
+A well-organized project structure saves time.
+
+## 3. Write Documentation
+
+Document as you go, not after.
+
+## 4. Learn Keyboard Shortcuts
+
+Speed up your workflow significantly.
+
+## 5. Take Regular Breaks
+
+Avoid burnout and maintain focus.
+
+## 6. Automate Repetitive Tasks
+
+Use scripts and tools to automate.
+
+## 7. Keep Learning
+
+Stay updated with new technologies.
+
+## 8. Code Reviews Matter
+
+Learn from others and improve your code.
+
+## 9. Test Early, Test Often
+
+Catch bugs before they become problems.
+
+## 10. Focus on One Task
+
+Multitasking is a myth for developers.
+`,
+    frontmatter: {
+      title: "10 Productivity Tips for Developers",
+      author: "Mike Chen",
+      date: "2025-10-25",
+      description: "Proven strategies to boost developer productivity",
+      categories: ["Blog", "Productivity"],
+      tags: ["productivity", "tips", "development", "workflow"]
+    },
+    rawContent: ''
+  },
+  {
+    name: 'typescript-guide.md',
+    path: 'tutorials/typescript-guide.md',
+    content: `A comprehensive guide to writing better TypeScript code.
+
+## Why TypeScript?
+
+- Type safety prevents bugs
+- Better IDE support
+- Improved code documentation
+- Easier refactoring
+
+## Basic Types
+
+\`\`\`typescript
+const name: string = "John";
+const age: number = 30;
+const isActive: boolean = true;
+\`\`\`
+
+## Interfaces
+
+\`\`\`typescript
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+\`\`\`
+
+## Generics
+
+\`\`\`typescript
+function identity<T>(arg: T): T {
+  return arg;
+}
+\`\`\`
+
+## Conclusion
+
+TypeScript makes JavaScript development more robust and maintainable.
+`,
+    frontmatter: {
+      title: "TypeScript Best Practices",
+      author: "Emily Davis",
+      date: "2025-10-20",
+      description: "Learn TypeScript best practices",
+      categories: ["Tutorial", "Programming"],
+      tags: ["typescript", "javascript", "programming", "tutorial"]
+    },
+    rawContent: ''
+  },
+  {
+    name: 'react-hooks.md',
+    path: 'tutorials/react-hooks.md',
+    content: `Master React Hooks for modern component development.
+
+## useState
+
+\`\`\`jsx
+const [count, setCount] = useState(0);
+\`\`\`
+
+## useEffect
+
+\`\`\`jsx
+useEffect(() => {
+  document.title = \`Count: \${count}\`;
+}, [count]);
+\`\`\`
+
+## useCallback
+
+\`\`\`jsx
+const memoizedCallback = useCallback(
+  () => {
+    doSomething(a, b);
+  },
+  [a, b]
+);
+\`\`\`
+
+## useMemo
+
+\`\`\`jsx
+const memoizedValue = useMemo(() => 
+  computeExpensiveValue(a, b), 
+  [a, b]
+);
+\`\`\`
+
+## Best Practices
+
+- Don't call Hooks inside loops or conditions
+- Always declare Hooks at the top level
+- Use ESLint plugin for rules enforcement
+`,
+    frontmatter: {
+      title: "Understanding React Hooks",
+      author: "David Wilson",
+      date: "2025-10-15",
+      description: "Complete guide to React Hooks",
+      categories: ["Tutorial", "React"],
+      tags: ["react", "hooks", "javascript", "frontend"]
+    },
+    rawContent: ''
+  },
+  {
+    name: 'git-workflows.md',
+    path: 'tutorials/git-workflows.md',
+    content: `Learn effective Git workflows for collaborative development.
+
+## Feature Branch Workflow
+
+1. Create a feature branch
+2. Make commits
+3. Open a pull request
+4. Code review
+5. Merge to main
+
+## Commit Message Guidelines
+
+\`\`\`
+feat: add new feature
+fix: resolve bug
+docs: update documentation
+style: format code
+refactor: restructure code
+test: add tests
+\`\`\`
+
+## Best Practices
+
+- Commit often, push regularly
+- Write meaningful commit messages
+- Keep commits atomic
+- Use pull requests for code review
+- Never force push to shared branches
+
+## Useful Commands
+
+\`\`\`bash
+git status
+git add .
+git commit -m "message"
+git push origin branch-name
+git pull origin main
+\`\`\`
+`,
+    frontmatter: {
+      title: "Git Workflows for Teams",
+      author: "Lisa Anderson",
+      date: "2025-10-10",
+      description: "Best practices for Git collaboration",
+      categories: ["Tutorial", "Git"],
+      tags: ["git", "version-control", "collaboration", "workflow"]
+    },
+    rawContent: ''
+  },
+  {
+    name: 'release-notes-v1.md',
+    path: 'releases/release-notes-v1.md',
+    content: `## 🎉 Initial Release
+
+Welcome to the first stable release of Markdown++!
+
+## Features
+
+- ✅ Markdown editing with live preview
+- ✅ Frontmatter metadata management
+- ✅ File tree navigation
+- ✅ Git integration
+- ✅ Multi-language support
+- ✅ Dark mode
+- ✅ Responsive design
+
+## Technical Details
+
+- Built with React 18
+- TypeScript for type safety
+- Tailwind CSS for styling
+- Shadcn/ui components
+
+## Known Issues
+
+None at this time!
+
+## What's Next?
+
+- Cloud sync (v1.1)
+- Collaborative editing (v1.2)
+- Plugin system (v2.0)
+`,
+    frontmatter: {
+      title: "Release Notes v1.0.0",
+      author: "Release Team",
+      date: "2025-11-08",
+      description: "First stable release of Markdown++",
+      categories: ["Release", "Announcement"],
+      tags: ["release", "v1.0.0", "announcement"]
+    },
+    rawContent: ''
+  }
+];
+
+// Demo file tree structure
+const DEMO_FILE_TREE: FileTreeItem[] = [
+  {
+    name: 'blog',
+    path: 'blog',
+    isDirectory: true,
+    children: [
+      {
+        name: 'web-development.md',
+        path: 'blog/web-development.md',
+        isDirectory: false
+      },
+      {
+        name: 'productivity-tips.md',
+        path: 'blog/productivity-tips.md',
+        isDirectory: false
+      }
+    ]
+  },
+  {
+    name: 'de',
+    path: 'de',
+    isDirectory: true,
+    children: [
+      {
+        name: 'willkommen.md',
+        path: 'de/willkommen.md',
+        isDirectory: false
+      },
+      {
+        name: 'anleitung.md',
+        path: 'de/anleitung.md',
+        isDirectory: false
+      }
+    ]
+  },
+  {
+    name: 'es',
+    path: 'es',
+    isDirectory: true,
+    children: [
+      {
+        name: 'bienvenido.md',
+        path: 'es/bienvenido.md',
+        isDirectory: false
+      }
+    ]
+  },
+  {
+    name: 'fr',
+    path: 'fr',
+    isDirectory: true,
+    children: [
+      {
+        name: 'bienvenue.md',
+        path: 'fr/bienvenue.md',
+        isDirectory: false
+      },
+      {
+        name: 'guide-utilisateur.md',
+        path: 'fr/guide-utilisateur.md',
+        isDirectory: false
+      }
+    ]
+  },
+  {
+    name: 'guides',
+    path: 'guides',
+    isDirectory: true,
+    children: [
+      {
+        name: 'getting-started.md',
+        path: 'guides/getting-started.md',
+        isDirectory: false
+      },
+      {
+        name: 'advanced-features.md',
+        path: 'guides/advanced-features.md',
+        isDirectory: false
+      }
+    ]
+  },
+  {
+    name: 'releases',
+    path: 'releases',
+    isDirectory: true,
+    children: [
+      {
+        name: 'release-notes-v1.md',
+        path: 'releases/release-notes-v1.md',
+        isDirectory: false
+      }
+    ]
+  },
+  {
+    name: 'tr',
+    path: 'tr',
+    isDirectory: true,
+    children: [
+      {
+        name: 'giris.md',
+        path: 'tr/giris.md',
+        isDirectory: false
+      },
+      {
+        name: 'kullanim-klavuzu.md',
+        path: 'tr/kullanim-klavuzu.md',
+        isDirectory: false
+      }
+    ]
+  },
+  {
+    name: 'tutorials',
+    path: 'tutorials',
+    isDirectory: true,
+    children: [
+      {
+        name: 'typescript-guide.md',
+        path: 'tutorials/typescript-guide.md',
+        isDirectory: false
+      },
+      {
+        name: 'react-hooks.md',
+        path: 'tutorials/react-hooks.md',
+        isDirectory: false
+      },
+      {
+        name: 'git-workflows.md',
+        path: 'tutorials/git-workflows.md',
+        isDirectory: false
+      }
+    ]
+  },
+  {
+    name: 'welcome.md',
+    path: 'welcome.md',
+    isDirectory: false
   }
 ];
 
@@ -278,6 +1000,7 @@ function App() {
     // Set demo mode
     setIsDemoMode(true);
     setAllPosts(DEMO_POSTS);
+    setFileTree(DEMO_FILE_TREE);
     setViewMode('table');
     
     // Set a mock directory handle name for UI
@@ -298,6 +1021,8 @@ function App() {
     setIsDemoMode(false);
     setDirHandle(null);
     setAllPosts([]);
+    setFileTree([]);
+    setSelectedFolderPath(null);
     setCurrentFile(null);
     setSelectedFilePath(null);
     setHasChanges(false);
@@ -507,11 +1232,13 @@ function App() {
     setShouldAutoFocus(false); // Don't auto-focus when editing existing posts
     setViewMode('editor');
     
-    // Save state
-    saveAppState({
-      selectedFilePath: post.path,
-      viewMode: 'editor',
-    });
+    // Save state (skip in demo mode)
+    if (!isDemoMode) {
+      saveAppState({
+        selectedFilePath: post.path,
+        viewMode: 'editor',
+      });
+    }
     
     // Push to browser history
     window.history.pushState({ viewMode: 'editor', filePath: post.path }, '', '#editor');
@@ -831,13 +1558,13 @@ function App() {
 
   // Save view mode changes
   useEffect(() => {
-    if (!isRestoring && dirHandle) {
+    if (!isRestoring && dirHandle && !isDemoMode) {
       saveAppState({
         viewMode,
         selectedFilePath: viewMode === 'editor' ? selectedFilePath : null,
       });
     }
-  }, [viewMode, selectedFilePath, dirHandle, isRestoring]);
+  }, [viewMode, selectedFilePath, dirHandle, isRestoring, isDemoMode]);
 
   // Handle browser back/forward buttons
   useEffect(() => {
@@ -874,35 +1601,58 @@ function App() {
         setHasChanges(false);
         setHasPendingPublish(false);
         // Ensure posts are loaded when navigating back to table (non-blocking if already present)
-        await reloadPosts();
+        // Skip reload in demo mode
+        if (!isDemoMode) {
+          await reloadPosts();
+        }
       } else if (state.viewMode === 'settings') {
         setViewMode('settings');
-      } else if (state.viewMode === 'editor' && state.filePath && dirHandle) {
-        // Try to load the file
-        try {
-          const fileContent = await readFile(dirHandle, state.filePath);
-          const fileName = state.filePath.split('/').pop() || state.filePath;
-          const parsed = parseMarkdown(fileContent, state.filePath, fileName);
-          setCurrentFile(parsed);
-          setSelectedFilePath(state.filePath);
-          setHasChanges(false);
-          setHasPendingPublish(false);
-          setShouldAutoFocus(false); // Don't auto-focus when navigating back
-          setViewMode('editor');
-        } catch (error) {
-          // File not found, go to table
-          setViewMode('table');
-          setCurrentFile(null);
-          setSelectedFilePath(null);
-          setHasChanges(false);
-          setHasPendingPublish(false);
+      } else if (state.viewMode === 'editor' && state.filePath) {
+        // In demo mode, load from allPosts array instead of file system
+        if (isDemoMode) {
+          const post = allPosts.find(p => p.path === state.filePath);
+          if (post) {
+            setCurrentFile(post);
+            setSelectedFilePath(state.filePath);
+            setHasChanges(false);
+            setHasPendingPublish(false);
+            setShouldAutoFocus(false);
+            setViewMode('editor');
+          } else {
+            // Post not found, go to table
+            setViewMode('table');
+            setCurrentFile(null);
+            setSelectedFilePath(null);
+            setHasChanges(false);
+            setHasPendingPublish(false);
+          }
+        } else if (dirHandle) {
+          // Normal mode: load from file system
+          try {
+            const fileContent = await readFile(dirHandle, state.filePath);
+            const fileName = state.filePath.split('/').pop() || state.filePath;
+            const parsed = parseMarkdown(fileContent, state.filePath, fileName);
+            setCurrentFile(parsed);
+            setSelectedFilePath(state.filePath);
+            setHasChanges(false);
+            setHasPendingPublish(false);
+            setShouldAutoFocus(false); // Don't auto-focus when navigating back
+            setViewMode('editor');
+          } catch (error) {
+            // File not found, go to table
+            setViewMode('table');
+            setCurrentFile(null);
+            setSelectedFilePath(null);
+            setHasChanges(false);
+            setHasPendingPublish(false);
+          }
         }
       }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [hasChanges, viewMode, dirHandle]);
+  }, [hasChanges, viewMode, dirHandle, isDemoMode, allPosts]);
 
   // Reset autoFocus after editor has had time to focus
   useEffect(() => {
@@ -1520,7 +2270,7 @@ function App() {
           {/* Two-column layout */}
           <div className="flex-1 overflow-hidden flex">
             {/* File Tree Sidebar */}
-            {isFileTreeVisible && !isDemoMode && (
+            {isFileTreeVisible && (
               <div className="relative border-r overflow-y-auto overflow-x-hidden p-3 hidden sm:block text-muted-foreground" style={{ width: `${fileTreeWidth}px` }}>
                 {/* Loading Overlay */}
                 {isMovingFile && (
@@ -1542,17 +2292,17 @@ function App() {
                 </div>
                 <button
                   onClick={() => setSelectedFolderPath(null)}
-                  onDragOver={(e) => {
+                  onDragOver={isDemoMode ? undefined : (e) => {
                     if (isMovingFile) return;
                     e.preventDefault();
                     e.currentTarget.classList.add('bg-primary/20', 'border-2', 'border-primary', 'border-dashed');
                   }}
-                  onDragLeave={(e) => {
+                  onDragLeave={isDemoMode ? undefined : (e) => {
                     if (isMovingFile) return;
                     e.preventDefault();
                     e.currentTarget.classList.remove('bg-primary/20', 'border-2', 'border-primary', 'border-dashed');
                   }}
-                  onDrop={(e) => {
+                  onDrop={isDemoMode ? undefined : (e) => {
                     if (isMovingFile) return;
                     e.preventDefault();
                     e.currentTarget.classList.remove('bg-primary/20', 'border-2', 'border-primary', 'border-dashed');
@@ -1596,7 +2346,7 @@ function App() {
                       }
                     }
                   }}
-                  onFileMove={handleFileMove}
+                  onFileMove={isDemoMode ? undefined : handleFileMove}
                   isMoving={isMovingFile}
                 />
                 {/* Resize Handle */}
@@ -1618,7 +2368,7 @@ function App() {
               <PostsDataTable
                 posts={allPosts.filter(post => {
                   if (!dirHandle) return true;
-                  const hiddenFiles = getHiddenFiles(dirHandle.name);
+                  const hiddenFiles = isDemoMode ? [] : getHiddenFiles(dirHandle.name);
                   if (hiddenFiles.includes(post.path)) return false;
                   // Filter by selected folder
                   if (selectedFolderPath && !post.path.startsWith(selectedFolderPath + '/')) return false;
@@ -1630,7 +2380,7 @@ function App() {
                 onHide={isDemoMode ? () => toast.info('Hiding is disabled in demo mode') : handleHidePost}
                 title={selectedFolderPath || 'All Posts'}
                 onClearFilter={selectedFolderPath ? () => setSelectedFolderPath(null) : undefined}
-                onToggleSidebar={isDemoMode ? undefined : () => setIsFileTreeVisible(!isFileTreeVisible)}
+                onToggleSidebar={() => setIsFileTreeVisible(!isFileTreeVisible)}
                 isSidebarVisible={isFileTreeVisible}
               />
             </div>
