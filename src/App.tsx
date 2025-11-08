@@ -2364,7 +2364,7 @@ function App() {
             )}
             
             {/* Main Content - Data Table */}
-            <div className="flex-1 overflow-hidden p-3 sm:p-4">
+            <div className="flex-1 overflow-auto p-3 sm:p-4">
               <PostsDataTable
                 posts={allPosts.filter(post => {
                   if (!dirHandle) return true;
