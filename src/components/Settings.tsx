@@ -6,6 +6,7 @@ import { getSettings, saveSettings } from '@/lib/settings';
 import { getHiddenFiles, unhideFile, clearHiddenFiles } from '@/lib/hiddenFiles';
 import { applyColorPalette, getPaletteDisplayName, PALETTE_CATEGORIES } from '@/lib/colorPalettes';
 import type { AppSettings, ColorPalette } from '@/types/settings';
+import { useConfirm } from './ui/confirm-dialog';
 
 function UrlPreview({ baseUrl, urlFormat }: { baseUrl: string; urlFormat: string }) {
   const now = new Date();
@@ -48,6 +49,7 @@ export function Settings({ onClose, directoryName }: SettingsProps = {}) {
   const [newMultiplicityMode, setNewMultiplicityMode] = useState<'single' | 'multi'>('multi');
   const [hiddenFiles, setHiddenFiles] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { confirm, ConfirmDialog } = useConfirm();
   const urlFormatInputRef = useRef<HTMLInputElement>(null);
 
   const Section = ({
@@ -312,10 +314,14 @@ export function Settings({ onClose, directoryName }: SettingsProps = {}) {
     toast.success('File unhidden');
   };
 
-  const handleClearAllHidden = () => {
+  const handleClearAllHidden = async () => {
     if (!directoryName) return;
     
-    if (window.confirm('Unhide all files? They will appear in the table again.')) {
+    const confirmed = await confirm('Unhide all files? They will appear in the table again.', {
+      title: 'Unhide All Files',
+      confirmLabel: 'Unhide All',
+    });
+    if (confirmed) {
       clearHiddenFiles(directoryName);
       setHiddenFiles([]);
       toast.success('All files unhidden');
@@ -775,6 +781,9 @@ export function Settings({ onClose, directoryName }: SettingsProps = {}) {
             </TabsContent>
           </div>
         </Tabs>
+
+        {/* Confirm Dialog */}
+        <ConfirmDialog />
       </div>
   );
 }

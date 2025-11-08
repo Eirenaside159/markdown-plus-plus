@@ -9,6 +9,7 @@ import { Sheet, SheetContent } from '@/components/ui/Sheet';
 import { toast } from 'sonner';
 import { WelcomeWarningModal, shouldShowWarning } from '@/components/WelcomeWarningModal';
 import { FileBrowser } from '@/components/FileBrowser';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import confetti from 'canvas-confetti';
 import { selectDirectory, readFile, writeFile, deleteFile, renameFile, moveFile, isFileSystemAccessSupported } from '@/lib/fileSystem';
 import { parseMarkdown, stringifyMarkdown, updateFrontmatter } from '@/lib/markdown';
@@ -949,6 +950,9 @@ function App() {
   }, []);
   const [isRefreshingPosts, setIsRefreshingPosts] = useState(false);
   
+  // Confirm dialog hook
+  const { confirm, ConfirmDialog } = useConfirm();
+  
   // Always call the hook, but only use it when dirHandle is null
   const { displayedText } = useTypewriter('Markdown++', 80);
 
@@ -1012,9 +1016,14 @@ function App() {
     toast.success('Welcome to the demo! 👋', { duration: 3000 });
   };
 
-  const handleExitDemo = () => {
-    if (hasChanges && !window.confirm('You have unsaved changes. Exit demo?')) {
-      return;
+  const handleExitDemo = async () => {
+    if (hasChanges) {
+      const confirmed = await confirm('You have unsaved changes. Exit demo?', {
+        title: 'Exit Demo',
+        confirmLabel: 'Exit',
+        variant: 'destructive'
+      });
+      if (!confirmed) return;
     }
     
     // Clear demo state
@@ -1170,8 +1179,13 @@ function App() {
 
   const handleLogout = async () => {
     // Check for unsaved changes
-    if (hasChanges && !window.confirm('You have unsaved changes. Discard them and logout?')) {
-      return;
+    if (hasChanges) {
+      const confirmed = await confirm('You have unsaved changes. Discard them and logout?', {
+        title: 'Logout',
+        confirmLabel: 'Logout',
+        variant: 'destructive'
+      });
+      if (!confirmed) return;
     }
 
     // Clear any existing toasts
@@ -1191,8 +1205,13 @@ function App() {
     // Don't show toast - the UI change (back to folder selection) is clear enough
   };
 
-  const handleClearRecent = () => {
-    if (window.confirm('Clear all recent folders?')) {
+  const handleClearRecent = async () => {
+    const confirmed = await confirm('Clear all recent folders?', {
+      title: 'Clear Recent Folders',
+      confirmLabel: 'Clear',
+      variant: 'destructive'
+    });
+    if (confirmed) {
       clearRecentFolders();
       // Don't show toast before reload - it won't be visible anyway
       window.location.reload();
@@ -1202,10 +1221,12 @@ function App() {
   const handleDiscardChanges = async () => {
     if (!currentFile || !dirHandle || !selectedFilePath || !hasChanges) return;
 
-    const confirmMsg = 'Discard all unsaved changes?\n\nThis action cannot be undone.';
-    if (!window.confirm(confirmMsg)) {
-      return;
-    }
+    const confirmed = await confirm('Discard all unsaved changes?\n\nThis action cannot be undone.', {
+      title: 'Discard Changes',
+      confirmLabel: 'Discard',
+      variant: 'destructive'
+    });
+    if (!confirmed) return;
 
     try {
       // Reload the file from disk
@@ -1221,9 +1242,14 @@ function App() {
     }
   };
 
-  const handleEditPost = (post: MarkdownFile) => {
-    if (hasChanges && !window.confirm('You have unsaved changes. Discard them?')) {
-      return;
+  const handleEditPost = async (post: MarkdownFile) => {
+    if (hasChanges) {
+      const confirmed = await confirm('You have unsaved changes. Discard them?', {
+        title: 'Unsaved Changes',
+        confirmLabel: 'Discard',
+        variant: 'destructive'
+      });
+      if (!confirmed) return;
     }
     setCurrentFile(post);
     setSelectedFilePath(post.path);
@@ -1247,10 +1273,12 @@ function App() {
   const handleDeletePost = async (post: MarkdownFile) => {
     if (!dirHandle) return;
 
-    const confirmMsg = `Are you sure you want to delete "${post.frontmatter.title || post.name}"?\n\nThis action cannot be undone.`;
-    if (!window.confirm(confirmMsg)) {
-      return;
-    }
+    const confirmed = await confirm(`Are you sure you want to delete "${post.frontmatter.title || post.name}"?\n\nThis action cannot be undone.`, {
+      title: 'Delete Post',
+      confirmLabel: 'Delete',
+      variant: 'destructive'
+    });
+    if (!confirmed) return;
 
     try {
       await deleteFile(dirHandle, post.path);
@@ -1573,10 +1601,17 @@ function App() {
       
       if (!state) {
         // No state, go to table view
-        if (hasChanges && !window.confirm('You have unsaved changes. Discard them?')) {
-          // User cancelled, push current state back
-          window.history.pushState({ viewMode }, '', viewMode === 'editor' ? '#editor' : viewMode === 'settings' ? '#settings' : '#table');
-          return;
+        if (hasChanges) {
+          const confirmed = await confirm('You have unsaved changes. Discard them?', {
+            title: 'Unsaved Changes',
+            confirmLabel: 'Discard',
+            variant: 'destructive'
+          });
+          if (!confirmed) {
+            // User cancelled, push current state back
+            window.history.pushState({ viewMode }, '', viewMode === 'editor' ? '#editor' : viewMode === 'settings' ? '#settings' : '#table');
+            return;
+          }
         }
         setViewMode('table');
         setCurrentFile(null);
@@ -1587,10 +1622,17 @@ function App() {
       }
 
       // Handle unsaved changes
-      if (hasChanges && !window.confirm('You have unsaved changes. Discard them?')) {
-        // User cancelled, push current state back
-        window.history.pushState({ viewMode }, '', viewMode === 'editor' ? '#editor' : viewMode === 'settings' ? '#settings' : '#table');
-        return;
+      if (hasChanges) {
+        const confirmed = await confirm('You have unsaved changes. Discard them?', {
+          title: 'Unsaved Changes',
+          confirmLabel: 'Discard',
+          variant: 'destructive'
+        });
+        if (!confirmed) {
+          // User cancelled, push current state back
+          window.history.pushState({ viewMode }, '', viewMode === 'editor' ? '#editor' : viewMode === 'settings' ? '#settings' : '#table');
+          return;
+        }
       }
 
       // Navigate to the requested view
@@ -1947,8 +1989,13 @@ function App() {
           <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               onClick={async () => {
-                if (hasChanges && !window.confirm('You have unsaved changes. Discard them?')) {
-                  return;
+                if (hasChanges) {
+                  const confirmed = await confirm('You have unsaved changes. Discard them?', {
+                    title: 'Unsaved Changes',
+                    confirmLabel: 'Discard',
+                    variant: 'destructive'
+                  });
+                  if (!confirmed) return;
                 }
                 // If in editor mode, go to table view and ensure posts are loaded
                 if (viewMode === 'editor') {
@@ -2466,6 +2513,9 @@ function App() {
           projectPath={dirHandle?.name}
         />
       )}
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog />
     </div>
     </>
   );
