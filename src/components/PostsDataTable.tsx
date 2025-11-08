@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   flexRender,
   getCoreRowModel,
@@ -13,17 +13,16 @@ import type {
   SortingState,
   VisibilityState,
 } from '@tanstack/react-table';
-import { ArrowUpDown, MoreHorizontal, Settings2, Eye, EyeOff, Trash2, ExternalLink, Loader2, PanelLeft, PanelLeftClose } from 'lucide-react';
+import { ArrowUpDown, MoreHorizontal, Eye, EyeOff, Trash2, ExternalLink, Loader2, PanelLeft, PanelLeftClose } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuContent,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import {
@@ -39,6 +38,8 @@ import type { MarkdownFile } from '@/types';
 import { formatFieldLabel, isDateString, formatDateValue } from '@/lib/fieldUtils';
 import { buildPostUrl } from '@/lib/utils';
 import { getSettings } from '@/lib/settings';
+import { loadColumnVisibility, saveColumnVisibility } from '@/lib/columnVisibility';
+import { ColumnSelector } from '@/components/ColumnSelector';
 
 interface PostsDataTableProps {
   posts: MarkdownFile[];
@@ -76,10 +77,16 @@ const formatCellValue = (value: unknown): string => {
 export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onHide, title = 'All Posts', onClearFilter, onToggleSidebar, isSidebarVisible }: PostsDataTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() => loadColumnVisibility());
   const [globalFilter, setGlobalFilter] = useState('');
+  const [visibilityKey, setVisibilityKey] = useState(0);
 
   const settings = getSettings();
+
+  // Save column visibility whenever it changes
+  useEffect(() => {
+    saveColumnVisibility(columnVisibility);
+  }, [columnVisibility]);
 
   // Extract all unique columns from posts
   const allColumns = useMemo(() => {
@@ -119,6 +126,7 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
         return {
           accessorKey: 'frontmatter.title',
           id: columnKey,
+          enableHiding: false, // Title column cannot be hidden
           header: ({ column }) => {
             return (
               <Button
@@ -304,30 +312,11 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
           onChange={(event) => setGlobalFilter(event.target.value)}
           className="max-w-xs"
         />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline">
-              Columns <Settings2 className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {formatFieldLabel(column.id)}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <ColumnSelector 
+          key={visibilityKey}
+          table={table}
+          onVisibilityChange={() => setVisibilityKey(k => k + 1)}
+        />
       </div>
 
       {/* Table */}
@@ -386,27 +375,173 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
 
       {/* Pagination */}
       <div className="flex items-center justify-between py-4">
-        <div className="text-sm text-muted-foreground">
-          Page {table.getState().pagination.pageIndex + 1} of{" "}
-          {table.getPageCount()}
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-muted-foreground">
+            Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{" "}
+            {Math.min(
+              (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+              table.getFilteredRowModel().rows.length
+            )}{" "}
+            of {table.getFilteredRowModel().rows.length}
+          </p>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium">Rows per page</p>
+            <select
+              value={table.getState().pagination.pageSize}
+              onChange={(e) => {
+                table.setPageSize(Number(e.target.value));
+              }}
+              className="h-8 w-[70px] rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 appearance-none bg-[length:16px_16px] bg-[position:right_0.25rem_center] bg-no-repeat px-2 pr-6"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`
+              }}
+            >
+              {[10, 20, 30, 50, 100].map((pageSize) => (
+                <option key={pageSize} value={pageSize}>
+                  {pageSize}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+            >
+              <span className="sr-only">Go to first page</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+              >
+                <polyline points="11 17 6 12 11 7" />
+                <polyline points="18 17 13 12 18 7" />
+              </svg>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              <span className="sr-only">Go to previous page</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+              >
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </Button>
+            
+            {/* Page Numbers */}
+            {(() => {
+              const currentPage = table.getState().pagination.pageIndex;
+              const pageCount = table.getPageCount();
+              const pages: (number | string)[] = [];
+              
+              if (pageCount <= 7) {
+                // Show all pages if 7 or less
+                for (let i = 0; i < pageCount; i++) {
+                  pages.push(i);
+                }
+              } else {
+                // Always show first page
+                pages.push(0);
+                
+                if (currentPage <= 3) {
+                  // Near start
+                  pages.push(1, 2, 3, 4, '...', pageCount - 1);
+                } else if (currentPage >= pageCount - 4) {
+                  // Near end
+                  pages.push('...', pageCount - 5, pageCount - 4, pageCount - 3, pageCount - 2, pageCount - 1);
+                } else {
+                  // Middle
+                  pages.push('...', currentPage - 1, currentPage, currentPage + 1, '...', pageCount - 1);
+                }
+              }
+              
+              return pages.map((page, index) => {
+                if (page === '...') {
+                  return (
+                    <span key={`ellipsis-${index}`} className="px-2 text-sm text-muted-foreground">
+                      ...
+                    </span>
+                  );
+                }
+                
+                const pageNum = page as number;
+                const isActive = pageNum === currentPage;
+                
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={isActive ? 'default' : 'outline'}
+                    className="h-8 w-8 p-0"
+                    onClick={() => table.setPageIndex(pageNum)}
+                  >
+                    {pageNum + 1}
+                  </Button>
+                );
+              });
+            })()}
+            
+            <Button
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              <span className="sr-only">Go to next page</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+              >
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+              disabled={!table.getCanNextPage()}
+            >
+              <span className="sr-only">Go to last page</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+              >
+                <polyline points="13 17 18 12 13 7" />
+                <polyline points="6 17 11 12 6 7" />
+              </svg>
+            </Button>
+          </div>
         </div>
       </div>
     </div>

@@ -733,7 +733,7 @@ export function Settings({ onClose, directoryName }: SettingsProps = {}) {
           {/* Export Configuration */}
           <Section 
             title="Export Configuration" 
-            description="Export all your application settings, preferences, and data to a JSON file. This includes default meta fields, recent folders, column settings, hidden files, file tree preferences, and UI state. Use this to backup your configuration or transfer it to another machine."
+            description="Export all your application settings, preferences, and data to a JSON file. This includes default meta fields, recent folders, DataTable column visibility preferences, hidden files, file tree preferences, and UI state. Use this to backup your configuration or transfer it to another machine."
           >
             <button
               onClick={handleExport}
@@ -747,7 +747,7 @@ export function Settings({ onClose, directoryName }: SettingsProps = {}) {
           {/* Import Configuration */}
           <Section 
             title="Import Configuration" 
-            description="Restore your settings from a previously exported JSON file. This will replace all current settings including default meta, recent folders, column preferences, and hidden files. The page will automatically reload after import to apply all changes."
+            description="Restore your settings from a previously exported JSON file. This will replace all current settings including default meta, recent folders, DataTable column visibility preferences, and hidden files. The page will automatically reload after import to apply all changes."
           >
             <div className="space-y-2.5">
               <button
