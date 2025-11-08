@@ -954,8 +954,8 @@ function App() {
 
   // Check if warning should be shown on mount
   useEffect(() => {
-    setShowWarningModal(shouldShowWarning());
-  }, []);
+    setShowWarningModal(!isDemoMode && shouldShowWarning());
+  }, [isDemoMode]);
 
   // Update page title
   useEffect(() => {

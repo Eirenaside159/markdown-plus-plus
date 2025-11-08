@@ -66,7 +66,7 @@ export function WelcomeWarningModal({ isOpen, onAccept }: WelcomeWarningModalPro
                   <AlertTriangle className="h-4 w-4 shrink-0" />
                   Please be aware:
                 </p>
-                <ul className="space-y-1.5 text-warning-foreground pl-4 list-disc">
+                <ul className="space-y-1.5 text-foreground pl-4 list-disc">
                   <li>This application is in beta stage</li>
                   <li>Unexpected errors may occur</li>
                   <li>Data loss in your files is possible</li>
