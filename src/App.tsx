@@ -1759,7 +1759,8 @@ function App() {
         <div className="flex h-screen items-center justify-center bg-background">
           <div className="text-center space-y-3">
             <div className="inline-flex items-center justify-center w-16 h-16">
-              <img src="/logo.png" alt="Markdown++" className="w-full h-full object-contain animate-pulse" />
+              <img src="/logo-white.png" alt="Markdown++" className="w-full h-full object-contain animate-pulse dark:hidden" />
+              <img src="/logo.png" alt="Markdown++" className="w-full h-full object-contain animate-pulse hidden dark:block" />
             </div>
             <p className="text-muted-foreground animate-pulse">Restoring workspace...</p>
           </div>
@@ -1780,7 +1781,8 @@ function App() {
                   className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 mb-2 cursor-pointer hover:scale-105 transition-transform"
                   title="Markdown++"
                 >
-                  <img src="/logo.png" alt="Markdown++" className="w-full h-full object-contain" />
+                  <img src="/logo-white.png" alt="Markdown++" className="w-full h-full object-contain dark:hidden" />
+                  <img src="/logo.png" alt="Markdown++" className="w-full h-full object-contain hidden dark:block" />
                 </button>
                 <h1 className="text-3xl sm:text-4xl font-bold">
                   {displayedText}
@@ -1967,7 +1969,8 @@ function App() {
               }}
               className="flex items-center gap-1.5 text-base sm:text-lg font-semibold opacity-40 hover:opacity-100 transition-all duration-500 ease-in-out group cursor-pointer relative z-10"
             >
-              <img src="/logo.png" alt="Markdown++" className="w-6 h-6 sm:w-7 sm:h-7 object-contain group-hover:scale-105 transition-transform duration-500" />
+              <img src="/logo-white.png" alt="Markdown++" className="w-6 h-6 sm:w-7 sm:h-7 object-contain group-hover:scale-105 transition-transform duration-500 dark:hidden" />
+              <img src="/logo.png" alt="Markdown++" className="w-6 h-6 sm:w-7 sm:h-7 object-contain group-hover:scale-105 transition-transform duration-500 hidden dark:block" />
               <span>Markdown++</span>
             </button>
             
