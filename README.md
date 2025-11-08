@@ -36,11 +36,12 @@ Markdown++ gives you a modern, WordPress-like admin panel for your static site�
 
 - ✅ **No backend** - Runs entirely in your browser using modern web APIs
 - ✅ **No database** - Your files stay on your computer, no cloud storage needed
-- ✅ **Zero setup** - Just open the app and select your folder
+- ✅ **Zero setup** - Just open the app and select your folder (or try the demo!)
 - ✅ **Privacy-first** - No tracking, no data collection, completely offline-capable
 - ✅ **Works on Android** - Edit your site from your phone or tablet
 - ✅ **Git-integrated** - Commit and push changes with a single button
 - ✅ **Framework-agnostic** - Works with any static site generator
+- ✅ **Demo mode** - Explore all features without touching your files
 
 Built for developers who love static sites but want a better content editing experience.
 
@@ -62,6 +63,9 @@ Built for developers who love static sites but want a better content editing exp
 
 ### 🗂️ Content Management
 - **File Browser** - Navigate through your folder structure with a visual file tree
+  - Resizable sidebar for optimal workspace
+  - Drag & drop files between folders to reorganize
+  - Filter by folder to focus on specific content
 - **Table View** - See all your posts in a sortable, searchable data table
   - Sort by title, date, status, or any custom field
   - Filter posts by text search
@@ -74,6 +78,7 @@ Built for developers who love static sites but want a better content editing exp
   - Array inputs for lists
   - Supports custom fields of any type
 - **CRUD Operations** - Create, read, update, and delete posts directly from the UI
+- **File Management** - Rename files and move them between folders with drag & drop
 - **Related Posts** - Automatically link posts by canonical URL for multilingual sites
 - **Bulk Operations** - Manage multiple files efficiently
 
@@ -85,12 +90,19 @@ Built for developers who love static sites but want a better content editing exp
 - **Works Locally** - No server needed, uses isomorphic-git in the browser
 
 ### 🔧 Smart Features
+- **Demo Mode** - Try the app without selecting files - explore with sample content
 - **Auto-Save Drafts** - Your work is continuously saved to browser storage
 - **Persistent Workspace** - Your selected folder and preferences are remembered
+  - Recent folders list for quick access
+  - Restores your last open file on return
+  - Remembers theme and layout preferences
+- **Quick Theme Switcher** - Change between light, dark, and system themes from the header
 - **Column Customization** - Show/hide columns in the table view
 - **File Filtering** - Hide system files and folders (dotfiles, node_modules, etc.)
 - **Settings Panel** - Customize the editor behavior and appearance
 - **Favicon Badge** - Shows unsaved changes indicator in browser tab
+- **Visual Feedback** - Confetti celebrations when saving, smooth animations throughout
+- **Smart Header** - Shows current post title when scrolling in editor
 
 ### 🌐 Deployment & Access
 - **PWA Support** - Install as a native app on desktop and Android
@@ -105,8 +117,8 @@ Built for developers who love static sites but want a better content editing exp
 The easiest way to get started—no installation required!
 
 1. Visit <a href="https://markdown-plus-plus.com/" style="text-decoration:none;">markdown-plus-plus.com</a>
-2. Click "Select Folder" and choose your Markdown files directory
-3. Grant browser permission to access the folder
+2. Click "Try Demo" to explore without selecting files, or "Select Folder" to work with your own files
+3. Grant browser permission to access the folder (if using your own files)
 4. Start editing!
 
 **Note:** All processing happens in your browser. Your files never leave your computer.
@@ -116,7 +128,7 @@ Perfect for development or offline use:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/markdown-plus-plus.git
+git clone https://github.com/emir/markdown-plus-plus.git
 cd markdown-plus-plus
 
 # Install dependencies
@@ -172,6 +184,7 @@ npm run build
    - View all posts in the table
    - Sort by any column (title, date, status, etc.)
    - Use the search box to filter posts
+   - Filter by folder using the file tree sidebar
    - Configure visible columns in settings
 
 2. **Edit Content**
@@ -180,32 +193,46 @@ npm run build
    - Edit content in the WYSIWYG editor
    - Switch to raw Markdown mode if needed
    - Press `Ctrl/Cmd + S` to save
+   - Enjoy the confetti celebration! 🎉
 
-3. **Create New Posts**
+3. **Organize Files**
+   - Drag and drop files between folders in the file tree
+   - Rename files directly in the editor
+   - Resize the file tree sidebar to your preference
+   - Hide files you don't want to see
+
+4. **Create New Posts**
    - Click "New Post" button
+   - Posts are created in the currently selected folder
    - Fill in the frontmatter fields
    - Write your content
    - Save to create the file
 
-4. **Publish Changes**
+5. **Publish Changes**
    - Click "Publish" button in the editor
    - Review the auto-generated commit message
    - Edit the message if needed
    - Click "Publish" to commit and push to Git
 
-5. **Manage Settings**
-   - Click the settings icon
-   - Customize editor behavior
+6. **Manage Settings**
+   - Click the settings dropdown in the header
+   - Quickly switch themes (light/dark/system)
+   - Access advanced settings
    - Show/hide table columns
    - Configure file filtering
 
 ### Tips & Tricks
 
 - **Keyboard Shortcuts:** Use `Ctrl/Cmd + S` to save quickly
+- **Try Before You Commit:** Use demo mode to explore the app without touching your files
+- **Recent Folders:** Quickly access your frequently used projects from the welcome screen
 - **Persistent State:** Your selected folder is remembered between sessions
+- **File Organization:** Drag and drop files in the file tree to reorganize your content
 - **Mobile Editing:** Works great on Android Chrome and Edge
 - **Offline Work:** Edit without internet; push changes when online
 - **Multiple Languages:** Use canonical URLs to link related posts in different languages
+- **Custom Workspace:** Resize the file tree sidebar to fit your workflow
+- **Visual Cues:** Watch for the favicon badge showing unsaved changes
 
 **That's it!** No configuration files, no database setup, no complexity.
 
@@ -437,26 +464,31 @@ Markdown++ is perfect for:
 - Manage posts for Hugo, Jekyll, or Next.js blogs
 - Edit frontmatter and content with a visual editor
 - Preview and organize posts in a table view
+- Reorganize content with drag & drop
 
 **Documentation Sites**
 - Edit documentation for Docusaurus, VuePress, or MkDocs
 - Manage technical content with code highlighting
 - Keep docs up-to-date with Git integration
+- Move files between sections easily
 
 **Multilingual Content**
 - Link related posts across languages with canonical URLs
 - Manage translations side-by-side
 - Keep frontmatter synchronized
+- Organize by language folders
 
 **Marketing Teams**
 - Give non-technical team members an easy editing interface
 - Review and edit landing page content
 - Publish changes without touching code
+- Try changes in demo mode before committing
 
 **Personal Knowledge Base**
 - Manage your personal Markdown notes
 - Organize content with tags and categories
 - Keep everything in version control
+- Quick access to recent projects
 
 ## ❓ Frequently Asked Questions
 
@@ -464,10 +496,10 @@ Markdown++ is perfect for:
 Yes! All your files stay on your computer. The app runs entirely in your browser and never sends your content to any server. Only Git operations (if you use them) communicate with your Git remote.
 
 ### Do I need to install anything?
-No! Just open the web app in a supported browser and select your folder. For local development, you'll need Node.js and npm.
+No! Just open the web app in a supported browser. You can try the demo mode immediately, or select a folder to work with your own files. For local development, you'll need Node.js and npm.
 
 ### Can I use this offline?
-Yes! After the initial load, the app works completely offline. You can edit and save files without an internet connection. You'll only need internet to push changes to Git.
+Yes! After the initial load, the app works completely offline. You can edit and save files without an internet connection. Demo mode works offline too. You'll only need internet to push changes to Git.
 
 ### Does it work with my static site generator?
 Yes! Markdown++ works with any tool that uses Markdown files with YAML frontmatter: Hugo, Jekyll, Next.js, Astro, Gatsby, Eleventy, VuePress, Docusaurus, and more.
