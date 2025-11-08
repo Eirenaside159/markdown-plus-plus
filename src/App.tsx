@@ -1939,7 +1939,7 @@ function App() {
         onAccept={() => setShowWarningModal(false)}
       />
       
-      <div className="h-screen flex flex-col bg-background">
+      <div className="h-screen overflow-hidden flex flex-col bg-background">
       {/* Header */}
       <div className="border-b">
         <div className="relative flex items-center px-3 sm:px-4 gap-2 sm:gap-4 h-12 sm:h-14">
@@ -2275,12 +2275,10 @@ function App() {
           </div>
         </div>
       ) : viewMode === 'table' ? (
-        <div className="flex-1 overflow-hidden flex flex-col">
-          {/* Two-column layout */}
-          <div className="flex-1 overflow-hidden flex">
-            {/* File Tree Sidebar */}
-            {isFileTreeVisible && (
-              <div className="relative border-r overflow-y-auto overflow-x-hidden p-3 hidden sm:block text-muted-foreground" style={{ width: `${fileTreeWidth}px` }}>
+        <div className="flex-1 min-h-0 flex">
+          {/* File Tree Sidebar */}
+          {isFileTreeVisible && (
+            <div className="relative min-h-0 border-r overflow-y-auto overflow-x-hidden p-3 hidden sm:block text-muted-foreground" style={{ width: `${fileTreeWidth}px` }}>
                 {/* Loading Overlay */}
                 {isMovingFile && (
                   <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -2373,7 +2371,7 @@ function App() {
             )}
             
             {/* Main Content - Data Table */}
-            <div className="flex-1 overflow-auto p-3 sm:p-4">
+            <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4">
               <PostsDataTable
                 posts={allPosts.filter(post => {
                   if (!dirHandle) return true;
@@ -2393,7 +2391,6 @@ function App() {
                 isSidebarVisible={isFileTreeVisible}
               />
             </div>
-          </div>
         </div>
       ) : (
         <div className="flex-1 overflow-auto">
