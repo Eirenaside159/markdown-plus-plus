@@ -1044,7 +1044,7 @@ function App() {
     setDirHandle({ name: 'Demo Workspace' } as FileSystemDirectoryHandle);
     
     // Initialize browser history with table view
-    window.history.replaceState({ viewMode: 'table' }, '', '#table');
+    window.history.replaceState({ viewMode: 'table' }, '', '#posts');
     
     toast.success('Welcome to the demo! 👋', { duration: 3000 });
   };
@@ -1103,7 +1103,7 @@ function App() {
       await refreshPosts(handle, tree);
       
       // Initialize browser history with table view
-      window.history.replaceState({ viewMode: 'table' }, '', '#table');
+      window.history.replaceState({ viewMode: 'table' }, '', '#posts');
       
       // Check git status
       const status = await checkGitStatus(handle);
@@ -1161,7 +1161,7 @@ function App() {
             } catch (error) {
               // If file cannot be restored, fall back to table view
               setViewMode('table');
-              window.history.replaceState({ viewMode: 'table' }, '', '#table');
+              window.history.replaceState({ viewMode: 'table' }, '', '#posts');
             }
 
             // Initialize posts and background refresh (cache-first)
@@ -1191,11 +1191,11 @@ function App() {
 
             if (savedState?.viewMode) {
               setViewMode(savedState.viewMode);
-              const hash = savedState.viewMode === 'settings' ? '#settings' : '#table';
+              const hash = savedState.viewMode === 'settings' ? '#settings' : '#posts';
               window.history.replaceState({ viewMode: savedState.viewMode }, '', hash);
             } else {
               // No saved state, initialize with table view
-              window.history.replaceState({ viewMode: 'table' }, '', '#table');
+              window.history.replaceState({ viewMode: 'table' }, '', '#posts');
             }
 
             // Check git status
@@ -1694,7 +1694,7 @@ function App() {
           });
           if (!confirmed) {
             // User cancelled, push current state back
-            window.history.pushState({ viewMode }, '', viewMode === 'editor' ? '#editor' : viewMode === 'settings' ? '#settings' : '#table');
+            window.history.pushState({ viewMode }, '', viewMode === 'editor' ? '#editor' : viewMode === 'settings' ? '#settings' : '#posts');
             return;
           }
         }
@@ -1715,7 +1715,7 @@ function App() {
         });
         if (!confirmed) {
           // User cancelled, push current state back
-          window.history.pushState({ viewMode }, '', viewMode === 'editor' ? '#editor' : viewMode === 'settings' ? '#settings' : '#table');
+          window.history.pushState({ viewMode }, '', viewMode === 'editor' ? '#editor' : viewMode === 'settings' ? '#settings' : '#posts');
           return;
         }
       }
@@ -2089,12 +2089,12 @@ function App() {
                   setSelectedFilePath(null);
                   setHasChanges(false);
                   setHasPendingPublish(false);
-                  window.history.pushState({ viewMode: 'table' }, '', '#table');
+                  window.history.pushState({ viewMode: 'table' }, '', '#posts');
                   if (!isDemoMode) await reloadPosts();
                 } else if (viewMode === 'settings') {
                   // If in settings, go to table view and ensure posts are loaded
                   setViewMode('table');
-                  window.history.pushState({ viewMode: 'table' }, '', '#table');
+                  window.history.pushState({ viewMode: 'table' }, '', '#posts');
                   if (!isDemoMode) await reloadPosts();
                 } else if (viewMode === 'table' && dirHandle && !isDemoMode) {
                   // If in table view, refresh posts (cache-first)
@@ -2399,7 +2399,7 @@ function App() {
             <Settings 
               onClose={async () => {
                 setViewMode('table');
-                window.history.pushState({ viewMode: 'table' }, '', '#table');
+                window.history.pushState({ viewMode: 'table' }, '', '#posts');
                 await reloadPosts();
               }} 
               directoryName={dirHandle?.name}
@@ -2548,7 +2548,7 @@ function App() {
                   <button
                     onClick={() => {
                       setViewMode('table');
-                      window.history.pushState({ viewMode: 'table' }, '', '#table');
+                      window.history.pushState({ viewMode: 'table' }, '', '#posts');
                     }}
                     className="text-sm text-primary hover:underline px-4 py-2"
                   >
