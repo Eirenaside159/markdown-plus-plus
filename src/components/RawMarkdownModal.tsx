@@ -16,13 +16,13 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
   const [copied, setCopied] = useState(false);
   const [copiedOriginal, setCopiedOriginal] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('split');
-  const showComparison = originalContent && originalContent !== content;
+  const hasChanges = originalContent && originalContent !== content;
 
   // Calculate diff
   const diffResult = useMemo(() => {
-    if (!showComparison || !originalContent) return null;
+    if (!hasChanges || !originalContent) return null;
     return Diff.diffLines(originalContent, content);
-  }, [showComparison, originalContent, content]);
+  }, [hasChanges, originalContent, content]);
 
   // ESC key to close
   useEffect(() => {
@@ -73,19 +73,19 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
       onClick={handleBackdropClick}
     >
       <div 
-        className={`bg-background rounded-lg shadow-xl w-full ${showComparison ? 'max-w-7xl' : 'max-w-4xl'} max-h-[90vh] flex flex-col border overflow-hidden`}
+        className="bg-background rounded-lg shadow-xl w-full max-w-5xl h-[85vh] flex flex-col border overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b gap-3">
           <div className="flex-1 min-w-0">
             <h2 className="text-lg font-semibold truncate">
-              {showComparison ? 'View Changes' : 'Raw Markdown'}
+              View Changes
             </h2>
             <p className="text-sm text-muted-foreground truncate hidden sm:block">{filename}</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {showComparison && (
+            {hasChanges && (
               <div className="flex items-center gap-1 border rounded-md p-0.5">
                 <button
                   onClick={() => setViewMode('split')}
@@ -113,25 +113,6 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
                 </button>
               </div>
             )}
-            {!showComparison && (
-              <button
-                onClick={handleCopy}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors font-medium"
-                title="Copy to clipboard"
-              >
-                {copied ? (
-                  <>
-                    <Check className="h-4 w-4" />
-                    <span className="hidden sm:inline">Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4" />
-                    <span className="hidden sm:inline">Copy</span>
-                  </>
-                )}
-              </button>
-            )}
             <button
               onClick={onClose}
               className="h-9 w-9 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors inline-flex items-center justify-center"
@@ -144,7 +125,7 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
         </div>
 
         {/* Content */}
-        {showComparison ? (
+        {hasChanges ? (
           viewMode === 'unified' ? (
             // Unified Diff View (GitHub style)
             <div className="flex-1 overflow-y-auto overflow-x-hidden">
@@ -328,20 +309,88 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
             </div>
           )
         ) : (
-          <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4">
-            <pre className="text-xs sm:text-sm font-mono whitespace-pre-wrap break-words overflow-wrap-anywhere">
-              <code>{content}</code>
-            </pre>
+          // No changes - show original on left, "No changes" message on right
+          <div className="flex-1 overflow-hidden flex flex-col sm:flex-row min-w-0">
+            {/* Original (Left) */}
+            <div className="flex-1 flex flex-col border-b sm:border-b-0 sm:border-r min-w-0 overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/50">
+                <h3 className="text-sm font-semibold">Original</h3>
+                <button
+                  onClick={handleCopyOriginal}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 text-xs rounded-md border border-input bg-background hover:bg-accent transition-colors"
+                  title="Copy original"
+                >
+                  {copiedOriginal ? (
+                    <>
+                      <Check className="h-3 w-3" />
+                      <span className="hidden sm:inline">Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3 w-3" />
+                      <span className="hidden sm:inline">Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto overflow-x-hidden">
+                <div className="font-mono text-xs sm:text-sm">
+                  {(originalContent || content).split('\n').map((line, index) => (
+                    <div key={index} className="flex min-w-0">
+                      <span className="inline-block w-12 flex-shrink-0 px-2 py-0.5 text-right select-none border-r bg-muted/30 text-muted-foreground/50 border-border">
+                        {index + 1}
+                      </span>
+                      <span className="flex-1 min-w-0 px-3 py-0.5 whitespace-pre-wrap break-words overflow-wrap-anywhere">
+                        {line || ' '}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* No Changes Message (Right) */}
+            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/50">
+                <h3 className="text-sm font-semibold">Current</h3>
+                <button
+                  onClick={handleCopy}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 text-xs rounded-md border border-input bg-background hover:bg-accent transition-colors"
+                  title="Copy current"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="h-3 w-3" />
+                      <span className="hidden sm:inline">Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3 w-3" />
+                      <span className="hidden sm:inline">Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto overflow-x-hidden flex items-center justify-center p-8">
+                <div className="text-center space-y-3">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-success/10 text-success">
+                    <Check className="h-8 w-8" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-lg font-semibold">No Changes</p>
+                    <p className="text-sm text-muted-foreground">
+                      The current version matches the saved version
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
         {/* Footer */}
         <div className="flex items-center justify-between p-4 border-t bg-muted/30 gap-3 flex-wrap">
-          {!showComparison ? (
-            <p className="text-sm text-muted-foreground">
-              {content.split('\n').length} lines • {content.length} chars
-            </p>
-          ) : (
+          {hasChanges ? (
             <div className="text-sm text-muted-foreground flex gap-4">
               <span>
                 {diffResult?.filter(d => d.added).reduce((acc, d) => acc + d.value.split('\n').length - 1, 0) || 0} additions
@@ -350,6 +399,10 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
                 {diffResult?.filter(d => d.removed).reduce((acc, d) => acc + d.value.split('\n').length - 1, 0) || 0} deletions
               </span>
             </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No changes to display
+            </p>
           )}
           <button
             onClick={onClose}
