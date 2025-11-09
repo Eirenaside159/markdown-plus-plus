@@ -8,6 +8,7 @@ import { Settings } from '@/components/Settings';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/Sheet';
 import { toast } from 'sonner';
 import { WelcomeWarningModal, shouldShowWarning } from '@/components/WelcomeWarningModal';
+import { DemoInfoModal } from '@/components/DemoInfoModal';
 import { FileBrowser } from '@/components/FileBrowser';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import confetti from 'canvas-confetti';
@@ -938,6 +939,7 @@ function App() {
   const [shouldAutoFocus, setShouldAutoFocus] = useState(false);
   const [isMovingFile, setIsMovingFile] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [showDemoModal, setShowDemoModal] = useState(false);
   const [recentFolders, setRecentFolders] = useState(() => getRecentFolders());
   const [hiddenFiles, setHiddenFiles] = useState<string[]>([]);
   
@@ -1046,7 +1048,8 @@ function App() {
     // Initialize browser history with table view
     window.history.replaceState({ viewMode: 'table' }, '', '#posts');
     
-    toast.success('Welcome to the demo! 👋', { duration: 3000 });
+    // Show demo info modal
+    setShowDemoModal(true);
   };
 
   const handleExitDemo = async () => {
@@ -2064,6 +2067,11 @@ function App() {
       <WelcomeWarningModal
         isOpen={showWarningModal}
         onAccept={() => setShowWarningModal(false)}
+      />
+      
+      <DemoInfoModal
+        isOpen={showDemoModal}
+        onClose={() => setShowDemoModal(false)}
       />
       
       <div className="h-screen overflow-hidden flex flex-col bg-background">
