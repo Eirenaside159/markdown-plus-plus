@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings as SettingsIcon, X, Trash2, Download, Upload, AlertTriangle, EyeOff, Eye, Save, Link2, Palette, FileText, ListTree, Archive, FolderOpen } from 'lucide-react';
+import { Settings as SettingsIcon, X, Trash2, Download, Upload, AlertTriangle, EyeOff, Eye, Save, Link2, Palette, FileText, ListTree, Archive, FolderOpen, Info, Github, BookOpen, Heart, ExternalLink, ChevronDown, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { getSettings, saveSettings } from '@/lib/settings';
@@ -7,6 +7,7 @@ import { getHiddenFiles, unhideFile, clearHiddenFiles } from '@/lib/hiddenFiles'
 import { applyColorPalette, getPaletteDisplayName, PALETTE_CATEGORIES } from '@/lib/colorPalettes';
 import type { AppSettings, ColorPalette } from '@/types/settings';
 import { useConfirm } from './ui/confirm-dialog';
+import packageJson from '../../package.json';
 
 function UrlPreview({ baseUrl, urlFormat }: { baseUrl: string; urlFormat: string }) {
   const now = new Date();
@@ -49,6 +50,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
   const [newMultiplicityKey, setNewMultiplicityKey] = useState('');
   const [newMultiplicityMode, setNewMultiplicityMode] = useState<'single' | 'multi'>('multi');
   const [hiddenFiles, setHiddenFiles] = useState<string[]>([]);
+  const [isLibrariesOpen, setIsLibrariesOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { confirm, ConfirmDialog } = useConfirm();
   const urlFormatInputRef = useRef<HTMLInputElement>(null);
@@ -396,6 +398,13 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
             >
               <Archive className="h-4 w-4 shrink-0" />
               <span className="hidden md:inline whitespace-nowrap">Backup</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="about" 
+              className="flex-shrink-0 w-full md:w-full justify-center md:justify-start gap-2 md:gap-3 text-left px-3 py-2.5 rounded-md text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent hover:text-accent-foreground"
+            >
+              <Info className="h-4 w-4 shrink-0" />
+              <span className="hidden md:inline whitespace-nowrap">About</span>
             </TabsTrigger>
           </TabsList>
 
@@ -778,6 +787,231 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                 <p className="text-xs text-foreground leading-relaxed">
                   <strong>Warning:</strong> Importing will replace all current settings and reload the page.
                 </p>
+              </div>
+            </div>
+          </Section>
+            </TabsContent>
+
+            {/* About Tab */}
+            <TabsContent value="about" className="mt-0 space-y-6 max-w-2xl">
+          {/* App Information */}
+          <Section 
+            title="About Markdown++" 
+            description="A modern, powerful markdown editor for managing your blog posts and content. Built with React, TypeScript, and modern web technologies."
+          >
+            <div className="space-y-6">
+              {/* Logo and Version */}
+              <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50 border border-border">
+                <div className="h-16 w-16 rounded-lg flex items-center justify-center shrink-0">
+                  <img 
+                    src="/logo-white.png" 
+                    alt="Markdown++ Logo" 
+                    className="h-16 w-16 object-contain dark:hidden"
+                  />
+                  <img 
+                    src="/logo.png" 
+                    alt="Markdown++ Logo" 
+                    className="h-16 w-16 object-contain hidden dark:block"
+                  />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-lg font-semibold text-foreground">Markdown++</h4>
+                  <p className="text-sm text-muted-foreground mt-1">Version {packageJson.version}</p>
+                </div>
+              </div>
+
+              {/* Quick Links */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-foreground">Quick Links</h4>
+                <div className="space-y-2">
+                  {/* GitHub */}
+                  <a
+                    href="https://github.com/byildiz/markdown-plus-plus"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3 rounded-md border border-input bg-background hover:bg-accent hover:border-accent-foreground/20 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Github className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                      <div>
+                        <div className="text-sm font-medium text-foreground">GitHub Repository</div>
+                        <div className="text-xs text-muted-foreground">View source code, report issues, contribute</div>
+                      </div>
+                    </div>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  </a>
+
+                  {/* Docs */}
+                  <a
+                    href="https://markdown-plus-plus.com/docs"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3 rounded-md border border-input bg-background hover:bg-accent hover:border-accent-foreground/20 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <BookOpen className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                      <div>
+                        <div className="text-sm font-medium text-foreground">Documentation</div>
+                        <div className="text-xs text-muted-foreground">Learn how to use all features</div>
+                      </div>
+                    </div>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  </a>
+
+                  {/* Donate */}
+                  <a
+                    href="https://github.com/sponsors/byildiz"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3 rounded-md border border-input bg-background hover:bg-accent hover:border-accent-foreground/20 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Heart className="h-5 w-5 text-muted-foreground group-hover:text-destructive transition-colors" />
+                      <div>
+                        <div className="text-sm font-medium text-foreground">Support Development</div>
+                        <div className="text-xs text-muted-foreground">Help keep this project alive</div>
+                      </div>
+                    </div>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  </a>
+                </div>
+              </div>
+
+              {/* Additional Info */}
+              <div className="p-4 rounded-lg bg-muted/30 border border-border space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">License</span>
+                  <span className="font-medium text-foreground">MIT</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Built with</span>
+                  <span className="font-medium text-foreground">React + TypeScript + Vite</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Homepage</span>
+                  <a 
+                    href="https://markdown-plus-plus.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="font-medium text-primary hover:underline"
+                  >
+                    markdown-plus-plus.com
+                  </a>
+                </div>
+              </div>
+
+              {/* Open Source Libraries */}
+              <div className="space-y-3">
+                <button
+                  onClick={() => setIsLibrariesOpen(!isLibrariesOpen)}
+                  className="w-full flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border hover:bg-muted transition-colors group"
+                >
+                  <h4 className="text-sm font-medium text-foreground">Open Source Libraries</h4>
+                  {isLibrariesOpen ? (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  )}
+                </button>
+                
+                {isLibrariesOpen && (
+                <div className="space-y-4 pt-3">
+                  {/* Core Framework */}
+                  <div>
+                    <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Core Framework</h5>
+                    <div className="space-y-1.5">
+                      <a href="https://react.dev" target="_blank" rel="noopener noreferrer" className="block text-sm text-foreground hover:text-primary transition-colors">
+                        • React - UI Library
+                      </a>
+                      <a href="https://www.typescriptlang.org" target="_blank" rel="noopener noreferrer" className="block text-sm text-foreground hover:text-primary transition-colors">
+                        • TypeScript - Type Safety
+                      </a>
+                      <a href="https://vitejs.dev" target="_blank" rel="noopener noreferrer" className="block text-sm text-foreground hover:text-primary transition-colors">
+                        • Vite - Build Tool
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Editor */}
+                  <div>
+                    <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Editor</h5>
+                    <div className="space-y-1.5">
+                      <a href="https://tiptap.dev" target="_blank" rel="noopener noreferrer" className="block text-sm text-foreground hover:text-primary transition-colors">
+                        • TipTap - Rich Text Editor
+                      </a>
+                      <a href="https://github.com/jonschlinkert/gray-matter" target="_blank" rel="noopener noreferrer" className="block text-sm text-foreground hover:text-primary transition-colors">
+                        • Gray Matter - Frontmatter Parser
+                      </a>
+                      <a href="https://marked.js.org" target="_blank" rel="noopener noreferrer" className="block text-sm text-foreground hover:text-primary transition-colors">
+                        • Marked - Markdown Parser
+                      </a>
+                      <a href="https://github.com/mixmark-io/turndown" target="_blank" rel="noopener noreferrer" className="block text-sm text-foreground hover:text-primary transition-colors">
+                        • Turndown - HTML to Markdown
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* UI Components */}
+                  <div>
+                    <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">UI Components</h5>
+                    <div className="space-y-1.5">
+                      <a href="https://www.radix-ui.com" target="_blank" rel="noopener noreferrer" className="block text-sm text-foreground hover:text-primary transition-colors">
+                        • Radix UI - Accessible Components
+                      </a>
+                      <a href="https://ui.shadcn.com" target="_blank" rel="noopener noreferrer" className="block text-sm text-foreground hover:text-primary transition-colors">
+                        • shadcn/ui - UI Component System
+                      </a>
+                      <a href="https://tailwindcss.com" target="_blank" rel="noopener noreferrer" className="block text-sm text-foreground hover:text-primary transition-colors">
+                        • Tailwind CSS - Utility-First CSS
+                      </a>
+                      <a href="https://lucide.dev" target="_blank" rel="noopener noreferrer" className="block text-sm text-foreground hover:text-primary transition-colors">
+                        • Lucide React - Icon Library
+                      </a>
+                      <a href="https://sonner.emilkowal.ski" target="_blank" rel="noopener noreferrer" className="block text-sm text-foreground hover:text-primary transition-colors">
+                        • Sonner - Toast Notifications
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Data & State */}
+                  <div>
+                    <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Data & State</h5>
+                    <div className="space-y-1.5">
+                      <a href="https://tanstack.com/table" target="_blank" rel="noopener noreferrer" className="block text-sm text-foreground hover:text-primary transition-colors">
+                        • TanStack Table - Data Tables
+                      </a>
+                      <a href="https://isomorphic-git.org" target="_blank" rel="noopener noreferrer" className="block text-sm text-foreground hover:text-primary transition-colors">
+                        • Isomorphic Git - Git Operations
+                      </a>
+                      <a href="https://github.com/feross/buffer" target="_blank" rel="noopener noreferrer" className="block text-sm text-foreground hover:text-primary transition-colors">
+                        • Buffer - Node.js Buffer API
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Utilities */}
+                  <div>
+                    <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Utilities</h5>
+                    <div className="space-y-1.5">
+                      <a href="https://github.com/lukeed/clsx" target="_blank" rel="noopener noreferrer" className="block text-sm text-foreground hover:text-primary transition-colors">
+                        • clsx - Conditional Classnames
+                      </a>
+                      <a href="https://github.com/dcastil/tailwind-merge" target="_blank" rel="noopener noreferrer" className="block text-sm text-foreground hover:text-primary transition-colors">
+                        • tailwind-merge - Tailwind Class Merger
+                      </a>
+                      <a href="https://github.com/kpdecker/jsdiff" target="_blank" rel="noopener noreferrer" className="block text-sm text-foreground hover:text-primary transition-colors">
+                        • diff - Text Diffing
+                      </a>
+                      <a href="https://atomiks.github.io/tippyjs" target="_blank" rel="noopener noreferrer" className="block text-sm text-foreground hover:text-primary transition-colors">
+                        • Tippy.js - Tooltip Library
+                      </a>
+                      <a href="https://www.kirilv.com/canvas-confetti" target="_blank" rel="noopener noreferrer" className="block text-sm text-foreground hover:text-primary transition-colors">
+                        • canvas-confetti - Celebration Effects
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                )}
               </div>
             </div>
           </Section>
