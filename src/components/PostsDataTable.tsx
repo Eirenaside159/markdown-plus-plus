@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   flexRender,
   getCoreRowModel,
@@ -80,8 +80,52 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() => loadColumnVisibility());
   const [globalFilter, setGlobalFilter] = useState('');
   const [visibilityKey, setVisibilityKey] = useState(0);
+  const [contextMenuRow, setContextMenuRow] = useState<MarkdownFile | null>(null);
+  const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   const settings = getSettings();
+
+  // Adjust context menu position to keep it within viewport
+  useEffect(() => {
+    if (!contextMenuPosition || !menuRef.current) return;
+
+    const menuRect = menuRef.current.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    let adjustedX = contextMenuPosition.x;
+    let adjustedY = contextMenuPosition.y;
+
+    // Adjust horizontal position
+    if (contextMenuPosition.x + menuRect.width > viewportWidth) {
+      adjustedX = viewportWidth - menuRect.width - 10;
+    }
+
+    // Adjust vertical position
+    if (contextMenuPosition.y + menuRect.height > viewportHeight) {
+      adjustedY = viewportHeight - menuRect.height - 10;
+    }
+
+    if (adjustedX !== contextMenuPosition.x || adjustedY !== contextMenuPosition.y) {
+      setContextMenuPosition({ x: adjustedX, y: adjustedY });
+    }
+  }, [contextMenuPosition]);
+
+  // Close context menu on ESC key
+  useEffect(() => {
+    if (!contextMenuRow) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setContextMenuRow(null);
+        setContextMenuPosition(null);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [contextMenuRow]);
 
   // Save column visibility whenever it changes
   useEffect(() => {
@@ -346,6 +390,12 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
+                  className={contextMenuRow?.path === row.original.path ? 'bg-accent/50' : ''}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setContextMenuRow(row.original);
+                    setContextMenuPosition({ x: e.clientX, y: e.clientY });
+                  }}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="text-xs sm:text-sm">
@@ -544,6 +594,70 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
           </div>
         </div>
       </div>
+
+      {/* Context Menu */}
+      {contextMenuRow && contextMenuPosition && (
+        <>
+          <div 
+            className="fixed inset-0 z-50" 
+            onClick={() => {
+              setContextMenuRow(null);
+              setContextMenuPosition(null);
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setContextMenuRow(null);
+              setContextMenuPosition(null);
+            }}
+          />
+          <div
+            ref={menuRef}
+            className="fixed z-50 min-w-[12rem] rounded-md border bg-popover p-1 text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95"
+            style={{
+              left: `${contextMenuPosition.x}px`,
+              top: `${contextMenuPosition.y}px`,
+            }}
+          >
+            <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
+              Actions
+            </div>
+            <button
+              onClick={() => {
+                onEdit(contextMenuRow);
+                setContextMenuRow(null);
+                setContextMenuPosition(null);
+              }}
+              className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              Edit
+            </button>
+            <button
+              onClick={() => {
+                onHide(contextMenuRow);
+                setContextMenuRow(null);
+                setContextMenuPosition(null);
+              }}
+              className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+            >
+              <EyeOff className="mr-2 h-4 w-4" />
+              Hide
+            </button>
+            <div className="my-1 h-px bg-border" />
+            <button
+              onClick={() => {
+                onDelete(contextMenuRow);
+                setContextMenuRow(null);
+                setContextMenuPosition(null);
+              }}
+              className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground text-destructive focus:text-destructive"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

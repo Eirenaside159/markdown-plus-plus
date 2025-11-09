@@ -2492,6 +2492,30 @@ function App() {
                   }}
                   onFileMove={isDemoMode ? undefined : handleFileMove}
                   isMoving={isMovingFile}
+                  onFileEdit={(path) => {
+                    const post = allPosts.find(p => p.path === path);
+                    if (post) {
+                      handleEditPost(post);
+                    }
+                  }}
+                  onFileHide={isDemoMode 
+                    ? () => toast.info('Hiding is disabled in demo mode')
+                    : (path) => {
+                        const post = allPosts.find(p => p.path === path);
+                        if (post) {
+                          handleHidePost(post);
+                        }
+                      }
+                  }
+                  onFileDelete={isDemoMode 
+                    ? () => toast.info('Deleting is disabled in demo mode')
+                    : (path) => {
+                        const post = allPosts.find(p => p.path === path);
+                        if (post) {
+                          handleDeletePost(post);
+                        }
+                      }
+                  }
                 />
                 {/* Resize Handle */}
                 <div

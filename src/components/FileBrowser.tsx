@@ -1,7 +1,15 @@
 import type { FileTreeItem } from '@/types';
-import { File, Folder, FolderOpen, ChevronRight, EyeOff } from 'lucide-react';
+import { File, Folder, FolderOpen, ChevronRight, EyeOff, Eye, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
+} from '@/components/ui/context-menu';
 
 interface FileBrowserProps {
   files: FileTreeItem[];
@@ -10,6 +18,9 @@ interface FileBrowserProps {
   hiddenFiles: string[];
   onFileMove?: (sourcePath: string, targetDirPath: string) => void;
   isMoving?: boolean;
+  onFileEdit?: (path: string) => void;
+  onFileHide?: (path: string) => void;
+  onFileDelete?: (path: string) => void;
 }
 
 function FileTreeNode({
@@ -20,6 +31,11 @@ function FileTreeNode({
   hiddenFiles,
   onFileMove,
   isMoving,
+  onFileEdit,
+  onFileHide,
+  onFileDelete,
+  contextMenuPath,
+  setContextMenuPath,
 }: {
   item: FileTreeItem;
   level: number;
@@ -28,6 +44,11 @@ function FileTreeNode({
   hiddenFiles: string[];
   onFileMove?: (sourcePath: string, targetDirPath: string) => void;
   isMoving?: boolean;
+  onFileEdit?: (path: string) => void;
+  onFileHide?: (path: string) => void;
+  onFileDelete?: (path: string) => void;
+  contextMenuPath: string | null;
+  setContextMenuPath: (path: string | null) => void;
 }) {
   const [isOpen, setIsOpen] = useState(true);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -111,6 +132,11 @@ function FileTreeNode({
                 hiddenFiles={hiddenFiles}
                 onFileMove={onFileMove}
                 isMoving={isMoving}
+                onFileEdit={onFileEdit}
+                onFileHide={onFileHide}
+                onFileDelete={onFileDelete}
+                contextMenuPath={contextMenuPath}
+                setContextMenuPath={setContextMenuPath}
               />
             ))}
           </div>
@@ -137,29 +163,70 @@ function FileTreeNode({
   };
 
   return (
-    <button
-      onClick={() => onFileSelect(item.path)}
-      draggable={!isMoving}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      className={cn(
-        'flex w-full items-center gap-2 rounded-md py-1.5 text-sm hover:bg-accent min-w-0 transition-opacity',
-        selectedFile === item.path && 'bg-accent text-foreground',
-        isHidden && 'opacity-50',
-        isDragging && 'opacity-30',
-        !isMoving && 'cursor-move',
-        isMoving && 'cursor-not-allowed opacity-60'
-      )}
-      style={{ paddingLeft: `${level * 12 + 20}px` }}
+    <ContextMenu
+      onOpenChange={(isOpen) => {
+        if (!isOpen) {
+          setContextMenuPath(null);
+        }
+      }}
+      menu={
+        <ContextMenuContent>
+          <ContextMenuLabel>Actions</ContextMenuLabel>
+          <ContextMenuItem onClick={() => {
+            onFileEdit?.(item.path);
+          }}>
+            <Eye className="mr-2 h-4 w-4" />
+            Edit
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => {
+            onFileHide?.(item.path);
+          }}>
+            <EyeOff className="mr-2 h-4 w-4" />
+            Hide
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem
+            onClick={() => {
+              onFileDelete?.(item.path);
+            }}
+            className="text-destructive focus:text-destructive"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
+          </ContextMenuItem>
+        </ContextMenuContent>
+      }
     >
-      <File className="h-4 w-4 shrink-0" />
-      <span className="truncate">{item.name}</span>
-      {isHidden && <EyeOff className="h-3 w-3 shrink-0 ml-auto" />}
-    </button>
+      <ContextMenuTrigger>
+        <button
+          onClick={() => onFileSelect(item.path)}
+          onContextMenu={() => setContextMenuPath(item.path)}
+          draggable={!isMoving}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          className={cn(
+            'flex w-full items-center gap-2 rounded-md py-1.5 text-sm hover:bg-accent min-w-0 transition-opacity',
+            selectedFile === item.path && 'bg-accent text-foreground',
+            contextMenuPath === item.path && 'bg-accent/50',
+            isHidden && 'opacity-50',
+            isDragging && 'opacity-30',
+            !isMoving && 'cursor-move',
+            isMoving && 'cursor-not-allowed opacity-60'
+          )}
+          style={{ paddingLeft: `${level * 12 + 20}px` }}
+        >
+          <File className="h-4 w-4 shrink-0" />
+          <span className="truncate">{item.name}</span>
+          {isHidden && <EyeOff className="h-3 w-3 shrink-0 ml-auto" />}
+        </button>
+      </ContextMenuTrigger>
+    </ContextMenu>
   );
 }
 
-export function FileBrowser({ files, selectedFile, onFileSelect, hiddenFiles, onFileMove, isMoving }: FileBrowserProps) {
+export function FileBrowser({ files, selectedFile, onFileSelect, hiddenFiles, onFileMove, isMoving, onFileEdit, onFileHide, onFileDelete }: FileBrowserProps) {
+  const [contextMenuPath, setContextMenuPath] = useState<string | null>(null);
+
   if (files.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">No markdown files found</p>
@@ -178,6 +245,11 @@ export function FileBrowser({ files, selectedFile, onFileSelect, hiddenFiles, on
           hiddenFiles={hiddenFiles}
           onFileMove={onFileMove}
           isMoving={isMoving}
+          onFileEdit={onFileEdit}
+          onFileHide={onFileHide}
+          onFileDelete={onFileDelete}
+          contextMenuPath={contextMenuPath}
+          setContextMenuPath={setContextMenuPath}
         />
       ))}
     </div>
