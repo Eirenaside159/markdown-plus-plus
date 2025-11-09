@@ -1237,6 +1237,10 @@ function App() {
     setCurrentFile(null);
     setHasChanges(false);
     setViewMode('table');
+    setIsRestoring(false);
+    
+    // Clear URL hash
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
     
     // Don't show toast - the UI change (back to folder selection) is clear enough
   };
@@ -1256,43 +1260,46 @@ function App() {
   };
 
   const handleOpenRecentFolder = async (folderName: string) => {
+    const toastId = toast.loading(`Opening ${folderName}...`);
+    
     try {
-      toast.loading(`Opening ${folderName}...`);
-      
       // Try to load the saved handle
       const handle = await loadRecentFolderHandle(folderName);
       
       if (!handle) {
         // Handle not found or permission denied
-        toast.dismiss();
+        toast.dismiss(toastId);
         toast.error(`Cannot access "${folderName}". Permission may have been revoked.`);
         return;
       }
 
-      // Successfully loaded handle, open it
-      toast.dismiss();
-      
-      setDirHandle(handle);
-      addRecentFolder(handle);
-      setRecentFolders(getRecentFolders());
+      // Save handle and update recent folders
       await saveDirectoryHandle(handle);
       await saveRecentFolderHandle(handle.name, handle);
+      addRecentFolder(handle);
+      setRecentFolders(getRecentFolders());
       
-      // Centralized posts init (cache-first, serialized scan)
-      await initializePosts(handle);
-      
-      const tree = await refreshFileTree(handle);
-      setFileTree(tree);
-      
-      // Check git status
-      const status = await checkGitStatus(handle);
-      setGitStatus(status);
-      
+      // Open UI immediately with cached data
+      setDirHandle(handle);
       setViewMode('table');
       
+      // Dismiss loading toast and show success
+      toast.dismiss(toastId);
       toast.success(`Opened ${folderName}`);
+      
+      // Initialize posts in background (cache-first, then refresh)
+      initializePosts(handle);
+      
+      // Refresh file tree and git status in background
+      (async () => {
+        const tree = await refreshFileTree(handle);
+        setFileTree(tree);
+        
+        const status = await checkGitStatus(handle);
+        setGitStatus(status);
+      })();
     } catch (error) {
-      toast.dismiss();
+      toast.dismiss(toastId);
       toast.error('Failed to open folder');
     }
   };
