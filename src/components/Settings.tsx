@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings as SettingsIcon, X, Trash2, Download, Upload, AlertTriangle, EyeOff, Eye, Save, Link2, Palette, FileText, ListTree, Archive, FolderOpen, Info, Github, BookOpen, Heart, ExternalLink, ChevronDown, ChevronRight } from 'lucide-react';
+import { Settings as SettingsIcon, X, Trash2, Download, Upload, AlertTriangle, EyeOff, Eye, Save, Link2, Palette, FileText, ListTree, Archive, FolderOpen, Info, Github, BookOpen, Heart, ExternalLink, ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { getSettings, saveSettings } from '@/lib/settings';
@@ -7,6 +7,7 @@ import { getHiddenFiles, unhideFile, clearHiddenFiles } from '@/lib/hiddenFiles'
 import { applyColorPalette, getPaletteDisplayName, PALETTE_CATEGORIES } from '@/lib/colorPalettes';
 import type { AppSettings, ColorPalette } from '@/types/settings';
 import { useConfirm } from './ui/confirm-dialog';
+import { AISettings } from './AISettings';
 import packageJson from '../../package.json';
 
 function UrlPreview({ baseUrl, urlFormat }: { baseUrl: string; urlFormat: string }) {
@@ -187,7 +188,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
   };
 
 
-  const handleExport = () => {
+  const handleExport = async () => {
     try {
       // Collect all relevant localStorage data
       const allData: Record<string, any> = {};
@@ -222,9 +223,18 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
         }
       });
 
+      // Export AI settings from IndexedDB
+      const { exportAISettings } = await import('@/lib/aiSettings');
+      try {
+        const aiSettingsJson = await exportAISettings();
+        allData['ai-settings'] = JSON.parse(aiSettingsJson);
+      } catch (error) {
+        console.warn('Failed to export AI settings:', error);
+      }
+
       // Create export object with metadata
       const exportData = {
-        version: '1.1',
+        version: '1.2',
         exportDate: new Date().toISOString(),
         data: allData,
       };
@@ -249,12 +259,12 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const content = e.target?.result as string;
         const importedData = JSON.parse(content);
@@ -270,6 +280,18 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
           dataToImport = { 'mdplusplus-settings': importedData };
         } else {
           throw new Error('Invalid config format');
+        }
+
+        // Import AI settings separately (IndexedDB)
+        if (dataToImport['ai-settings']) {
+          try {
+            const { importAISettings } = await import('@/lib/aiSettings');
+            await importAISettings(JSON.stringify(dataToImport['ai-settings']));
+          } catch (error) {
+            console.warn('Failed to import AI settings:', error);
+          }
+          // Remove from localStorage import
+          delete dataToImport['ai-settings'];
         }
 
         // Validate and import each key
@@ -392,6 +414,13 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
             >
               <FolderOpen className="h-4 w-4 shrink-0" />
               <span className="hidden md:inline whitespace-nowrap">Hidden Files</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="ai" 
+              className="flex-shrink-0 w-full justify-center md:justify-start gap-2 text-left px-3 py-2 rounded text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent/50 hover:text-accent-foreground"
+            >
+              <Sparkles className="h-4 w-4 shrink-0" />
+              <span className="hidden md:inline whitespace-nowrap">AI</span>
             </TabsTrigger>
             <TabsTrigger 
               value="backup" 
@@ -759,6 +788,11 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
               </div>
             )}
           </Section>
+            </TabsContent>
+
+            {/* AI Tab */}
+            <TabsContent value="ai" className="mt-0">
+              <AISettings />
             </TabsContent>
 
             {/* Backup Tab */}

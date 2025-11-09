@@ -35,6 +35,7 @@ import {
   MoreHorizontal,
   ChevronDown,
   FileCode,
+  Sparkles,
 } from 'lucide-react';
 
 interface TiptapEditorProps {
@@ -44,12 +45,13 @@ interface TiptapEditorProps {
   onTitleChange?: (title: string) => void;
   autoFocus?: boolean;
   onModeToggle?: () => void;
+  onAIGenerate?: () => void;
 }
 
 // Create lowlight instance with common languages
 const lowlight = createLowlight(common);
 
-export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocus = false, onModeToggle }: TiptapEditorProps) {
+export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocus = false, onModeToggle, onAIGenerate }: TiptapEditorProps) {
   const [showMoreTools, setShowMoreTools] = useState(false);
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
   const [headingMenuPosition, setHeadingMenuPosition] = useState<{ top: number; left: number } | null>(null);
@@ -531,6 +533,18 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
           </div>
 
           {/* Mode Toggle Button */}
+          {onAIGenerate && (
+            <>
+              <div className="toolbar-divider" />
+              <button
+                onClick={onAIGenerate}
+                className="toolbar-btn"
+                title="Generate with AI"
+              >
+                <Sparkles className="h-5 w-5" />
+              </button>
+            </>
+          )}
           {onModeToggle && (
             <>
               <div className="toolbar-divider" />

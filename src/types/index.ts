@@ -23,3 +23,6 @@ export interface FileTreeItem {
   children?: FileTreeItem[];
 }
 
+// Export AI types
+export * from './ai-providers';
+

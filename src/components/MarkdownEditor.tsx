@@ -2,7 +2,9 @@ import { TiptapEditor } from './TiptapEditor';
 import { useEffect, useState, useRef } from 'react';
 import { marked } from 'marked';
 import TurndownService from 'turndown';
-import { Eye } from 'lucide-react';
+import { Eye, Sparkles } from 'lucide-react';
+import { AIGeneratorModal } from './AIGeneratorModal';
+import type { AIGeneratedContent } from '@/types/ai-providers';
 
 interface MarkdownEditorProps {
   content: string;
@@ -10,6 +12,7 @@ interface MarkdownEditorProps {
   title: string;
   onTitleChange: (title: string) => void;
   autoFocus?: boolean;
+  onMetaChange?: (meta: Record<string, any>) => void;
 }
 
 type EditorMode = 'tiptap' | 'raw';
@@ -26,13 +29,14 @@ const turndownService = new TurndownService({
   codeBlockStyle: 'fenced',
 });
 
-export function MarkdownEditor({ content, onChange, title, onTitleChange, autoFocus = false }: MarkdownEditorProps) {
+export function MarkdownEditor({ content, onChange, title, onTitleChange, autoFocus = false, onMetaChange }: MarkdownEditorProps) {
   const [htmlContent, setHtmlContent] = useState(() => {
     // Initialize with converted HTML content if content exists
     return content ? (marked(content) as string) : '';
   });
   const [editorMode, setEditorMode] = useState<EditorMode>('tiptap');
   const [rawMarkdown, setRawMarkdown] = useState(content);
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const isUpdatingFromEditor = useRef(false);
   const lastContent = useRef(content);
   const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -110,12 +114,55 @@ export function MarkdownEditor({ content, onChange, title, onTitleChange, autoFo
     }
   };
 
+  const handleAIGenerate = (generatedContent: AIGeneratedContent) => {
+    // Update content - mark that this is coming from internal edit
+    isUpdatingFromEditor.current = true;
+    lastContent.current = generatedContent.content;
+    setRawMarkdown(generatedContent.content);
+    
+    // Send content to parent first
+    onChange(generatedContent.content);
+
+    // Update HTML content for tiptap mode
+    // This needs to happen AFTER onChange to keep editor in sync
+    if (editorMode === 'tiptap') {
+      const html = marked(generatedContent.content) as string;
+      setHtmlContent(html);
+    }
+
+    // Update all metadata including title in a single atomic update
+    // This prevents race conditions when multiple state updates happen
+    if (onMetaChange) {
+      onMetaChange({
+        title: generatedContent.title,
+        ...generatedContent.meta,
+      });
+    }
+    // Note: We don't call onTitleChange separately because title is already
+    // included in the meta update above. The editor will receive the updated
+    // title through its title prop when the parent component re-renders.
+
+    // Reset the flag immediately (next tick) to ensure subsequent edits work
+    setTimeout(() => {
+      isUpdatingFromEditor.current = false;
+    }, 0);
+  };
+
   if (editorMode === 'raw') {
     return (
       <>
         {/* Toolbar */}
         <div className="sticky top-0 z-10 bg-background">
-          <div className="w-full max-w-[680px] mx-auto px-4 sm:px-6 py-3 sm:py-4 border-b flex items-center justify-end">
+          <div className="w-full max-w-[680px] mx-auto px-4 sm:px-6 py-3 sm:py-4 border-b flex items-center justify-between">
+            <button
+              onClick={() => setIsAIModalOpen(true)}
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent hover:border-accent-foreground/20 transition-colors touch-target"
+              title="Generate with AI"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span className="hidden xs:inline">AI Generate</span>
+              <span className="xs:hidden">AI</span>
+            </button>
             <button
               onClick={toggleMode}
               className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors touch-target"
@@ -158,18 +205,35 @@ export function MarkdownEditor({ content, onChange, title, onTitleChange, autoFo
             }}
           />
         </div>
+
+        {/* AI Generator Modal */}
+        <AIGeneratorModal
+          isOpen={isAIModalOpen}
+          onClose={() => setIsAIModalOpen(false)}
+          onGenerate={handleAIGenerate}
+        />
       </>
     );
   }
 
   return (
-    <TiptapEditor 
-      content={htmlContent} 
-      onChange={handleChange}
-      title={title}
-      onTitleChange={onTitleChange}
-      autoFocus={autoFocus}
-      onModeToggle={toggleMode}
-    />
+    <>
+      <TiptapEditor 
+        content={htmlContent} 
+        onChange={handleChange}
+        title={title}
+        onTitleChange={onTitleChange}
+        autoFocus={autoFocus}
+        onModeToggle={toggleMode}
+        onAIGenerate={() => setIsAIModalOpen(true)}
+      />
+      
+      {/* AI Generator Modal */}
+      <AIGeneratorModal
+        isOpen={isAIModalOpen}
+        onClose={() => setIsAIModalOpen(false)}
+        onGenerate={handleAIGenerate}
+      />
+    </>
   );
 }

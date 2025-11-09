@@ -2571,6 +2571,16 @@ function App() {
                   title={currentFile.frontmatter.title || ''}
                   onTitleChange={handleTitleChange}
                   autoFocus={shouldAutoFocus}
+                  onMetaChange={(meta) => {
+                    // Merge AI-generated meta with existing frontmatter
+                    if (currentFile) {
+                      const updatedFrontmatter = {
+                        ...currentFile.frontmatter,
+                        ...meta,
+                      };
+                      handleMetaChange(updatedFrontmatter);
+                    }
+                  }}
                 />
               </div>
             ) : (
