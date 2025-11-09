@@ -88,7 +88,6 @@ export async function checkGitStatus(
       }
     } catch (error) {
       // Not critical, continue anyway - we can still commit and push
-      console.warn('Could not check git status:', error);
     }
 
     return {
@@ -97,7 +96,6 @@ export async function checkGitStatus(
       hasChanges,
     };
   } catch (error) {
-    console.error('✗ Git status check failed:', error);
     return {
       isGitRepo: false,
       currentBranch: null,
@@ -119,14 +117,10 @@ export async function publishFile(
   try {
     const fs = createFileSystemAdapter(dirHandle);
 
-    console.log('📝 Starting publish process for:', filePath);
-
     // Verify file exists before staging
     try {
-      const fileContent = await fs.promises.readFile('/' + filePath);
-      console.log('✓ File found, size:', fileContent.length, 'bytes');
+      await fs.promises.readFile('/' + filePath);
     } catch (readError) {
-      console.error('✗ File not found:', filePath);
       throw new Error('File not found: ' + filePath);
     }
 
@@ -135,21 +129,13 @@ export async function publishFile(
     
     // Stage the file (git add)
     try {
-      console.log('Staging file:', filePath);
       await git.add({
         fs,
         dir: '/',
         filepath: filePath,
         cache,
       });
-      console.log('✓ File staged (git add)');
     } catch (addError) {
-      console.error('✗ Failed to stage file:', addError);
-      console.error('Error details:', {
-        name: addError instanceof Error ? addError.name : 'Unknown',
-        message: addError instanceof Error ? addError.message : String(addError),
-        stack: addError instanceof Error ? addError.stack : undefined,
-      });
       throw new Error('Failed to stage file: ' + (addError instanceof Error ? addError.message : 'Unknown error'));
     }
 
@@ -175,11 +161,8 @@ export async function publishFile(
       if (emailMatch && emailMatch[1]) {
         email = emailMatch[1].trim();
       }
-      
-      console.log('✓ Git config loaded:', { name, email });
     } catch (configError) {
-      console.warn('⚠️ Could not load git config, using defaults:', { name, email });
-      console.warn('Config error details:', configError);
+      // Could not load git config, using defaults
     }
 
     // Commit the changes
@@ -195,9 +178,7 @@ export async function publishFile(
         },
         cache,
       });
-      console.log('✓ Committed:', commitSha.substring(0, 7));
     } catch (commitError) {
-      console.error('✗ Failed to commit:', commitError);
       throw new Error('Failed to commit: ' + (commitError instanceof Error ? commitError.message : 'Unknown error'));
     }
 
@@ -207,16 +188,12 @@ export async function publishFile(
     try {
       remoteUrl = await git.getConfig({ fs, dir: '/', path: 'remote.origin.url' }) || '';
       usesSsh = remoteUrl.startsWith('git@') || remoteUrl.startsWith('ssh://');
-      console.log('📍 Remote URL:', remoteUrl);
-      console.log('🔐 Uses SSH:', usesSsh);
     } catch (error) {
-      console.log('⚠️ Could not detect remote URL');
+      // Could not detect remote URL
     }
 
     // Try to push to remote (may fail due to browser limitations, that's OK)
     try {
-      console.log('📤 Attempting push to origin/' + branch);
-      
       await git.push({
         fs,
         http,
@@ -226,7 +203,6 @@ export async function publishFile(
         cache,
       });
 
-      console.log('✅ Successfully pushed to origin/' + branch);
       return {
         success: true,
         message: `Successfully published to ${branch}! 🚀\n\nCommit: ${commitSha.substring(0, 7)}\nChanges have been pushed to remote.`,
@@ -235,8 +211,6 @@ export async function publishFile(
         commitSha: commitSha.substring(0, 7),
       };
     } catch (pushError) {
-      console.log('ℹ️ Push from browser failed (expected):', pushError);
-      
       // Check if it's SSH protocol issue
       if (usesSsh) {
         return {
@@ -258,7 +232,6 @@ export async function publishFile(
       };
     }
   } catch (error) {
-    console.error('✗ Publish failed:', error);
     return {
       success: false,
       message: 'Failed to publish changes',
@@ -307,7 +280,6 @@ export async function getChangedFiles(
       .map(([filepath]) => filepath)
       .filter((path) => path.endsWith('.md'));
   } catch (error) {
-    console.error('Error getting changed files:', error);
     return [];
   }
 }

@@ -16,7 +16,7 @@ export function saveColumnVisibility(visibility: VisibilityState): void {
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
   } catch (error) {
-    console.error('Failed to save column visibility:', error);
+    // Failed to save column visibility
   }
 }
 
@@ -28,7 +28,7 @@ export function loadColumnVisibility(): VisibilityState {
       return config.visibility;
     }
   } catch (error) {
-    console.error('Failed to load column visibility:', error);
+    // Failed to load column visibility
   }
   return {};
 }
@@ -50,7 +50,7 @@ export function importColumnVisibility(jsonString: string): boolean {
     }
     return false;
   } catch (error) {
-    console.error('Failed to import column visibility:', error);
+    // Failed to import column visibility
     return false;
   }
 }
@@ -59,7 +59,7 @@ export function resetColumnVisibility(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch (error) {
-    console.error('Failed to reset column visibility:', error);
+    // Failed to reset column visibility
   }
 }
 

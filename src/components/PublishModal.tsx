@@ -36,12 +36,6 @@ export function PublishModal({
 
   useEffect(() => {
     if (isOpen) {
-      console.log('📝 Publish Modal opened:', {
-        fileName,
-        hasGitRepo: gitStatus?.isGitRepo,
-        currentBranch: gitStatus?.currentBranch,
-        projectPath,
-      });
       setCommitMessage(defaultMessage);
       setIsPublishing(false);
       setPublishSuccess(false);
@@ -64,26 +58,18 @@ export function PublishModal({
 
   const handlePublish = async () => {
     if (!commitMessage.trim() || isPublishing) {
-      console.log('❌ Publish blocked:', { 
-        hasMessage: !!commitMessage.trim(), 
-        isPublishing,
-        gitStatus: gitStatus?.isGitRepo 
-      });
       return;
     }
 
-    console.log('🚀 Starting publish...', { fileName, commitMessage: commitMessage.substring(0, 50) });
     setIsPublishing(true);
     setPublishError(null);
     try {
       const result = await onPublish(commitMessage);
-      console.log('✅ Publish completed:', result);
       // Don't close modal, show success state instead
       setPublishSuccess(true);
       setPublishError(null);
       setPublishResult(result || null);
     } catch (error) {
-      console.error('❌ Publish error:', error);
       setPublishSuccess(false);
       setPublishError(error instanceof Error ? error.message : 'Failed to publish changes');
     } finally {
@@ -119,7 +105,7 @@ export function PublishModal({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy:', error);
+      // Failed to copy
     }
   };
 
@@ -283,7 +269,7 @@ export function PublishModal({
                             setCopied(true);
                             setTimeout(() => setCopied(false), 2000);
                           } catch (error) {
-                            console.error('Failed to copy:', error);
+                            // Failed to copy
                           }
                         }}
                         className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md hover:bg-background transition-colors"
@@ -340,16 +326,6 @@ export function PublishModal({
                       {gitStatus.currentBranch || 'main'}
                     </span>
                   </div>
-                  <button
-                    onClick={() => {
-                      console.log('Current Git Status:', gitStatus);
-                      console.log('Press F12 and check Console tab for detailed logs');
-                    }}
-                    className="text-xs text-muted-foreground hover:text-foreground underline px-2 py-1 sm:px-3 sm:py-1.5 self-start xs:self-auto touch-target"
-                    title="Show debug info in console"
-                  >
-                    Debug Info
-                  </button>
                 </div>
 
                 {!gitStatus.isGitRepo && (

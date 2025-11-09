@@ -62,7 +62,7 @@ export async function saveDirectoryHandle(handle: FileSystemDirectoryHandle): Pr
       };
     });
   } catch (error) {
-    console.error('Failed to save directory handle:', error);
+    // Failed to save directory handle
   }
 }
 
@@ -101,7 +101,6 @@ export async function loadDirectoryHandle(): Promise<FileSystemDirectoryHandle |
           }
         } catch (error) {
           // Handle might be invalid
-          console.warn('Failed to verify permission:', error);
           resolve(null);
         }
       };
@@ -112,7 +111,6 @@ export async function loadDirectoryHandle(): Promise<FileSystemDirectoryHandle |
       };
     });
   } catch (error) {
-    console.error('Failed to load directory handle:', error);
     return null;
   }
 }
@@ -149,7 +147,7 @@ export async function saveAppState(state: Partial<AppState>): Promise<void> {
       };
     });
   } catch (error) {
-    console.error('Failed to save app state:', error);
+    // Failed to save app state
   }
 }
 
@@ -185,7 +183,6 @@ export async function loadAppState(): Promise<AppState | null> {
       };
     });
   } catch (error) {
-    console.error('Failed to load app state:', error);
     return null;
   }
 }
@@ -212,7 +209,7 @@ export async function clearPersistedData(): Promise<void> {
       };
     });
   } catch (error) {
-    console.error('Failed to clear persisted data:', error);
+    // Failed to clear persisted data
   }
 }
 
@@ -239,7 +236,7 @@ export async function clearCurrentWorkspace(): Promise<void> {
       };
     });
   } catch (error) {
-    console.error('Failed to clear current workspace:', error);
+    // Failed to clear current workspace
   }
 }
 
@@ -265,19 +262,17 @@ export async function clearAllRecentFolderHandles(): Promise<void> {
       };
       
       transaction.oncomplete = () => {
-        console.log('[ClearRecentHandles] All recent folder handles cleared');
         db.close();
         resolve();
       };
       
       transaction.onerror = () => {
-        console.error('[ClearRecentHandles] Transaction error:', transaction.error);
         db.close();
         reject(transaction.error);
       };
     });
   } catch (error) {
-    console.error('[ClearRecentHandles] Failed to clear recent folder handles:', error);
+    // Failed to clear recent folder handles
   }
 }
 
@@ -410,9 +405,6 @@ export async function loadFileTreeCache(projectKey: string): Promise<FileTreeIte
 // Save recent folder handle
 export async function saveRecentFolderHandle(folderName: string, handle: FileSystemDirectoryHandle): Promise<void> {
   try {
-    console.log('[SaveRecentFolder] Saving handle for:', folderName, 'with key:', `recent-${folderName}`);
-    console.log('[SaveRecentFolder] Handle type:', handle.kind, 'name:', handle.name);
-    
     const db = await openDB();
     const transaction = db.transaction([HANDLE_STORE], 'readwrite');
     const store = transaction.objectStore(HANDLE_STORE);
@@ -420,64 +412,29 @@ export async function saveRecentFolderHandle(folderName: string, handle: FileSys
     const putRequest = store.put(handle, `recent-${folderName}`);
     
     return new Promise((resolve, reject) => {
-      putRequest.onsuccess = () => {
-        console.log('[SaveRecentFolder] Put request successful for:', folderName);
-      };
-      
       putRequest.onerror = () => {
-        console.error('[SaveRecentFolder] Put request error for:', folderName, putRequest.error);
         reject(putRequest.error);
       };
       
-      transaction.oncomplete = async () => {
-        console.log('[SaveRecentFolder] Transaction complete for:', folderName);
-        
-        // Verify the save by reading it back immediately
-        try {
-          const verifyDb = await openDB();
-          const verifyTx = verifyDb.transaction([HANDLE_STORE], 'readonly');
-          const verifyStore = verifyTx.objectStore(HANDLE_STORE);
-          const verifyRequest = verifyStore.get(`recent-${folderName}`);
-          
-          verifyRequest.onsuccess = () => {
-            const savedHandle = verifyRequest.result;
-            console.log('[SaveRecentFolder] Verification:', folderName, savedHandle ? 'VERIFIED ✓' : 'FAILED ✗');
-            if (!savedHandle) {
-              console.error('[SaveRecentFolder] Handle was not saved to IndexedDB!');
-            }
-            verifyDb.close();
-          };
-          
-          verifyRequest.onerror = () => {
-            console.error('[SaveRecentFolder] Verification error:', verifyRequest.error);
-            verifyDb.close();
-          };
-        } catch (verifyError) {
-          console.error('[SaveRecentFolder] Verification failed:', verifyError);
-        }
-        
+      transaction.oncomplete = () => {
         // Small delay to ensure DB has flushed to disk
         setTimeout(() => {
           db.close();
-          console.log('[SaveRecentFolder] DB closed for:', folderName);
           resolve();
         }, 50);
       };
       
       transaction.onerror = () => {
-        console.error('[SaveRecentFolder] Transaction error for:', folderName, transaction.error);
         db.close();
         reject(transaction.error);
       };
       
       transaction.onabort = () => {
-        console.error('[SaveRecentFolder] Transaction aborted for:', folderName);
         db.close();
         reject(new Error('Transaction aborted'));
       };
     });
   } catch (error) {
-    console.error('[SaveRecentFolder] Failed to save recent folder handle for:', folderName, error);
     throw error;
   }
 }
@@ -485,16 +442,9 @@ export async function saveRecentFolderHandle(folderName: string, handle: FileSys
 // Load recent folder handle
 export async function loadRecentFolderHandle(folderName: string): Promise<FileSystemDirectoryHandle | null> {
   try {
-    console.log('[LoadRecentFolder] Loading handle for:', folderName, 'with key:', `recent-${folderName}`);
     const db = await openDB();
     const transaction = db.transaction([HANDLE_STORE], 'readonly');
     const store = transaction.objectStore(HANDLE_STORE);
-    
-    // First, list all keys in the store for debugging
-    const getAllKeysRequest = store.getAllKeys();
-    getAllKeysRequest.onsuccess = () => {
-      console.log('[LoadRecentFolder] All keys in handle store:', getAllKeysRequest.result);
-    };
     
     return new Promise((resolve, reject) => {
       const request = store.get(`recent-${folderName}`);
@@ -502,57 +452,44 @@ export async function loadRecentFolderHandle(folderName: string): Promise<FileSy
       request.onsuccess = async () => {
         const handle = request.result as FileSystemDirectoryHandle | undefined;
         
-        console.log('[LoadRecentFolder] Get request result for:', folderName, handle ? 'FOUND' : 'NOT FOUND');
-        
         if (!handle) {
-          console.warn('[LoadRecentFolder] No handle found for:', folderName);
           db.close();
           resolve(null);
           return;
         }
-
-        console.log('[LoadRecentFolder] Handle found for:', folderName, 'Verifying permission...');
         
         // Verify permission
         try {
           const permission = await handle.queryPermission({ mode: 'readwrite' });
-          console.log('[LoadRecentFolder] Current permission for', folderName, ':', permission);
           
           if (permission === 'granted') {
-            console.log('[LoadRecentFolder] Permission granted for:', folderName);
             db.close();
             resolve(handle);
           } else {
             // Try to request permission
-            console.log('[LoadRecentFolder] Requesting permission for:', folderName);
             const requestedPermission = await handle.requestPermission({ mode: 'readwrite' });
-            console.log('[LoadRecentFolder] Requested permission result for', folderName, ':', requestedPermission);
             
             if (requestedPermission === 'granted') {
               db.close();
               resolve(handle);
             } else {
-              console.warn('[LoadRecentFolder] Permission denied for:', folderName);
               db.close();
               resolve(null);
             }
           }
         } catch (error) {
           // Handle might be invalid
-          console.warn('[LoadRecentFolder] Failed to verify permission for:', folderName, error);
           db.close();
           resolve(null);
         }
       };
       
       request.onerror = () => {
-        console.error('[LoadRecentFolder] Request error for:', folderName, request.error);
         db.close();
         reject(request.error);
       };
     });
   } catch (error) {
-    console.error('[LoadRecentFolder] Failed to load recent folder handle for:', folderName, error);
     return null;
   }
 }

@@ -47,15 +47,13 @@ function preloadFavicon(): Promise<HTMLImageElement> {
 
 // Preload on module load
 preloadFavicon().catch(() => {
-  console.warn('Failed to preload favicon');
+  // Failed to preload favicon
 });
 
 /**
  * Updates the favicon with a yellow badge indicator
  */
 export function updateFaviconBadge(hasChanges: boolean) {
-  console.log('updateFaviconBadge called with hasChanges:', hasChanges);
-  
   // Cancel any existing animation
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId);
@@ -68,7 +66,6 @@ export function updateFaviconBadge(hasChanges: boolean) {
   const ctx = canvas.getContext('2d');
   
   if (!ctx) {
-    console.warn('Could not get canvas context');
     return;
   }
 
@@ -125,7 +122,6 @@ export function updateFaviconBadge(hasChanges: boolean) {
       fadingOut = true;
       
       // Draw immediately
-      console.log('Drawing favicon with badge immediately');
       drawFavicon(currentOpacity);
       
       // Then animate the badge with pulsing effect
@@ -149,13 +145,12 @@ export function updateFaviconBadge(hasChanges: boolean) {
       animationFrameId = requestAnimationFrame(animate);
     } else {
       // Reset to original without badge
-      console.log('Removing badge from favicon');
       currentOpacity = 1;
       fadingOut = false;
       drawFavicon();
     }
   }).catch(() => {
-    console.warn('Failed to update favicon badge');
+    // Failed to update favicon badge
   });
 }
 

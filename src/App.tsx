@@ -1004,7 +1004,6 @@ function App() {
   // Update favicon badge based on changes (only in editor mode)
   useEffect(() => {
     const shouldShowBadge = viewMode === 'editor' && hasChanges;
-    console.log('Favicon badge update:', { viewMode, hasChanges, shouldShowBadge });
     updateFaviconBadge(shouldShowBadge);
   }, [hasChanges, viewMode]);
 
@@ -1083,9 +1082,7 @@ function App() {
       try {
         await saveDirectoryHandle(handle);
         await saveRecentFolderHandle(handle.name, handle);
-        console.log('[App] Successfully saved handles for:', handle.name);
       } catch (error) {
-        console.error('[App] Failed to save handles:', error);
         // Don't block the flow, just log the error
       }
       
@@ -1104,12 +1101,7 @@ function App() {
       
       // Show git status to user
       if (!status.isGitRepo) {
-        console.warn('⚠️ Git repository not found in:', handle.name);
-        console.log('Selected folder:', handle.name);
-        console.log('Error:', status.error);
         toast.info('Git not detected - publish limited');
-      } else {
-        console.log('✓ Git repository found in:', handle.name, '| Branch:', status.currentBranch);
       }
     }
   };
@@ -1131,9 +1123,8 @@ function App() {
           setRecentFolders(getRecentFolders());
           try {
             await saveRecentFolderHandle(savedHandle.name, savedHandle);
-            console.log('[App] Successfully saved recent folder handle on restore for:', savedHandle.name);
           } catch (error) {
-            console.error('[App] Failed to save recent folder handle on restore:', error);
+            // Handle error silently
           }
 
           // Prefill posts from cache if available for instant list
@@ -1159,7 +1150,6 @@ function App() {
               setViewMode('editor');
             } catch (error) {
               // If file cannot be restored, fall back to table view
-              console.warn('Could not restore file:', savedState.selectedFilePath);
               setViewMode('table');
               window.history.replaceState({ viewMode: 'table' }, '', '#table');
             }
@@ -1201,13 +1191,10 @@ function App() {
             // Check git status
             const status = await checkGitStatus(savedHandle);
             setGitStatus(status);
-            if (!status.isGitRepo) {
-              console.warn('⚠️ Restored folder is not a Git repository');
-            }
           }
         }
       } catch (error) {
-        console.error('Failed to restore state:', error);
+        // Failed to restore state
       } finally {
         setIsRestoring(false);
       }
@@ -1295,7 +1282,6 @@ function App() {
       
       toast.success(`Opened ${folderName}`);
     } catch (error) {
-      console.error('Error opening recent folder:', error);
       toast.dismiss();
       toast.error('Failed to open folder');
     }
@@ -1611,7 +1597,6 @@ function App() {
       toast.success('File renamed successfully');
     } catch (error) {
       toast.error('Failed to rename file');
-      console.error('Rename error:', error);
     }
   };
 
@@ -1661,7 +1646,6 @@ function App() {
       } else {
         toast.error(`Failed to move "${fileName}"`);
       }
-      console.error('Move error:', error);
     } finally {
       setIsMovingFile(false);
     }
