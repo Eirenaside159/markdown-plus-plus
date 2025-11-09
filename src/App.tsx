@@ -16,7 +16,7 @@ import { parseMarkdown, stringifyMarkdown, updateFrontmatter } from '@/lib/markd
 import { getRecentFolders, addRecentFolder, clearRecentFolders, formatTimestamp } from '@/lib/recentFolders';
 import { getSettings, saveSettings } from '@/lib/settings';
 import { setTheme } from '@/lib/theme';
-import { saveDirectoryHandle, loadDirectoryHandle, saveAppState, loadAppState, clearPersistedData } from '@/lib/persistedState';
+import { saveDirectoryHandle, loadDirectoryHandle, saveAppState, loadAppState, clearCurrentWorkspace, saveRecentFolderHandle, loadRecentFolderHandle, clearAllRecentFolderHandles } from '@/lib/persistedState';
 import { subscribePosts, initializePosts, refreshPosts, refreshFileTree, applyPostAdded, applyPostUpdated, applyPostDeleted, applyPostPathChanged } from '@/lib/postsStore';
 import { checkGitStatus, publishFile, generateCommitMessage, type GitStatus } from '@/lib/gitOperations';
 import { hideFile, getHiddenFiles } from '@/lib/hiddenFiles';
@@ -938,6 +938,30 @@ function App() {
   const [shouldAutoFocus, setShouldAutoFocus] = useState(false);
   const [isMovingFile, setIsMovingFile] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [recentFolders, setRecentFolders] = useState(() => getRecentFolders());
+  
+  // Clean up recent folders that don't have saved handles on mount
+  useEffect(() => {
+    const cleanupRecentFolders = async () => {
+      const folders = getRecentFolders();
+      const validFolders: typeof folders = [];
+      
+      for (const folder of folders) {
+        const handle = await loadRecentFolderHandle(folder.name);
+        if (handle) {
+          validFolders.push(folder);
+        }
+      }
+      
+      // If some folders were removed, update localStorage and state
+      if (validFolders.length !== folders.length) {
+        localStorage.setItem('mdplusplus_recent_folders', JSON.stringify(validFolders));
+        setRecentFolders(validFolders);
+      }
+    };
+    
+    cleanupRecentFolders();
+  }, []);
   
   // Centralized posts subscription (cache-first, serialized scanning)
   useEffect(() => {
@@ -1054,8 +1078,16 @@ function App() {
       
       setDirHandle(handle);
       addRecentFolder(handle);
+      setRecentFolders(getRecentFolders());
       // Save to IndexedDB for persistence
-      await saveDirectoryHandle(handle);
+      try {
+        await saveDirectoryHandle(handle);
+        await saveRecentFolderHandle(handle.name, handle);
+        console.log('[App] Successfully saved handles for:', handle.name);
+      } catch (error) {
+        console.error('[App] Failed to save handles:', error);
+        // Don't block the flow, just log the error
+      }
       
       // Centralized posts init (cache-first, serialized scan)
       await initializePosts(handle);
@@ -1096,6 +1128,13 @@ function App() {
           // Set handle first so UI can render app shell immediately
           setDirHandle(savedHandle);
           addRecentFolder(savedHandle);
+          setRecentFolders(getRecentFolders());
+          try {
+            await saveRecentFolderHandle(savedHandle.name, savedHandle);
+            console.log('[App] Successfully saved recent folder handle on restore for:', savedHandle.name);
+          } catch (error) {
+            console.error('[App] Failed to save recent folder handle on restore:', error);
+          }
 
           // Prefill posts from cache if available for instant list
           // Load saved app state to choose fast path
@@ -1191,8 +1230,8 @@ function App() {
     // Clear any existing toasts
     toast.dismiss();
 
-    // Clear persisted data from IndexedDB
-    await clearPersistedData();
+    // Clear current workspace from IndexedDB (keeps recent folders)
+    await clearCurrentWorkspace();
 
     // Clear state
     setDirHandle(null);
@@ -1213,8 +1252,52 @@ function App() {
     });
     if (confirmed) {
       clearRecentFolders();
-      // Don't show toast before reload - it won't be visible anyway
-      window.location.reload();
+      await clearAllRecentFolderHandles();
+      setRecentFolders([]);
+      toast.success('Recent folders cleared');
+    }
+  };
+
+  const handleOpenRecentFolder = async (folderName: string) => {
+    try {
+      toast.loading(`Opening ${folderName}...`);
+      
+      // Try to load the saved handle
+      const handle = await loadRecentFolderHandle(folderName);
+      
+      if (!handle) {
+        // Handle not found or permission denied
+        toast.dismiss();
+        toast.error(`Cannot access "${folderName}". Permission may have been revoked.`);
+        return;
+      }
+
+      // Successfully loaded handle, open it
+      toast.dismiss();
+      
+      setDirHandle(handle);
+      addRecentFolder(handle);
+      setRecentFolders(getRecentFolders());
+      await saveDirectoryHandle(handle);
+      await saveRecentFolderHandle(handle.name, handle);
+      
+      // Centralized posts init (cache-first, serialized scan)
+      await initializePosts(handle);
+      
+      const tree = await refreshFileTree(handle);
+      setFileTree(tree);
+      
+      // Check git status
+      const status = await checkGitStatus(handle);
+      setGitStatus(status);
+      
+      setViewMode('table');
+      
+      toast.success(`Opened ${folderName}`);
+    } catch (error) {
+      console.error('Error opening recent folder:', error);
+      toast.dismiss();
+      toast.error('Failed to open folder');
     }
   };
 
@@ -1810,7 +1893,6 @@ function App() {
       );
     }
 
-    const recentFolders = getRecentFolders();
     const isSupported = isFileSystemAccessSupported();
     
     return (
@@ -1897,7 +1979,7 @@ function App() {
                 {recentFolders.map((folder) => (
                   <button
                     key={folder.name + folder.timestamp}
-                    onClick={handleSelectDirectory}
+                    onClick={() => handleOpenRecentFolder(folder.name)}
                     disabled={!isSupported}
                     className="flex items-center justify-between p-3 sm:p-4 rounded-md border border-border bg-card hover:bg-accent active:bg-accent/80 transition-colors text-left group touch-target disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-card"
                   >
@@ -1970,6 +2052,7 @@ function App() {
           </div>
 
         </div>
+        <ConfirmDialog />
       </div>
     );
   }
