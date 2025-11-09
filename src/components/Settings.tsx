@@ -415,7 +415,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
           {/* URL Configuration */}
           <Section 
             title="URL Configuration" 
-            description="Set your website's base domain and customize how post URLs are structured. Use tokens like {SLUG}, {CATEGORY}, {YEAR}, {MONTH}, and {DAY} to create dynamic URL patterns. This helps generate canonical URLs and preview links for your posts."
+            description="Set up your website URL pattern for generating post links. Use placeholders like {SLUG}, {CATEGORY}, {YEAR}, {MONTH}, and {DAY}."
           >
             <div className="space-y-3">
               <div className="space-y-2">
@@ -481,7 +481,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
           {/* Color Palette */}
           <Section 
             title="Color Palette" 
-            description="Choose an accent color scheme for the interface. These colors affect buttons, links, highlights, and other interactive elements throughout the application. All palettes are carefully crafted with the shadcn/ui design system to ensure accessibility and visual consistency in both light and dark modes."
+            description="Choose your preferred color theme for the interface. Works seamlessly in both light and dark modes."
           >
             <div className="space-y-4">
               {Object.entries(PALETTE_CATEGORIES).map(([categoryName, palettes]) => (
@@ -524,7 +524,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
           {/* Default Meta */}
           <Section 
             title="Default Meta" 
-            description="Define default frontmatter fields that will be automatically added to every new post you create. This is useful for fields like author, status, layout, or any custom metadata your site requires. These values can be edited after the post is created."
+            description="Add fields that automatically appear in every new post. Perfect for author, status, or other repeated metadata."
           >
             <div className="space-y-3">
               {Object.entries(settings.defaultMeta).length === 0 ? (
@@ -604,7 +604,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
           {/* Meta Field Types */}
           <Section 
             title="Meta Field Types" 
-            description="Control whether specific frontmatter fields accept single or multiple values. Single-value fields store a simple string, while multi-value fields store arrays (e.g., tags: ['tech', 'blog']). This setting affects how the editor displays and handles these fields."
+            description="Choose whether fields accept single or multiple values. For example, 'author' is usually single, while 'tags' is multi."
           >
             <div className="space-y-3">
               {Object.entries(settings.metaFieldMultiplicity || {}).length === 0 ? (
@@ -699,7 +699,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
           {/* Hidden Files */}
           <Section 
             title={`Hidden Files ${hiddenFiles.length > 0 ? `(${hiddenFiles.length})` : ''}`}
-            description="Manage files that you've hidden from the main post table. Hidden files are stored per workspace and won't appear in your post list, but they remain in your file system. You can unhide them individually or all at once to restore them to the table view."
+            description="View and restore files you've hidden from the post table. Hidden files stay in your folders but won't show in the list."
           >
             {hiddenFiles.length > 0 ? (
               <div className="space-y-3">
@@ -751,7 +751,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
           {/* Export Configuration */}
           <Section 
             title="Export Configuration" 
-            description="Export all your application settings, preferences, and data to a JSON file. This includes default meta fields, recent folders, DataTable column visibility preferences, hidden files, file tree preferences, and UI state. Use this to backup your configuration or transfer it to another machine."
+            description="Save all your settings to a file. Great for backups or moving to another computer."
           >
             <button
               onClick={handleExport}
@@ -765,7 +765,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
           {/* Import Configuration */}
           <Section 
             title="Import Configuration" 
-            description="Restore your settings from a previously exported JSON file. This will replace all current settings including default meta, recent folders, DataTable column visibility preferences, and hidden files. The page will automatically reload after import to apply all changes."
+            description="Load settings from a backup file. This replaces your current settings and reloads the page."
           >
             <div className="space-y-2.5">
               <button
@@ -797,7 +797,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
           {/* App Information */}
           <Section 
             title="About Markdown++" 
-            description="A modern, powerful markdown editor for managing your blog posts and content. Built with React, TypeScript, and modern web technologies."
+            description="A powerful markdown editor that helps you create, edit, and organize your blog posts with ease. Manage metadata, preview content, and maintain your entire blog from one place."
           >
             <div className="space-y-6">
               {/* Logo and Version */}
@@ -882,10 +882,6 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">License</span>
                   <span className="font-medium text-foreground">MIT</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Built with</span>
-                  <span className="font-medium text-foreground">React + TypeScript + Vite</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Homepage</span>
