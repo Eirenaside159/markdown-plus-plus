@@ -32,7 +32,7 @@ export function WelcomeWarningModal({ isOpen, onAccept }: WelcomeWarningModalPro
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 bg-black/60 z-50 transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-black/80 backdrop-blur-sm z-50 transition-opacity duration-300 ${
           show ? 'opacity-100' : 'opacity-0'
         }`}
       />

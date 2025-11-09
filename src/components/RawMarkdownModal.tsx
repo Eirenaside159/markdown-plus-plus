@@ -69,7 +69,7 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 sm:p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-2 sm:p-4"
       onClick={handleBackdropClick}
     >
       <div 
