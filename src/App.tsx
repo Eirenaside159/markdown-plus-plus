@@ -939,6 +939,16 @@ function App() {
   const [isMovingFile, setIsMovingFile] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [recentFolders, setRecentFolders] = useState(() => getRecentFolders());
+  const [hiddenFiles, setHiddenFiles] = useState<string[]>([]);
+  
+  // Update hidden files when directory changes
+  useEffect(() => {
+    if (dirHandle) {
+      setHiddenFiles(getHiddenFiles(dirHandle.name));
+    } else {
+      setHiddenFiles([]);
+    }
+  }, [dirHandle]);
   
   // Clean up recent folders that don't have saved handles on mount
   useEffect(() => {
@@ -1375,6 +1385,7 @@ function App() {
     if (!dirHandle) return;
 
     hideFile(dirHandle.name, post.path);
+    setHiddenFiles(getHiddenFiles(dirHandle.name));
     toast.info(`"${post.frontmatter.title || post.name}" hidden`);
   };
 
@@ -2385,6 +2396,11 @@ function App() {
                 await reloadPosts();
               }} 
               directoryName={dirHandle?.name}
+              onHiddenFilesChange={() => {
+                if (dirHandle) {
+                  setHiddenFiles(getHiddenFiles(dirHandle.name));
+                }
+              }}
             />
           </div>
         </div>
@@ -2442,7 +2458,7 @@ function App() {
                 <FileBrowser
                   files={fileTree}
                   selectedFile={selectedFolderPath}
-                  hiddenFiles={dirHandle ? getHiddenFiles(dirHandle.name) : []}
+                  hiddenFiles={hiddenFiles}
                   onFileSelect={(path) => {
                     // Check if this is a directory or file
                     const findItem = (items: FileTreeItem[], targetPath: string): FileTreeItem | null => {
@@ -2489,8 +2505,7 @@ function App() {
               <PostsDataTable
                 posts={allPosts.filter(post => {
                   if (!dirHandle) return true;
-                  const hiddenFiles = isDemoMode ? [] : getHiddenFiles(dirHandle.name);
-                  if (hiddenFiles.includes(post.path)) return false;
+                  if (!isDemoMode && hiddenFiles.includes(post.path)) return false;
                   // Filter by selected folder
                   if (selectedFolderPath && !post.path.startsWith(selectedFolderPath + '/')) return false;
                   return true;

@@ -39,9 +39,10 @@ function UrlPreview({ baseUrl, urlFormat }: { baseUrl: string; urlFormat: string
 interface SettingsProps {
   onClose?: () => void;
   directoryName?: string;
+  onHiddenFilesChange?: () => void;
 }
 
-export function Settings({ onClose, directoryName }: SettingsProps = {}) {
+export function Settings({ onClose, directoryName, onHiddenFilesChange }: SettingsProps = {}) {
   const [settings, setSettings] = useState<AppSettings>(getSettings());
   const [newMetaKey, setNewMetaKey] = useState('');
   const [newMetaValue, setNewMetaValue] = useState('');
@@ -311,6 +312,7 @@ export function Settings({ onClose, directoryName }: SettingsProps = {}) {
     
     unhideFile(directoryName, filePath);
     setHiddenFiles(prev => prev.filter(path => path !== filePath));
+    onHiddenFilesChange?.();
     toast.success('File unhidden');
   };
 
@@ -324,6 +326,7 @@ export function Settings({ onClose, directoryName }: SettingsProps = {}) {
     if (confirmed) {
       clearHiddenFiles(directoryName);
       setHiddenFiles([]);
+      onHiddenFilesChange?.();
       toast.success('All files unhidden');
     }
   };
