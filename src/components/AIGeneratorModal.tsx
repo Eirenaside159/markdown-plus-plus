@@ -4,9 +4,15 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Sparkles, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Sparkles, Loader2, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 import { getEnabledProviders, getProviderConfig, setLastUsed } from '@/lib/aiSettings';
 import { getProvider, PROVIDER_NAMES } from '@/lib/aiProviders';
 import type { AIProviderType, AIGeneratedContent } from '@/types/ai-providers';
@@ -130,90 +136,151 @@ export function AIGeneratorModal({ isOpen, onClose, onGenerate }: AIGeneratorMod
     setError(null);
   };
 
-  if (enabledProviders.length === 0 && isOpen) {
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget && !isGenerating) {
+      handleClose();
+    }
+  };
+
+  // ESC key to close
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isGenerating) {
+        handleClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isOpen, isGenerating]);
+
+  if (!isOpen) return null;
+
+  // No providers configured
+  if (enabledProviders.length === 0) {
     return (
-      <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4"
+        onClick={handleBackdropClick}
+      >
+        <div 
+          className="bg-background rounded-lg shadow-xl w-full max-w-lg border"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-3 sm:p-4 border-b">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
               <Sparkles className="h-5 w-5" />
               AI Content Generator
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-8 text-center space-y-4">
+            </h2>
+            <button
+              onClick={handleClose}
+              className="h-8 w-8 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors inline-flex items-center justify-center shrink-0"
+              title="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="p-4 sm:p-6 text-center space-y-4">
             <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
             <div className="space-y-2">
-              <h3 className="text-lg font-semibold">No AI Providers Configured</h3>
+              <h3 className="text-base font-semibold">No AI Providers Configured</h3>
               <p className="text-sm text-muted-foreground">
                 Please configure at least one AI provider in Settings → AI to use this feature.
               </p>
             </div>
             <button
               onClick={handleClose}
-              className="px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              className="h-10 px-4 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors inline-flex items-center justify-center"
             >
               Close
             </button>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5" />
-            AI Content Generator
-          </DialogTitle>
-          <DialogDescription>
-            Generate blog posts, articles, and content using AI. Fill in your requirements below.
-          </DialogDescription>
-        </DialogHeader>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4"
+      onClick={handleBackdropClick}
+    >
+      <div 
+        className="bg-background rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col border overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b">
+          <div className="flex-1">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              AI Content Generator
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1 hidden sm:block">
+              Generate blog posts, articles, and content using AI
+            </p>
+          </div>
+          <button
+            onClick={handleClose}
+            disabled={isGenerating}
+            className="h-8 w-8 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors inline-flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+            title="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
 
-        <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
           {/* Provider and Model Selection */}
           {(generationStatus === 'idle' || generationStatus === 'generating' || generationStatus === 'error') && (
             <>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {/* Provider Selection */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">AI Provider</label>
-                  <select
+                  <Select
                     value={selectedProvider || ''}
-                    onChange={(e) => setSelectedProvider(e.target.value as AIProviderType)}
+                    onValueChange={(value) => setSelectedProvider(value as AIProviderType)}
                     disabled={isGenerating}
-                    className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
                   >
-                    {enabledProviders.map((provider) => (
-                      <option key={provider} value={provider}>
-                        {PROVIDER_NAMES[provider]}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select provider" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {enabledProviders.map((provider) => (
+                        <SelectItem key={provider} value={provider}>
+                          {PROVIDER_NAMES[provider]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Model Selection */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Model</label>
-                  <select
+                  <Select
                     value={selectedModel}
-                    onChange={(e) => setSelectedModel(e.target.value)}
-                    disabled={isGenerating || !selectedProvider}
-                    className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                    onValueChange={setSelectedModel}
+                    disabled={isGenerating || !selectedProvider || availableModels.length === 0}
                   >
-                    {availableModels.length === 0 ? (
-                      <option value="">No models available</option>
-                    ) : (
-                      availableModels.map((model) => (
-                        <option key={model.id} value={model.id}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder={availableModels.length === 0 ? "No models available" : "Select model"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableModels.map((model) => (
+                        <SelectItem key={model.id} value={model.id}>
                           {model.name}
-                        </option>
-                      ))
-                    )}
-                  </select>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -301,8 +368,8 @@ export function AIGeneratorModal({ isOpen, onClose, onGenerate }: AIGeneratorMod
               {/* Content Preview */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Content Preview</label>
-                <div className="p-4 rounded-md bg-muted/50 border border-border max-h-64 overflow-y-auto">
-                  <pre className="text-xs font-mono whitespace-pre-wrap text-foreground">
+                <div className="p-3 sm:p-4 rounded-md bg-muted/50 border border-border max-h-48 sm:max-h-64 overflow-y-auto">
+                  <pre className="text-xs font-mono whitespace-pre-wrap text-foreground break-words">
                     {generatedContent.content}
                   </pre>
                 </div>
@@ -311,59 +378,59 @@ export function AIGeneratorModal({ isOpen, onClose, onGenerate }: AIGeneratorMod
           )}
         </div>
 
-        {/* Footer Actions */}
-        <div className="flex items-center justify-between gap-3 pt-4 border-t">
+        {/* Footer */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 p-3 sm:p-4 border-t">
           {generationStatus === 'success' ? (
             <>
               <button
                 onClick={handleTryAgain}
-                className="px-4 py-2 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent transition-colors"
+                className="h-10 px-4 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors order-2 sm:order-1 inline-flex items-center justify-center"
               >
                 Generate Another
               </button>
-              <div className="flex gap-2">
+              <div className="flex gap-2 order-1 sm:order-2">
                 <button
                   onClick={handleClose}
-                  className="px-4 py-2 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent transition-colors"
+                  className="flex-1 sm:flex-none h-10 px-4 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors inline-flex items-center justify-center"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleInsert}
-                  className="px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors inline-flex items-center gap-2"
+                  className="flex-1 sm:flex-none h-10 px-4 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors inline-flex items-center justify-center gap-2"
                 >
                   <CheckCircle className="h-4 w-4" />
-                  Insert Content
+                  <span>Insert Content</span>
                 </button>
               </div>
             </>
           ) : (
             <>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-xs text-muted-foreground order-2 sm:order-1 text-center sm:text-left">
                 {isGenerating ? 'Please wait...' : 'AI-generated content may require editing'}
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 order-1 sm:order-2">
                 <button
                   onClick={handleClose}
                   disabled={isGenerating}
-                  className="px-4 py-2 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent transition-colors disabled:opacity-50"
+                  className="flex-1 sm:flex-none h-10 px-4 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleGenerate}
                   disabled={isGenerating || !prompt.trim()}
-                  className="px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 inline-flex items-center gap-2"
+                  className="flex-1 sm:flex-none h-10 px-4 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
                 >
                   {isGenerating ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Generating...
+                      <span>Generating...</span>
                     </>
                   ) : (
                     <>
                       <Sparkles className="h-4 w-4" />
-                      Generate
+                      <span>Generate</span>
                     </>
                   )}
                 </button>
@@ -371,8 +438,8 @@ export function AIGeneratorModal({ isOpen, onClose, onGenerate }: AIGeneratorMod
             </>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
 
