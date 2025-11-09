@@ -52,8 +52,12 @@ const lowlight = createLowlight(common);
 export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocus = false, onModeToggle }: TiptapEditorProps) {
   const [showMoreTools, setShowMoreTools] = useState(false);
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
+  const [headingMenuPosition, setHeadingMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const [moreToolsPosition, setMoreToolsPosition] = useState<{ top: number; right: number } | null>(null);
   const moreToolsRef = useRef<HTMLDivElement>(null);
   const headingMenuRef = useRef<HTMLDivElement>(null);
+  const headingButtonRef = useRef<HTMLButtonElement>(null);
+  const moreToolsButtonRef = useRef<HTMLButtonElement>(null);
   const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
   const previousContentRef = useRef<string>(content);
 
@@ -154,20 +158,73 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
     }
   }, [content, editor]);
 
+  // Calculate dropdown positions when they open
+  const updateHeadingPosition = () => {
+    if (showHeadingMenu && headingButtonRef.current) {
+      const rect = headingButtonRef.current.getBoundingClientRect();
+      setHeadingMenuPosition({
+        top: rect.bottom + 4,
+        left: rect.left,
+      });
+    }
+  };
+
+  const updateMoreToolsPosition = () => {
+    if (showMoreTools && moreToolsButtonRef.current) {
+      const rect = moreToolsButtonRef.current.getBoundingClientRect();
+      setMoreToolsPosition({
+        top: rect.bottom + 4,
+        right: window.innerWidth - rect.right,
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (showHeadingMenu) {
+      updateHeadingPosition();
+      const handleScroll = () => updateHeadingPosition();
+      const handleResize = () => updateHeadingPosition();
+      window.addEventListener('scroll', handleScroll, true);
+      window.addEventListener('resize', handleResize);
+      return () => {
+        window.removeEventListener('scroll', handleScroll, true);
+        window.removeEventListener('resize', handleResize);
+      };
+    } else {
+      setHeadingMenuPosition(null);
+    }
+  }, [showHeadingMenu]);
+
+  useEffect(() => {
+    if (showMoreTools) {
+      updateMoreToolsPosition();
+      const handleScroll = () => updateMoreToolsPosition();
+      const handleResize = () => updateMoreToolsPosition();
+      window.addEventListener('scroll', handleScroll, true);
+      window.addEventListener('resize', handleResize);
+      return () => {
+        window.removeEventListener('scroll', handleScroll, true);
+        window.removeEventListener('resize', handleResize);
+      };
+    } else {
+      setMoreToolsPosition(null);
+    }
+  }, [showMoreTools]);
+
   // Close dropdowns on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (moreToolsRef.current && !moreToolsRef.current.contains(event.target as Node)) {
+      if (showMoreTools && moreToolsRef.current && !moreToolsRef.current.contains(event.target as Node) && !moreToolsButtonRef.current?.contains(event.target as Node)) {
         setShowMoreTools(false);
       }
-      if (headingMenuRef.current && !headingMenuRef.current.contains(event.target as Node)) {
+      if (showHeadingMenu && headingMenuRef.current && !headingMenuRef.current.contains(event.target as Node) && !headingButtonRef.current?.contains(event.target as Node)) {
         setShowHeadingMenu(false);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [showMoreTools, showHeadingMenu]);
 
   // Auto-resize title textarea
   useEffect(() => {
@@ -260,8 +317,9 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
           </button>
 
           {/* Heading Dropdown */}
-          <div className="relative" ref={headingMenuRef}>
+          <div className="relative">
             <button
+              ref={headingButtonRef}
               onClick={() => setShowHeadingMenu(!showHeadingMenu)}
               className="toolbar-btn flex items-center gap-1"
               title="Heading"
@@ -270,14 +328,18 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
               <ChevronDown className="h-3 w-3" />
             </button>
             
-            {showHeadingMenu && (
-              <div className="absolute top-full left-0 mt-1 bg-popover border border-border rounded-md shadow-lg py-1 z-20 min-w-[120px]">
+            {showHeadingMenu && headingMenuPosition && (
+              <div 
+                ref={headingMenuRef}
+                className="fixed bg-popover border border-border rounded-md shadow-lg py-1 z-[100] w-[140px]"
+                style={{ top: `${headingMenuPosition.top}px`, left: `${headingMenuPosition.left}px` }}
+              >
                 <button
                   onClick={() => {
                     editor.chain().focus().setParagraph().run();
                     setShowHeadingMenu(false);
                   }}
-                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent transition-colors"
+                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent transition-colors whitespace-nowrap"
                 >
                   Normal
                 </button>
@@ -286,7 +348,7 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
                     editor.chain().focus().toggleHeading({ level: 1 }).run();
                     setShowHeadingMenu(false);
                   }}
-                  className="w-full text-left px-3 py-1.5 text-xl font-bold hover:bg-accent transition-colors"
+                  className="w-full text-left px-3 py-1.5 text-xl font-bold hover:bg-accent transition-colors whitespace-nowrap"
                 >
                   Heading 1
                 </button>
@@ -295,7 +357,7 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
                     editor.chain().focus().toggleHeading({ level: 2 }).run();
                     setShowHeadingMenu(false);
                   }}
-                  className="w-full text-left px-3 py-1.5 text-lg font-bold hover:bg-accent transition-colors"
+                  className="w-full text-left px-3 py-1.5 text-lg font-bold hover:bg-accent transition-colors whitespace-nowrap"
                 >
                   Heading 2
                 </button>
@@ -304,7 +366,7 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
                     editor.chain().focus().toggleHeading({ level: 3 }).run();
                     setShowHeadingMenu(false);
                   }}
-                  className="w-full text-left px-3 py-1.5 text-base font-bold hover:bg-accent transition-colors"
+                  className="w-full text-left px-3 py-1.5 text-base font-bold hover:bg-accent transition-colors whitespace-nowrap"
                 >
                   Heading 3
                 </button>
@@ -346,8 +408,9 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
           <div className="toolbar-divider" />
 
           {/* More Tools Dropdown */}
-          <div className="relative" ref={moreToolsRef}>
+          <div className="relative">
             <button
+              ref={moreToolsButtonRef}
               onClick={() => setShowMoreTools(!showMoreTools)}
               className="toolbar-btn"
               title="More tools"
@@ -355,8 +418,12 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
               <MoreHorizontal className="h-5 w-5" />
             </button>
 
-            {showMoreTools && (
-              <div className="absolute top-full right-0 mt-1 bg-popover border border-border rounded-md shadow-lg py-1 z-20 min-w-[200px]">
+            {showMoreTools && moreToolsPosition && (
+              <div 
+                ref={moreToolsRef}
+                className="fixed bg-popover border border-border rounded-md shadow-lg py-1 z-[100] min-w-[200px]"
+                style={{ top: `${moreToolsPosition.top}px`, right: `${moreToolsPosition.right}px` }}
+              >
                 <button
                   onClick={() => {
                     editor.chain().focus().toggleCode().run();
