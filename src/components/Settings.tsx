@@ -43,6 +43,42 @@ interface SettingsProps {
   onHiddenFilesChange?: () => void;
 }
 
+const Section = ({
+  title,
+  description,
+  children,
+  tone = 'default',
+}: {
+  title: string;
+  description?: string | React.ReactNode;
+  children: React.ReactNode;
+  tone?: 'default' | 'muted' | 'danger';
+}) => {
+  const toneClasses =
+    tone === 'danger'
+      ? 'bg-destructive/10 border border-destructive/20 shadow-sm'
+      : 'border border-border bg-card shadow-sm';
+
+  return (
+    <section className={`p-5 rounded-lg ${toneClasses} hover:shadow-md transition-shadow`}>
+      <div className="space-y-4">
+        {/* Başlık ve Açıklama */}
+        <div className="space-y-2">
+          <h3 className="text-base font-semibold leading-tight text-foreground">{title}</h3>
+          {description && (
+            <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+          )}
+        </div>
+        
+        {/* İçerik */}
+        <div>
+          {children}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 export function Settings({ onClose, directoryName, onHiddenFilesChange }: SettingsProps = {}) {
   const [settings, setSettings] = useState<AppSettings>(getSettings());
   const [newMetaKey, setNewMetaKey] = useState('');
@@ -54,42 +90,6 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { confirm, ConfirmDialog } = useConfirm();
   const urlFormatInputRef = useRef<HTMLInputElement>(null);
-
-  const Section = ({
-    title,
-    description,
-    children,
-    tone = 'default',
-  }: {
-    title: string;
-    description?: string | React.ReactNode;
-    children: React.ReactNode;
-    tone?: 'default' | 'muted' | 'danger';
-  }) => {
-    const toneClasses =
-      tone === 'danger'
-        ? 'bg-destructive/10 border border-destructive/20 shadow-sm'
-        : 'border border-border bg-card shadow-sm';
-
-    return (
-      <section className={`p-5 rounded-lg ${toneClasses} hover:shadow-md transition-shadow`}>
-        <div className="space-y-4">
-          {/* Başlık ve Açıklama */}
-          <div className="space-y-2">
-            <h3 className="text-base font-semibold leading-tight text-foreground">{title}</h3>
-            {description && (
-              <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
-            )}
-          </div>
-          
-          {/* İçerik */}
-          <div>
-            {children}
-          </div>
-        </div>
-      </section>
-    );
-  };
 
   useEffect(() => {
     const saved = getSettings();
@@ -334,74 +334,75 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
   };
 
   return (
-      <div className="h-full flex flex-col max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
-          <div className="flex items-center gap-2">
-            <SettingsIcon className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-xl font-semibold leading-none tracking-tight">Settings</h2>
+      <div className="min-h-full flex justify-center pb-6">
+        <div className="flex flex-col w-full max-w-4xl px-4 md:px-6">
+          {/* Header */}
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-2">
+              <SettingsIcon className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-xl font-semibold leading-none tracking-tight">Settings</h2>
+            </div>
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="h-8 w-8 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors inline-flex items-center justify-center"
+                title="Close Settings"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="h-8 w-8 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors inline-flex items-center justify-center"
-              title="Close Settings"
-              aria-label="Close"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
 
-        {/* Tabs Layout: Left sidebar tabs, Right content */}
-        <Tabs defaultValue="publishing" className="flex-1 flex flex-col md:flex-row gap-4 md:gap-6">
+          {/* Tabs Layout: Left sidebar tabs, Right content */}
+          <Tabs defaultValue="publishing" className="flex flex-col md:flex-row gap-6 pb-6">
           {/* Left Sidebar - Vertical Tabs */}
-          <TabsList className="flex md:flex-col h-fit w-full md:w-56 bg-muted/50 p-2 gap-1 rounded-lg border border-border overflow-x-auto md:overflow-x-visible scrollbar-hide">
+          <TabsList className="flex md:flex-col h-fit w-full md:w-48 shrink-0 bg-muted/50 p-1.5 gap-0.5 rounded-lg border border-border overflow-x-auto md:overflow-x-visible scrollbar-hide">
             <TabsTrigger 
               value="publishing" 
-              className="flex-shrink-0 w-full md:w-full justify-center md:justify-start gap-2 md:gap-3 text-left px-3 py-2.5 rounded-md text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent hover:text-accent-foreground"
+              className="flex-shrink-0 w-full justify-center md:justify-start gap-2 text-left px-3 py-2 rounded text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent/50 hover:text-accent-foreground"
             >
               <Link2 className="h-4 w-4 shrink-0" />
               <span className="hidden md:inline whitespace-nowrap">Website</span>
             </TabsTrigger>
             <TabsTrigger 
               value="appearance" 
-              className="flex-shrink-0 w-full md:w-full justify-center md:justify-start gap-2 md:gap-3 text-left px-3 py-2.5 rounded-md text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent hover:text-accent-foreground"
+              className="flex-shrink-0 w-full justify-center md:justify-start gap-2 text-left px-3 py-2 rounded text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent/50 hover:text-accent-foreground"
             >
               <Palette className="h-4 w-4 shrink-0" />
               <span className="hidden md:inline whitespace-nowrap">Appearance</span>
             </TabsTrigger>
             <TabsTrigger 
               value="default-meta" 
-              className="flex-shrink-0 w-full md:w-full justify-center md:justify-start gap-2 md:gap-3 text-left px-3 py-2.5 rounded-md text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent hover:text-accent-foreground"
+              className="flex-shrink-0 w-full justify-center md:justify-start gap-2 text-left px-3 py-2 rounded text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent/50 hover:text-accent-foreground"
             >
               <FileText className="h-4 w-4 shrink-0" />
               <span className="hidden md:inline whitespace-nowrap">Default Meta</span>
             </TabsTrigger>
             <TabsTrigger 
               value="field-types" 
-              className="flex-shrink-0 w-full md:w-full justify-center md:justify-start gap-2 md:gap-3 text-left px-3 py-2.5 rounded-md text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent hover:text-accent-foreground"
+              className="flex-shrink-0 w-full justify-center md:justify-start gap-2 text-left px-3 py-2 rounded text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent/50 hover:text-accent-foreground"
             >
               <ListTree className="h-4 w-4 shrink-0" />
               <span className="hidden md:inline whitespace-nowrap">Field Types</span>
             </TabsTrigger>
             <TabsTrigger 
               value="hidden-files" 
-              className="flex-shrink-0 w-full md:w-full justify-center md:justify-start gap-2 md:gap-3 text-left px-3 py-2.5 rounded-md text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent hover:text-accent-foreground"
+              className="flex-shrink-0 w-full justify-center md:justify-start gap-2 text-left px-3 py-2 rounded text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent/50 hover:text-accent-foreground"
             >
               <FolderOpen className="h-4 w-4 shrink-0" />
               <span className="hidden md:inline whitespace-nowrap">Hidden Files</span>
             </TabsTrigger>
             <TabsTrigger 
               value="backup" 
-              className="flex-shrink-0 w-full md:w-full justify-center md:justify-start gap-2 md:gap-3 text-left px-3 py-2.5 rounded-md text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent hover:text-accent-foreground"
+              className="flex-shrink-0 w-full justify-center md:justify-start gap-2 text-left px-3 py-2 rounded text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent/50 hover:text-accent-foreground"
             >
               <Archive className="h-4 w-4 shrink-0" />
               <span className="hidden md:inline whitespace-nowrap">Backup</span>
             </TabsTrigger>
             <TabsTrigger 
               value="about" 
-              className="flex-shrink-0 w-full md:w-full justify-center md:justify-start gap-2 md:gap-3 text-left px-3 py-2.5 rounded-md text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent hover:text-accent-foreground"
+              className="flex-shrink-0 w-full justify-center md:justify-start gap-2 text-left px-3 py-2 rounded text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent/50 hover:text-accent-foreground"
             >
               <Info className="h-4 w-4 shrink-0" />
               <span className="hidden md:inline whitespace-nowrap">About</span>
@@ -409,9 +410,9 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
           </TabsList>
 
           {/* Right Content Area */}
-          <div className="flex-1 overflow-y-auto md:pr-2">
+          <div className="flex-1">
             {/* Website Tab */}
-            <TabsContent value="publishing" className="mt-0 space-y-6 max-w-2xl">
+            <TabsContent value="publishing" className="mt-0 space-y-6 pr-2">
           {/* URL Configuration */}
           <Section 
             title="URL Configuration" 
@@ -419,8 +420,10 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
           >
             <div className="space-y-3">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Complete URL Pattern</label>
+                <label htmlFor="url-pattern-input" className="text-sm font-medium text-foreground">Complete URL Pattern</label>
                 <input
+                  id="url-pattern-input"
+                  name="urlPattern"
                   ref={urlFormatInputRef}
                   type="text"
                   value={settings.baseUrl && settings.urlFormat 
@@ -477,7 +480,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
             </TabsContent>
 
             {/* Appearance Tab */}
-            <TabsContent value="appearance" className="mt-0 space-y-6 max-w-2xl">
+            <TabsContent value="appearance" className="mt-0 space-y-6 pr-2">
           {/* Color Palette */}
           <Section 
             title="Color Palette" 
@@ -520,7 +523,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
             </TabsContent>
 
             {/* Default Meta Tab */}
-            <TabsContent value="default-meta" className="mt-0 space-y-6 max-w-2xl">
+            <TabsContent value="default-meta" className="mt-0 space-y-6 pr-2">
           {/* Default Meta */}
           <Section 
             title="Default Meta" 
@@ -533,12 +536,16 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                 Object.entries(settings.defaultMeta).map(([key, value]) => (
                   <div key={key} className="flex gap-2 items-center">
                     <input
+                      id={`meta-key-${key}`}
+                      name={`metaKey-${key}`}
                       type="text"
                       value={key}
                       disabled
                       className="w-40 px-3 py-2 text-sm rounded-md border border-input bg-muted cursor-not-allowed font-medium"
                     />
                     <input
+                      id={`meta-value-${key}`}
+                      name={`metaValue-${key}`}
                       type="text"
                       value={typeof value === 'string' ? value : JSON.stringify(value)}
                       onChange={(e) => handleUpdateMeta(key, e.target.value)}
@@ -559,6 +566,8 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
               <div className="pt-3 border-t border-border">
                 <div className="flex gap-2 items-center">
                   <input
+                    id="new-meta-key"
+                    name="newMetaKey"
                     type="text"
                     value={newMetaKey}
                     onChange={(e) => setNewMetaKey(e.target.value)}
@@ -573,6 +582,8 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                     }}
                   />
                   <input
+                    id="new-meta-value"
+                    name="newMetaValue"
                     type="text"
                     value={newMetaValue}
                     onChange={(e) => setNewMetaValue(e.target.value)}
@@ -600,7 +611,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
             </TabsContent>
 
             {/* Field Types Tab */}
-            <TabsContent value="field-types" className="mt-0 space-y-6 max-w-2xl">
+            <TabsContent value="field-types" className="mt-0 space-y-6 pr-2">
           {/* Meta Field Types */}
           <Section 
             title="Meta Field Types" 
@@ -613,6 +624,8 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                 Object.entries(settings.metaFieldMultiplicity || {}).map(([key, mode]) => (
                   <div key={key} className="flex items-center gap-2">
                     <input
+                      id={`field-type-${key}`}
+                      name={`fieldType-${key}`}
                       type="text"
                       value={key}
                       disabled
@@ -650,6 +663,8 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
               <div className="pt-3 border-t border-border">
                 <div className="flex gap-2 items-center">
                   <input
+                    id="new-multiplicity-key"
+                    name="newMultiplicityKey"
                     type="text"
                     value={newMultiplicityKey}
                     onChange={(e) => setNewMultiplicityKey(e.target.value)}
@@ -695,7 +710,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
             </TabsContent>
 
             {/* Hidden Files Tab */}
-            <TabsContent value="hidden-files" className="mt-0 space-y-6 max-w-2xl">
+            <TabsContent value="hidden-files" className="mt-0 space-y-6 pr-2">
           {/* Hidden Files */}
           <Section 
             title={`Hidden Files ${hiddenFiles.length > 0 ? `(${hiddenFiles.length})` : ''}`}
@@ -747,7 +762,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
             </TabsContent>
 
             {/* Backup Tab */}
-            <TabsContent value="backup" className="mt-0 space-y-6 max-w-2xl">
+            <TabsContent value="backup" className="mt-0 space-y-6 pr-2">
           {/* Export Configuration */}
           <Section 
             title="Export Configuration" 
@@ -776,6 +791,8 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                 Choose Configuration File
               </button>
               <input
+                id="config-file-input"
+                name="configFile"
                 ref={fileInputRef}
                 type="file"
                 accept=".json,application/json"
@@ -793,7 +810,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
             </TabsContent>
 
             {/* About Tab */}
-            <TabsContent value="about" className="mt-0 space-y-6 max-w-2xl">
+            <TabsContent value="about" className="mt-0 space-y-6 pr-2">
           {/* App Information */}
           <Section 
             title="About Markdown++" 
@@ -826,7 +843,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                 <div className="space-y-2">
                   {/* GitHub */}
                   <a
-                    href="https://github.com/byildiz/markdown-plus-plus"
+                    href="https://github.com/emir/markdown-plus-plus"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-between p-3 rounded-md border border-input bg-background hover:bg-accent hover:border-accent-foreground/20 transition-colors group"
@@ -843,7 +860,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
 
                   {/* Docs */}
                   <a
-                    href="https://markdown-plus-plus.com/docs"
+                    href="https://github.com/emir/markdown-plus-plus?tab=readme-ov-file#markdown"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-between p-3 rounded-md border border-input bg-background hover:bg-accent hover:border-accent-foreground/20 transition-colors group"
@@ -860,7 +877,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
 
                   {/* Donate */}
                   <a
-                    href="https://github.com/sponsors/byildiz"
+                    href="https://buymeacoffee.com/emir"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-between p-3 rounded-md border border-input bg-background hover:bg-accent hover:border-accent-foreground/20 transition-colors group"
@@ -1017,6 +1034,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
 
         {/* Confirm Dialog */}
         <ConfirmDialog />
+        </div>
       </div>
   );
 }
