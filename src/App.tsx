@@ -5,7 +5,7 @@ import { RawMarkdownModal } from '@/components/RawMarkdownModal';
 import { PublishModal } from '@/components/PublishModal';
 import { SidebarTabs } from '@/components/SidebarTabs';
 import { Settings } from '@/components/Settings';
-import { Sheet, SheetContent } from '@/components/ui/Sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/Sheet';
 import { toast } from 'sonner';
 import { WelcomeWarningModal, shouldShowWarning } from '@/components/WelcomeWarningModal';
 import { FileBrowser } from '@/components/FileBrowser';
@@ -2565,6 +2565,12 @@ function App() {
       {viewMode === 'editor' && (
         <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
           <SheetContent side="right" className="w-full sm:max-w-md p-0">
+            <SheetHeader className="sr-only">
+              <SheetTitle>Post Metadata and Settings</SheetTitle>
+              <SheetDescription>
+                Edit post metadata, file name, and view canonical related posts
+              </SheetDescription>
+            </SheetHeader>
             <SidebarTabs
               currentFile={currentFile}
               allPosts={allPosts}

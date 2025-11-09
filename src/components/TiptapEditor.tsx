@@ -64,6 +64,8 @@ export function TiptapEditor({ content, onChange, title, onTitleChange, autoFocu
           levels: [1, 2, 3],
         },
         codeBlock: false, // Disable default code block in favor of lowlight
+        link: false, // Disable link in StarterKit since we're adding it separately
+        underline: false, // Disable underline in StarterKit since we're adding it separately
       }),
       CodeBlockLowlight.configure({
         lowlight,
