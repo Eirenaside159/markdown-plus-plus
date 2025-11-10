@@ -13,6 +13,7 @@ interface MarkdownEditorProps {
   onTitleChange: (title: string) => void;
   autoFocus?: boolean;
   onMetaChange?: (meta: Record<string, any>) => void;
+  currentFrontmatter?: Record<string, any>;
 }
 
 type EditorMode = 'tiptap' | 'raw';
@@ -29,7 +30,7 @@ const turndownService = new TurndownService({
   codeBlockStyle: 'fenced',
 });
 
-export function MarkdownEditor({ content, onChange, title, onTitleChange, autoFocus = false, onMetaChange }: MarkdownEditorProps) {
+export function MarkdownEditor({ content, onChange, title, onTitleChange, autoFocus = false, onMetaChange, currentFrontmatter }: MarkdownEditorProps) {
   const [htmlContent, setHtmlContent] = useState(() => {
     // Initialize with converted HTML content if content exists
     return content ? (marked(content) as string) : '';
@@ -133,10 +134,28 @@ export function MarkdownEditor({ content, onChange, title, onTitleChange, autoFo
     // Update all metadata including title in a single atomic update
     // This prevents race conditions when multiple state updates happen
     if (onMetaChange) {
-      onMetaChange({
-        title: generatedContent.title,
-        ...generatedContent.meta,
-      });
+      // Only update fields that are not already set in the current frontmatter
+      // This preserves predefined fields like author
+      const mergedMeta: Record<string, any> = {};
+      
+      // Title should always be updated from AI
+      mergedMeta.title = generatedContent.title;
+      
+      // For other meta fields, only update if they're empty
+      for (const [key, value] of Object.entries(generatedContent.meta)) {
+        // Use AI value only if current frontmatter doesn't have this field or it's empty
+        const currentValue = currentFrontmatter?.[key];
+        const hasExistingValue = currentValue !== undefined && 
+                                  currentValue !== null && 
+                                  currentValue !== '' &&
+                                  !(Array.isArray(currentValue) && currentValue.length === 0);
+        
+        if (!hasExistingValue) {
+          mergedMeta[key] = value;
+        }
+      }
+      
+      onMetaChange(mergedMeta);
     }
     // Note: We don't call onTitleChange separately because title is already
     // included in the meta update above. The editor will receive the updated

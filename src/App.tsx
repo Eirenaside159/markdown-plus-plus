@@ -2571,6 +2571,7 @@ function App() {
                   title={currentFile.frontmatter.title || ''}
                   onTitleChange={handleTitleChange}
                   autoFocus={shouldAutoFocus}
+                  currentFrontmatter={currentFile.frontmatter}
                   onMetaChange={(meta) => {
                     // Merge AI-generated meta with existing frontmatter
                     if (currentFile) {
