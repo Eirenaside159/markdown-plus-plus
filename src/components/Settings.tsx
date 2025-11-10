@@ -425,7 +425,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
               className="flex-shrink-0 w-full justify-center md:justify-start gap-2 text-left px-3 py-2 rounded text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent/50 hover:text-accent-foreground"
             >
               <Link2 className="h-4 w-4 shrink-0" />
-              <span className="hidden md:inline whitespace-nowrap">Website</span>
+              <span className="hidden md:inline whitespace-nowrap">URL Configuration</span>
             </TabsTrigger>
             <TabsTrigger 
               value="ai" 
