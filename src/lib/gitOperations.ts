@@ -12,6 +12,8 @@ export interface PublishOptions {
   filePath: string;
   commitMessage: string;
   branch?: string;
+  gitAuthor?: string;
+  gitEmail?: string;
 }
 
 export interface PublishResult {
@@ -112,7 +114,7 @@ export async function publishFile(
   dirHandle: FileSystemDirectoryHandle,
   options: PublishOptions
 ): Promise<PublishResult> {
-  const { filePath, commitMessage, branch = 'main' } = options;
+  const { filePath, commitMessage, branch = 'main', gitAuthor, gitEmail } = options;
 
   try {
     const fs = createFileSystemAdapter(dirHandle);
@@ -139,30 +141,46 @@ export async function publishFile(
       throw new Error('Failed to stage file: ' + (addError instanceof Error ? addError.message : 'Unknown error'));
     }
 
-    // Get git config for author info - try to read from .git/config directly
+    // Get git config for author info
+    // Priority: 1) Settings from options 2) .git/config 3) Default values
     let name = 'Markdown++ User';
     let email = 'user@mdadmin.local';
     
-    try {
-      // Try to read config file directly
-      const gitDir = await dirHandle.getDirectoryHandle('.git');
-      const configFile = await gitDir.getFileHandle('config');
-      const file = await configFile.getFile();
-      const content = await file.text();
-      
-      // Parse user name
-      const nameMatch = content.match(/\[user\][\s\S]*?name\s*=\s*(.+)/);
-      if (nameMatch && nameMatch[1]) {
-        name = nameMatch[1].trim();
+    // Use provided gitAuthor and gitEmail if available
+    if (gitAuthor && gitAuthor.trim()) {
+      name = gitAuthor.trim();
+    }
+    if (gitEmail && gitEmail.trim()) {
+      email = gitEmail.trim();
+    }
+    
+    // If not provided in options, try to read from .git/config
+    if (name === 'Markdown++ User' || email === 'user@mdadmin.local') {
+      try {
+        // Try to read config file directly
+        const gitDir = await dirHandle.getDirectoryHandle('.git');
+        const configFile = await gitDir.getFileHandle('config');
+        const file = await configFile.getFile();
+        const content = await file.text();
+        
+        // Parse user name if not already set
+        if (name === 'Markdown++ User') {
+          const nameMatch = content.match(/\[user\][\s\S]*?name\s*=\s*(.+)/);
+          if (nameMatch && nameMatch[1]) {
+            name = nameMatch[1].trim();
+          }
+        }
+        
+        // Parse user email if not already set
+        if (email === 'user@mdadmin.local') {
+          const emailMatch = content.match(/\[user\][\s\S]*?email\s*=\s*(.+)/);
+          if (emailMatch && emailMatch[1]) {
+            email = emailMatch[1].trim();
+          }
+        }
+      } catch (configError) {
+        // Could not load git config, using defaults
       }
-      
-      // Parse user email
-      const emailMatch = content.match(/\[user\][\s\S]*?email\s*=\s*(.+)/);
-      if (emailMatch && emailMatch[1]) {
-        email = emailMatch[1].trim();
-      }
-    } catch (configError) {
-      // Could not load git config, using defaults
     }
 
     // Commit the changes

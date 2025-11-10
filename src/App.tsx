@@ -1533,10 +1533,15 @@ function App() {
     if (!dirHandle || !currentFile || !selectedFilePath) return;
     
     try {
+      // Get git author and email from settings
+      const settings = getSettings();
+      
       const result = await publishFile(dirHandle, {
         filePath: selectedFilePath,
         commitMessage,
         branch: gitStatus?.currentBranch || 'main',
+        gitAuthor: settings.gitAuthor,
+        gitEmail: settings.gitEmail,
       });
       
       if (result.success) {

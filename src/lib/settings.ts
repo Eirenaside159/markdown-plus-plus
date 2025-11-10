@@ -19,6 +19,8 @@ export function getSettings(): AppSettings {
         },
         colorPalette: parsed.colorPalette ?? DEFAULT_SETTINGS.colorPalette,
         theme: parsed.theme ?? DEFAULT_SETTINGS.theme,
+        gitAuthor: parsed.gitAuthor ?? DEFAULT_SETTINGS.gitAuthor,
+        gitEmail: parsed.gitEmail ?? DEFAULT_SETTINGS.gitEmail,
       };
     }
   } catch (error) {

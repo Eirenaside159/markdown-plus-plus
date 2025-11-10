@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings as SettingsIcon, X, Trash2, Download, Upload, AlertTriangle, EyeOff, Eye, Save, Link2, Palette, FileText, ListTree, Archive, FolderOpen, Info, Github, BookOpen, Heart, ExternalLink, ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
+import { Settings as SettingsIcon, X, Trash2, Download, Upload, AlertTriangle, EyeOff, Eye, Save, Link2, Palette, FileText, ListTree, Archive, FolderOpen, Info, Github, BookOpen, Heart, ExternalLink, ChevronDown, ChevronRight, Sparkles, GitBranch } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { getSettings, saveSettings } from '@/lib/settings';
@@ -82,7 +82,7 @@ const Section = ({
 
 export function Settings({ onClose, directoryName, onHiddenFilesChange }: SettingsProps = {}) {
   const [settings, setSettings] = useState<AppSettings>(getSettings());
-  const [activeTab, setActiveTab] = useState<string>('publishing');
+  const [activeTab, setActiveTab] = useState<string>('git');
   const [newMetaKey, setNewMetaKey] = useState('');
   const [newMetaValue, setNewMetaValue] = useState('');
   const [newMultiplicityKey, setNewMultiplicityKey] = useState('');
@@ -118,7 +118,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
       if (!hash.startsWith('#settings')) return;
       const match = hash.match(/tab=([a-z-]+)/i);
       const tab = match?.[1];
-      if (tab && ['publishing','appearance','default-meta','field-types','hidden-files','backup','about','ai'].includes(tab)) {
+      if (tab && ['git','website','appearance','default-meta','field-types','hidden-files','backup','about','ai'].includes(tab)) {
         setActiveTab(tab);
       }
     };
@@ -414,7 +414,14 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
           {/* Left Sidebar - Vertical Tabs */}
           <TabsList className="flex md:flex-col h-fit w-full md:w-48 shrink-0 bg-muted/50 p-1.5 gap-0.5 rounded-lg border border-border overflow-x-auto md:overflow-x-visible scrollbar-hide">
             <TabsTrigger 
-              value="publishing" 
+              value="git" 
+              className="flex-shrink-0 w-full justify-center md:justify-start gap-2 text-left px-3 py-2 rounded text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent/50 hover:text-accent-foreground"
+            >
+              <GitBranch className="h-4 w-4 shrink-0" />
+              <span className="hidden md:inline whitespace-nowrap">Git</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="website" 
               className="flex-shrink-0 w-full justify-center md:justify-start gap-2 text-left px-3 py-2 rounded text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent/50 hover:text-accent-foreground"
             >
               <Link2 className="h-4 w-4 shrink-0" />
@@ -473,8 +480,54 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
 
           {/* Right Content Area */}
           <div className="flex-1">
+            {/* Git Tab */}
+            <TabsContent value="git" className="mt-0 space-y-6 pr-2">
+          {/* Git Configuration */}
+          <Section 
+            title="Git Configuration" 
+            description="Set your Git author name and email for commits. These will be used when publishing changes via Markdown++."
+          >
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <label htmlFor="git-author-input" className="text-sm font-medium text-foreground">Author Name</label>
+                <input
+                  id="git-author-input"
+                  name="gitAuthor"
+                  type="text"
+                  autoComplete="name"
+                  value={settings.gitAuthor || ''}
+                  onChange={(e) => {
+                    const updatedSettings = { ...settings, gitAuthor: e.target.value };
+                    setSettings(updatedSettings);
+                    saveSettings(updatedSettings);
+                  }}
+                  placeholder="Your Name"
+                  className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="git-email-input" className="text-sm font-medium text-foreground">Email Address</label>
+                <input
+                  id="git-email-input"
+                  name="gitEmail"
+                  type="email"
+                  autoComplete="email"
+                  value={settings.gitEmail || ''}
+                  onChange={(e) => {
+                    const updatedSettings = { ...settings, gitEmail: e.target.value };
+                    setSettings(updatedSettings);
+                    saveSettings(updatedSettings);
+                  }}
+                  placeholder="your.email@example.com"
+                  className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </div>
+          </Section>
+            </TabsContent>
+
             {/* Website Tab */}
-            <TabsContent value="publishing" className="mt-0 space-y-6 pr-2">
+            <TabsContent value="website" className="mt-0 space-y-6 pr-2">
           {/* URL Configuration */}
           <Section 
             title="URL Configuration" 

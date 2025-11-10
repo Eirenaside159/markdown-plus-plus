@@ -18,6 +18,8 @@ export interface AppSettings {
   metaFieldMultiplicity?: Record<string, MetaMultiplicity>;
   colorPalette?: ColorPalette;
   theme?: ThemeMode;
+  gitAuthor?: string;
+  gitEmail?: string;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -27,5 +29,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   metaFieldMultiplicity: {},
   colorPalette: 'neutral',
   theme: 'system',
+  gitAuthor: '',
+  gitEmail: '',
 };
 
