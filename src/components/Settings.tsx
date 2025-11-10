@@ -82,6 +82,7 @@ const Section = ({
 
 export function Settings({ onClose, directoryName, onHiddenFilesChange }: SettingsProps = {}) {
   const [settings, setSettings] = useState<AppSettings>(getSettings());
+  const [activeTab, setActiveTab] = useState<string>('publishing');
   const [newMetaKey, setNewMetaKey] = useState('');
   const [newMetaValue, setNewMetaValue] = useState('');
   const [newMultiplicityKey, setNewMultiplicityKey] = useState('');
@@ -95,6 +96,25 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
   useEffect(() => {
     const saved = getSettings();
     setSettings(saved);
+  }, []);
+
+  // Parse desired tab from location hash (e.g., #settings?tab=ai)
+  useEffect(() => {
+    const parseTabFromHash = () => {
+      const hash = window.location.hash || '';
+      if (!hash.startsWith('#settings')) return;
+      const match = hash.match(/tab=([a-z-]+)/i);
+      const tab = match?.[1];
+      if (tab && ['publishing','appearance','default-meta','field-types','hidden-files','backup','about','ai'].includes(tab)) {
+        setActiveTab(tab);
+      }
+    };
+    // Initial parse
+    parseTabFromHash();
+    // Listen for hash changes
+    const onHashChange = () => parseTabFromHash();
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
   useEffect(() => {
@@ -377,7 +397,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
           </div>
 
           {/* Tabs Layout: Left sidebar tabs, Right content */}
-          <Tabs defaultValue="publishing" className="flex flex-col md:flex-row gap-6 pb-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col md:flex-row gap-6 pb-6">
           {/* Left Sidebar - Vertical Tabs */}
           <TabsList className="flex md:flex-col h-fit w-full md:w-48 shrink-0 bg-muted/50 p-1.5 gap-0.5 rounded-lg border border-border overflow-x-auto md:overflow-x-visible scrollbar-hide">
             <TabsTrigger 
@@ -386,6 +406,13 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
             >
               <Link2 className="h-4 w-4 shrink-0" />
               <span className="hidden md:inline whitespace-nowrap">Website</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="ai" 
+              className="flex-shrink-0 w-full justify-center md:justify-start gap-2 text-left px-3 py-2 rounded text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent/50 hover:text-accent-foreground"
+            >
+              <Sparkles className="h-4 w-4 shrink-0" />
+              <span className="hidden md:inline whitespace-nowrap">AI</span>
             </TabsTrigger>
             <TabsTrigger 
               value="appearance" 
@@ -414,13 +441,6 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
             >
               <FolderOpen className="h-4 w-4 shrink-0" />
               <span className="hidden md:inline whitespace-nowrap">Hidden Files</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="ai" 
-              className="flex-shrink-0 w-full justify-center md:justify-start gap-2 text-left px-3 py-2 rounded text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-accent/50 hover:text-accent-foreground"
-            >
-              <Sparkles className="h-4 w-4 shrink-0" />
-              <span className="hidden md:inline whitespace-nowrap">AI</span>
             </TabsTrigger>
             <TabsTrigger 
               value="backup" 
@@ -506,6 +526,11 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
               <UrlPreview baseUrl={settings.baseUrl || ''} urlFormat={settings.urlFormat || ''} />
             </div>
           </Section>
+            </TabsContent>
+
+            {/* AI Tab */}
+            <TabsContent value="ai" className="mt-0">
+              <AISettings />
             </TabsContent>
 
             {/* Appearance Tab */}
@@ -788,11 +813,6 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
               </div>
             )}
           </Section>
-            </TabsContent>
-
-            {/* AI Tab */}
-            <TabsContent value="ai" className="mt-0">
-              <AISettings />
             </TabsContent>
 
             {/* Backup Tab */}

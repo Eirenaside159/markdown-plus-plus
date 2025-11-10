@@ -44,9 +44,9 @@ export const PROVIDER_NAMES: Record<AIProviderType, string> = {
  * Provider descriptions
  */
 export const PROVIDER_DESCRIPTIONS: Record<AIProviderType, string> = {
-  openai: 'ChatGPT models including GPT-4 and GPT-3.5',
-  gemini: 'Google\'s Gemini models with large context windows',
-  claude: 'Anthropic\'s Claude models known for safety and accuracy',
+  openai: 'All models from your OpenAI account',
+  gemini: 'All models from your Google AI account',
+  claude: 'Claude 2, 3, and 3.5 series',
 };
 
 /**

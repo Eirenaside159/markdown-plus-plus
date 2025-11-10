@@ -19,40 +19,6 @@ import {
 
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta';
 
-/**
- * Gemini supported models
- */
-const SUPPORTED_MODELS: AIModel[] = [
-  {
-    id: 'gemini-2.0-flash-exp',
-    name: 'Gemini 2.0 Flash (Experimental)',
-    description: 'Latest experimental model with fast performance',
-    contextWindow: 1000000,
-    maxTokens: 8192,
-  },
-  {
-    id: 'gemini-1.5-pro',
-    name: 'Gemini 1.5 Pro',
-    description: 'Most capable model, best for complex tasks',
-    contextWindow: 2000000,
-    maxTokens: 8192,
-  },
-  {
-    id: 'gemini-1.5-flash',
-    name: 'Gemini 1.5 Flash',
-    description: 'Fast and efficient for most tasks',
-    contextWindow: 1000000,
-    maxTokens: 8192,
-  },
-  {
-    id: 'gemini-1.5-flash-8b',
-    name: 'Gemini 1.5 Flash-8B',
-    description: 'Smallest and fastest for simple tasks',
-    contextWindow: 1000000,
-    maxTokens: 8192,
-  },
-];
-
 export class GeminiProvider implements AIProvider {
   /**
    * Validate Gemini API key format
@@ -101,22 +67,33 @@ export class GeminiProvider implements AIProvider {
 
       const data = await response.json();
       
-      // Filter for generateContent supported models
-      const availableModelIds = new Set(
-        data.models
-          ?.filter((m: any) => 
-            m.supportedGenerationMethods?.includes('generateContent')
-          )
-          .map((m: any) => m.name.replace('models/', ''))
-      );
+      // Get ALL models from API - no filtering at all
+      const allModels = (data.models || [])
+        .map((m: any): AIModel => {
+          const modelId = m.name.replace('models/', '');
+          return {
+            id: modelId,
+            name: modelId, // Keep original ID
+            description: m.displayName || undefined,
+          };
+        })
+        .sort((a: any, b: any) => {
+          // Sort alphabetically
+          return a.id.localeCompare(b.id);
+        });
 
-      const models = SUPPORTED_MODELS.filter(model =>
-        availableModelIds.has(model.id)
-      );
+      console.log('[Gemini] Fetched models:', allModels.length, allModels.map(m => m.id));
+
+      if (allModels.length === 0) {
+        return {
+          success: false,
+          error: 'No models found in your account',
+        };
+      }
 
       return {
         success: true,
-        models: models.length > 0 ? models : SUPPORTED_MODELS,
+        models: allModels,
       };
     } catch (error) {
       return {

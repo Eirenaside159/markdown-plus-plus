@@ -218,13 +218,13 @@ export function MarkdownEditor({ content, onChange, title, onTitleChange, autoFo
 
   return (
     <>
-      <TiptapEditor 
-        content={htmlContent} 
-        onChange={handleChange}
-        title={title}
-        onTitleChange={onTitleChange}
-        autoFocus={autoFocus}
-        onModeToggle={toggleMode}
+    <TiptapEditor 
+      content={htmlContent} 
+      onChange={handleChange}
+      title={title}
+      onTitleChange={onTitleChange}
+      autoFocus={autoFocus}
+      onModeToggle={toggleMode}
         onAIGenerate={() => setIsAIModalOpen(true)}
       />
       

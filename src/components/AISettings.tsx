@@ -4,8 +4,16 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Sparkles, Key, Check, X, Loader2, ExternalLink, AlertCircle } from 'lucide-react';
+import { Sparkles, Key, Check, X, Loader2, ExternalLink, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { Switch } from './ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 import {
   loadAISettings,
   updateProviderConfig,
@@ -74,13 +82,40 @@ function ProviderCard({
   connectionStatus,
 }: ProviderCardProps) {
   const [showApiKey, setShowApiKey] = useState(false);
+  const [lastFetchedApiKey, setLastFetchedApiKey] = useState<string>('');
+
+  // Auto-fetch models when API key is entered and hasn't been fetched yet
+  useEffect(() => {
+    // Only auto-fetch if we don't already have models cached
+    if (enabled && apiKey && apiKey.length > 20 && apiKey !== lastFetchedApiKey && availableModels.length === 0 && !isFetchingModels) {
+      // Wait a bit to avoid fetching on every keystroke
+      const timer = setTimeout(() => {
+        setLastFetchedApiKey(apiKey);
+        onFetchModels();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [apiKey, enabled, availableModels.length, isFetchingModels, lastFetchedApiKey, onFetchModels]);
+
+  // Ensure defaultModel is valid and set a sensible default when models load
+  useEffect(() => {
+    if (!enabled) return;
+    if (!availableModels || availableModels.length === 0) return;
+
+    const exists = defaultModel ? availableModels.some(m => m.id === defaultModel) : false;
+
+    // If there is no default or it's not in the fetched models, set the first one
+    if (!defaultModel || !exists) {
+      onModelSelect(availableModels[0].id);
+    }
+  }, [enabled, availableModels, defaultModel, onModelSelect]);
 
   return (
     <div
-      className={`p-4 rounded-lg border-2 transition-all ${
+      className={`p-4 rounded-lg border transition-all ${
         enabled
-          ? 'border-primary bg-primary/5'
-          : 'border-border bg-card'
+          ? 'border-primary/50 bg-primary/5 shadow-sm'
+          : 'border-border bg-card/50'
       }`}
     >
       {/* Header */}
@@ -104,15 +139,10 @@ function ProviderCard({
             {PROVIDER_DESCRIPTIONS[providerType]}
           </p>
         </div>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            checked={enabled}
-            onChange={(e) => onToggle(e.target.checked)}
-            className="sr-only peer"
-          />
-          <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ring rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-        </label>
+        <Switch
+          checked={enabled}
+          onCheckedChange={onToggle}
+        />
       </div>
 
       {/* API Key Input */}
@@ -130,20 +160,21 @@ function ProviderCard({
                   value={apiKey}
                   onChange={(e) => onApiKeyChange(e.target.value)}
                   placeholder="Enter your API key"
-                  className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring font-mono"
+                  className="w-full h-10 px-3 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring font-mono pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowApiKey(!showApiKey)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors rounded hover:bg-accent"
+                  title={showApiKey ? 'Hide API key' : 'Show API key'}
                 >
-                  {showApiKey ? '🙈' : '👁️'}
+                  {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
               <button
                 onClick={onTestConnection}
                 disabled={!apiKey || isTestingConnection}
-                className="px-4 py-2 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent hover:border-accent-foreground/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+                className="h-10 px-4 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 shrink-0"
                 title="Test connection"
               >
                 {isTestingConnection ? (
@@ -155,52 +186,68 @@ function ProviderCard({
                 ) : (
                   <Sparkles className="h-4 w-4" />
                 )}
-                Test
+                <span>Test</span>
               </button>
             </div>
           </div>
 
-          {/* Fetch Models */}
+          {/* Model Selection */}
           {apiKey && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-foreground">Models</label>
-                <button
-                  onClick={onFetchModels}
-                  disabled={isFetchingModels}
-                  className="text-sm text-primary hover:text-primary/80 transition-colors disabled:opacity-50 inline-flex items-center gap-1"
-                >
-                  {isFetchingModels ? (
-                    <>
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-sm font-medium text-foreground">Default Model</label>
+                <div className="inline-flex items-center gap-2">
+                  {isFetchingModels && (
+                    <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
                       <Loader2 className="h-3 w-3 animate-spin" />
-                      Fetching...
-                    </>
-                  ) : (
-                    'Fetch Models'
+                      Loading...
+                    </div>
                   )}
-                </button>
+                  <button
+                    type="button"
+                    onClick={onFetchModels}
+                    disabled={isFetchingModels || !apiKey}
+                    className="h-7 px-2 text-xs rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Refresh models"
+                  >
+                    Refresh
+                  </button>
+                </div>
               </div>
 
               {availableModels.length > 0 ? (
-                <select
-                  value={defaultModel || ''}
-                  onChange={(e) => onModelSelect(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="">Select default model</option>
-                  {availableModels.map((model) => (
-                    <option key={model.id} value={model.id}>
-                      {model.name}
-                      {model.description ? ` - ${model.description}` : ''}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <div className="text-sm text-muted-foreground py-2 flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4" />
-                  Click "Fetch Models" to load available models
+                <div className="space-y-2">
+                  <div className="space-y-1.5">
+                    <Select
+                      value={defaultModel || ''}
+                      onValueChange={onModelSelect}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select default model" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[300px]">
+                        {availableModels.map((model) => (
+                          <SelectItem key={model.id} value={model.id}>
+                            {model.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {availableModels.length} model{availableModels.length !== 1 ? 's' : ''} available
+                    {defaultModel && ` • Selected: ${defaultModel}`}
+                  </p>
                 </div>
-              )}
+              ) : !isFetchingModels ? (
+                <div className="p-3 rounded-md bg-muted/50 border border-border flex items-start gap-2 text-xs text-muted-foreground">
+                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-foreground mb-0.5">Models will load automatically</p>
+                    <p>Test your connection first, then models will be fetched automatically.</p>
+                  </div>
+                </div>
+              ) : null}
             </div>
           )}
         </div>
@@ -283,9 +330,14 @@ export function AISettings() {
       );
 
       setConnectionStatus((prev) => ({ ...prev, [provider]: success ? 'success' : 'error' }));
-      toast[success ? 'success' : 'error'](
-        success ? 'Connection successful!' : 'Connection failed. Check your API key.'
-      );
+
+      if (success) {
+        toast.success('Connection successful!');
+        // Always refresh models on successful connection
+        handleFetchModels(provider);
+      } else {
+        toast.error('Connection failed. Check your API key.');
+      }
     } catch (error) {
       setConnectionStatus((prev) => ({ ...prev, [provider]: 'error' }));
       toast.error('Connection test failed');
@@ -307,12 +359,15 @@ export function AISettings() {
 
       if (response.success && response.models) {
         const currentConfig = settings.providers[provider];
+        const keepExistingDefault = currentConfig?.defaultModel
+          ? response.models.some((m) => m.id === currentConfig!.defaultModel)
+          : false;
         await updateProviderConfig(provider, {
           type: provider,
           enabled: currentConfig?.enabled || false,
           apiKey: currentConfig?.apiKey || '',
           availableModels: response.models,
-          defaultModel: currentConfig?.defaultModel || response.models[0]?.id,
+          defaultModel: keepExistingDefault ? currentConfig!.defaultModel : response.models[0]?.id,
         });
 
         const updatedSettings = await loadAISettings();

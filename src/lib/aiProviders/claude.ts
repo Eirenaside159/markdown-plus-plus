@@ -21,42 +21,66 @@ const CLAUDE_API_URL = 'https://api.anthropic.com/v1';
 const ANTHROPIC_VERSION = '2023-06-01';
 
 /**
- * Claude supported models
+ * Claude supported models (as of November 2024)
+ * Note: Claude API doesn't provide a models listing endpoint
+ * Users can manually enter any model ID if needed
  */
 const SUPPORTED_MODELS: AIModel[] = [
+  // Claude 3.5 Series
   {
     id: 'claude-3-5-sonnet-20241022',
-    name: 'Claude 3.5 Sonnet (Latest)',
-    description: 'Most intelligent model, best for complex tasks',
+    name: 'claude-3-5-sonnet-20241022',
+    contextWindow: 200000,
+    maxTokens: 8192,
+  },
+  {
+    id: 'claude-3-5-sonnet-20240620',
+    name: 'claude-3-5-sonnet-20240620',
     contextWindow: 200000,
     maxTokens: 8192,
   },
   {
     id: 'claude-3-5-haiku-20241022',
-    name: 'Claude 3.5 Haiku',
-    description: 'Fastest model for quick tasks',
+    name: 'claude-3-5-haiku-20241022',
     contextWindow: 200000,
     maxTokens: 8192,
   },
+  // Claude 3 Series
   {
     id: 'claude-3-opus-20240229',
-    name: 'Claude 3 Opus',
-    description: 'Previous generation most capable',
+    name: 'claude-3-opus-20240229',
     contextWindow: 200000,
     maxTokens: 4096,
   },
   {
     id: 'claude-3-sonnet-20240229',
-    name: 'Claude 3 Sonnet',
-    description: 'Balanced performance and speed',
+    name: 'claude-3-sonnet-20240229',
     contextWindow: 200000,
     maxTokens: 4096,
   },
   {
     id: 'claude-3-haiku-20240307',
-    name: 'Claude 3 Haiku',
-    description: 'Fast and economical',
+    name: 'claude-3-haiku-20240307',
     contextWindow: 200000,
+    maxTokens: 4096,
+  },
+  // Older versions (if user has access)
+  {
+    id: 'claude-2.1',
+    name: 'claude-2.1',
+    contextWindow: 200000,
+    maxTokens: 4096,
+  },
+  {
+    id: 'claude-2.0',
+    name: 'claude-2.0',
+    contextWindow: 100000,
+    maxTokens: 4096,
+  },
+  {
+    id: 'claude-instant-1.2',
+    name: 'claude-instant-1.2',
+    contextWindow: 100000,
     maxTokens: 4096,
   },
 ];
@@ -100,6 +124,8 @@ export class ClaudeProvider implements AIProvider {
    */
   async fetchModels(_apiKey: string): Promise<ModelsResponse> {
     // Claude doesn't have a models endpoint, so we return our predefined list
+    console.log('[Claude] Using predefined models:', SUPPORTED_MODELS.length, SUPPORTED_MODELS.map(m => m.id));
+    
     return {
       success: true,
       models: SUPPORTED_MODELS,

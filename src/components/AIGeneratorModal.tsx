@@ -136,6 +136,22 @@ export function AIGeneratorModal({ isOpen, onClose, onGenerate }: AIGeneratorMod
     setError(null);
   };
 
+  const handleGoToSettings = () => {
+    try {
+      // Navigate to Settings → AI: update history state and hash
+      const url = '#settings?tab=ai';
+      window.history.pushState({ viewMode: 'settings' }, '', url);
+      // Notify App (viewMode) and Settings (activeTab)
+      window.dispatchEvent(new PopStateEvent('popstate', { state: { viewMode: 'settings' } } as any));
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    } catch (e) {
+      // Fallback: just change hash
+      window.location.hash = '#settings?tab=ai';
+    }
+    // Close modal after navigating
+    handleClose();
+  };
+
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget && !isGenerating) {
       handleClose();
@@ -173,7 +189,7 @@ export function AIGeneratorModal({ isOpen, onClose, onGenerate }: AIGeneratorMod
           <div className="flex items-center justify-between p-3 sm:p-4 border-b">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Sparkles className="h-5 w-5" />
-              AI Content Generator
+              AI Writer
             </h2>
             <button
               onClick={handleClose}
@@ -193,12 +209,21 @@ export function AIGeneratorModal({ isOpen, onClose, onGenerate }: AIGeneratorMod
                 Please configure at least one AI provider in Settings → AI to use this feature.
               </p>
             </div>
-            <button
-              onClick={handleClose}
-              className="h-10 px-4 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors inline-flex items-center justify-center"
-            >
-              Close
-            </button>
+            <div className="flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={handleGoToSettings}
+                className="h-10 px-4 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors inline-flex items-center justify-center"
+              >
+                Open Settings
+              </button>
+              <button
+                onClick={handleClose}
+                className="h-10 px-4 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors inline-flex items-center justify-center"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -211,7 +236,7 @@ export function AIGeneratorModal({ isOpen, onClose, onGenerate }: AIGeneratorMod
       onClick={handleBackdropClick}
     >
       <div 
-        className="bg-background rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col border overflow-hidden"
+        className="bg-background rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col border overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -219,7 +244,7 @@ export function AIGeneratorModal({ isOpen, onClose, onGenerate }: AIGeneratorMod
           <div className="flex-1">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Sparkles className="h-5 w-5" />
-              AI Content Generator
+              AI Writer
             </h2>
             <p className="text-sm text-muted-foreground mt-1 hidden sm:block">
               Generate blog posts, articles, and content using AI
