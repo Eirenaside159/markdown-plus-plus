@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { MarkdownFile } from '@/types';
 import { DynamicField } from './DynamicField';
 import { getFieldValues } from '@/lib/metaAnalyzer';
-import { formatFieldLabel, inferFieldType } from '@/lib/fieldUtils';
+import { formatFieldLabel, inferFieldType, generateSlug } from '@/lib/fieldUtils';
 import { Plus, X, Check } from 'lucide-react';
 import { getSettings } from '@/lib/settings';
 
@@ -19,8 +19,47 @@ export function MetaEditor({ frontmatter, onChange, allPosts, fileName, onFileNa
   const [newFieldName, setNewFieldName] = useState('');
   const [newFieldValue, setNewFieldValue] = useState('');
   const [editingFileName, setEditingFileName] = useState('');
+  
+  // Track whether slug has been manually edited
+  const slugManuallyEditedRef = useRef(false);
+  const lastTitleRef = useRef<string | undefined>(undefined);
+
+  // Auto-generate slug from title if slug doesn't exist
+  useEffect(() => {
+    const title = frontmatter.title;
+    const currentSlug = frontmatter.slug;
+    
+    // If title exists and has changed
+    if (title && typeof title === 'string' && title !== lastTitleRef.current) {
+      const previousTitle = lastTitleRef.current;
+      const generatedSlug = generateSlug(title);
+      
+      // Only auto-update slug if:
+      // 1. Slug doesn't exist yet, OR
+      // 2. Slug hasn't been manually edited AND current slug matches what would be generated from previous title
+      if (!currentSlug) {
+        // No slug exists, create one
+        onChange({ ...frontmatter, slug: generatedSlug });
+      } else if (!slugManuallyEditedRef.current && typeof currentSlug === 'string' && previousTitle) {
+        // Check if current slug matches the auto-generated slug from previous title
+        const previousGeneratedSlug = generateSlug(previousTitle);
+        if (currentSlug === previousGeneratedSlug) {
+          // Auto-update the slug
+          onChange({ ...frontmatter, slug: generatedSlug });
+        }
+      }
+      
+      // Update the last title reference
+      lastTitleRef.current = title;
+    }
+  }, [frontmatter.title, frontmatter.slug, onChange]);
 
   const handleFieldChange = (key: string, value: unknown) => {
+    // Track if slug is being manually edited
+    if (key === 'slug') {
+      slugManuallyEditedRef.current = true;
+    }
+    
     onChange({ ...frontmatter, [key]: value });
   };
 
@@ -52,8 +91,13 @@ export function MetaEditor({ frontmatter, onChange, allPosts, fileName, onFileNa
     return value !== null && value !== undefined;
   });
 
+  // Ensure slug field is present if title exists
+  if (frontmatter.title && !fields.includes('slug')) {
+    fields.push('slug');
+  }
+
   // Sort fields: common fields first, then alphabetically
-  const commonFields = ['title', 'date', 'author', 'description', 'categories', 'tags'];
+  const commonFields = ['title', 'slug', 'date', 'author', 'description', 'categories', 'tags'];
   fields.sort((a, b) => {
     const aIndex = commonFields.indexOf(a);
     const bIndex = commonFields.indexOf(b);
@@ -131,7 +175,13 @@ export function MetaEditor({ frontmatter, onChange, allPosts, fileName, onFileNa
       {/* Meta Fields */}
       <div className="space-y-4">
         {fields.map((key) => {
-          const value = frontmatter[key];
+          let value = frontmatter[key];
+          
+          // Auto-generate slug value if it doesn't exist but title does
+          if (key === 'slug' && !value && frontmatter.title) {
+            value = generateSlug(String(frontmatter.title));
+          }
+          
           const settings = getSettings();
           const override = settings.metaFieldMultiplicity?.[key];
           let fieldType = inferFieldType(value);

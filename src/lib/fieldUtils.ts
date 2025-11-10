@@ -152,3 +152,46 @@ export function normalizeDateValue(value: string): string {
   }
 }
 
+/**
+ * Generates a URL-friendly slug from a string (handles Turkish and other special characters)
+ * Examples:
+ *   - "Merhaba Dünya!" → "merhaba-dunya"
+ *   - "Hello World 123" → "hello-world-123"
+ *   - "Çok Güzel Şeyler" → "cok-guzel-seyler"
+ */
+export function generateSlug(text: string): string {
+  if (!text) return '';
+  
+  // Character replacements for Turkish and other special characters
+  const charMap: Record<string, string> = {
+    'ı': 'i', 'İ': 'i', 'ş': 's', 'Ş': 's',
+    'ğ': 'g', 'Ğ': 'g', 'ü': 'u', 'Ü': 'u',
+    'ö': 'o', 'Ö': 'o', 'ç': 'c', 'Ç': 'c',
+    'à': 'a', 'á': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a', 'å': 'a',
+    'è': 'e', 'é': 'e', 'ê': 'e', 'ë': 'e',
+    'ì': 'i', 'í': 'i', 'î': 'i', 'ï': 'i',
+    'ò': 'o', 'ó': 'o', 'ô': 'o', 'õ': 'o',
+    'ù': 'u', 'ú': 'u', 'û': 'u',
+    'ñ': 'n', 'ý': 'y', 'ÿ': 'y',
+  };
+  
+  let slug = text.toLowerCase();
+  
+  // Replace special characters
+  slug = slug.split('').map(char => charMap[char] || char).join('');
+  
+  // Remove any character that's not alphanumeric, space, or hyphen
+  slug = slug.replace(/[^a-z0-9\s-]/g, '');
+  
+  // Replace spaces with hyphens
+  slug = slug.replace(/\s+/g, '-');
+  
+  // Replace multiple hyphens with single hyphen
+  slug = slug.replace(/-+/g, '-');
+  
+  // Remove leading/trailing hyphens
+  slug = slug.replace(/^-+|-+$/g, '');
+  
+  return slug;
+}
+

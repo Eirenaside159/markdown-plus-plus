@@ -4,7 +4,8 @@ import {
   inferFieldType, 
   isDateString, 
   formatDateValue, 
-  normalizeDateValue 
+  normalizeDateValue,
+  generateSlug 
 } from './fieldUtils';
 
 describe('fieldUtils', () => {
@@ -144,6 +145,62 @@ describe('fieldUtils', () => {
       expect(sorted[0]).toContain('2025-01-15');
       expect(sorted[1]).toContain('2025-02-15');
       expect(sorted[2]).toContain('2025-03-15');
+    });
+  });
+
+  describe('generateSlug', () => {
+    it('converts basic strings to lowercase with hyphens', () => {
+      expect(generateSlug('Hello World')).toBe('hello-world');
+      expect(generateSlug('This is a Test')).toBe('this-is-a-test');
+    });
+
+    it('handles Turkish characters', () => {
+      expect(generateSlug('Merhaba Dünya')).toBe('merhaba-dunya');
+      expect(generateSlug('Çok Güzel Şeyler')).toBe('cok-guzel-seyler');
+      expect(generateSlug('Işık Ağacı Öğrenci')).toBe('isik-agaci-ogrenci');
+      expect(generateSlug('İstanbul Şehri')).toBe('istanbul-sehri');
+    });
+
+    it('handles other special characters', () => {
+      expect(generateSlug('Café Résumé')).toBe('cafe-resume');
+      expect(generateSlug('Niño España')).toBe('nino-espana');
+    });
+
+    it('removes special punctuation and symbols', () => {
+      expect(generateSlug('Hello! World?')).toBe('hello-world');
+      expect(generateSlug('Test @ 100% Success')).toBe('test-100-success');
+      expect(generateSlug('Foo & Bar')).toBe('foo-bar');
+    });
+
+    it('handles multiple spaces and hyphens', () => {
+      expect(generateSlug('Hello    World')).toBe('hello-world');
+      expect(generateSlug('Hello - - World')).toBe('hello-world');
+      expect(generateSlug('Test   -  Space')).toBe('test-space');
+    });
+
+    it('preserves numbers', () => {
+      expect(generateSlug('2024 Year End Report')).toBe('2024-year-end-report');
+      expect(generateSlug('Test 123 Demo')).toBe('test-123-demo');
+    });
+
+    it('handles leading and trailing spaces/hyphens', () => {
+      expect(generateSlug('  Hello World  ')).toBe('hello-world');
+      expect(generateSlug('- Leading Hyphen')).toBe('leading-hyphen');
+      expect(generateSlug('Trailing Hyphen -')).toBe('trailing-hyphen');
+    });
+
+    it('handles empty string', () => {
+      expect(generateSlug('')).toBe('');
+    });
+
+    it('handles all uppercase', () => {
+      expect(generateSlug('HELLO WORLD')).toBe('hello-world');
+      expect(generateSlug('TÜRKÇE METİN')).toBe('turkce-metin');
+    });
+
+    it('handles mixed case', () => {
+      expect(generateSlug('HeLLo WoRLd')).toBe('hello-world');
+      expect(generateSlug('TüRkÇe MeTİN')).toBe('turkce-metin');
     });
   });
 });
