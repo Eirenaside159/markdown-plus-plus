@@ -16,6 +16,11 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
   const [copied, setCopied] = useState(false);
   const [copiedOriginal, setCopiedOriginal] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('split');
+  const [splitWidth, setSplitWidth] = useState(() => {
+    const saved = localStorage.getItem('rawMarkdownSplitWidth');
+    return saved ? parseInt(saved, 10) : 50; // Default 50% (percentage)
+  });
+  const [isResizing, setIsResizing] = useState(false);
   const hasChanges = originalContent && originalContent !== content;
 
   // Calculate diff
@@ -37,6 +42,47 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
+
+  // Handle resizing split view
+  useEffect(() => {
+    if (!isResizing) return;
+
+    // Disable text selection while resizing
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+
+    const handleMouseMove = (e: MouseEvent) => {
+      // Find the split container
+      const splitContainer = document.querySelector('[data-split-container]') as HTMLElement;
+      if (!splitContainer) return;
+      
+      const rect = splitContainer.getBoundingClientRect();
+      const percentage = ((e.clientX - rect.left) / rect.width) * 100;
+      // Min 20%, Max 80%
+      const newWidth = Math.max(20, Math.min(80, percentage));
+      setSplitWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      // Re-enable text selection
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+      // Save to localStorage
+      localStorage.setItem('rawMarkdownSplitWidth', splitWidth.toString());
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      // Cleanup styles
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+  }, [isResizing, splitWidth]);
 
   if (!isOpen) return null;
 
@@ -73,6 +119,7 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
       onClick={handleBackdropClick}
     >
       <div 
+        id="raw-markdown-modal-content"
         className="bg-background rounded-lg shadow-xl w-full max-w-5xl h-[85vh] flex flex-col border overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
@@ -180,9 +227,12 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
             </div>
           ) : (
             // Split Diff View (GitHub style)
-            <div className="flex-1 overflow-hidden flex flex-col sm:flex-row min-w-0">
+            <div data-split-container className="flex-1 overflow-hidden flex flex-col sm:flex-row min-w-0 relative">
               {/* Original (Left) */}
-              <div className="flex-1 flex flex-col border-b sm:border-b-0 sm:border-r min-w-0 overflow-hidden">
+              <div 
+                className="flex flex-col border-b sm:border-b-0 sm:border-r min-w-0 overflow-hidden" 
+                style={{ width: `${splitWidth}%` }}
+              >
                 <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/50">
                   <h3 className="text-sm font-semibold">Original</h3>
                   <button
@@ -244,8 +294,25 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
                 </div>
               </div>
 
+              {/* Resize Handle */}
+              <div
+                className="hidden sm:block absolute top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/70 bg-border transition-colors z-50"
+                style={{ left: `${splitWidth}%`, transform: 'translateX(-50%)' }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsResizing(true);
+                }}
+                title="Drag to resize"
+              >
+                <div className="absolute inset-y-0 -left-2 w-5" />
+              </div>
+
               {/* Edited (Right) */}
-              <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+              <div 
+                className="flex flex-col min-w-0 overflow-hidden" 
+                style={{ width: `${100 - splitWidth}%` }}
+              >
                 <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/50">
                   <h3 className="text-sm font-semibold text-success">Edited (To Save)</h3>
                   <button
@@ -310,9 +377,12 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
           )
         ) : (
           // No changes - show original on left, "No changes" message on right
-          <div className="flex-1 overflow-hidden flex flex-col sm:flex-row min-w-0">
+          <div data-split-container className="flex-1 overflow-hidden flex flex-col sm:flex-row min-w-0 relative">
             {/* Original (Left) */}
-            <div className="flex-1 flex flex-col border-b sm:border-b-0 sm:border-r min-w-0 overflow-hidden">
+            <div 
+              className="flex flex-col border-b sm:border-b-0 sm:border-r min-w-0 overflow-hidden" 
+              style={{ width: `${splitWidth}%` }}
+            >
               <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/50">
                 <h3 className="text-sm font-semibold">Original</h3>
                 <button
@@ -349,8 +419,25 @@ export function RawMarkdownModal({ isOpen, onClose, content, originalContent, fi
               </div>
             </div>
 
+            {/* Resize Handle */}
+            <div
+              className="hidden sm:block absolute top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/70 bg-border transition-colors z-50"
+              style={{ left: `${splitWidth}%`, transform: 'translateX(-50%)' }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsResizing(true);
+              }}
+              title="Drag to resize"
+            >
+              <div className="absolute inset-y-0 -left-2 w-5" />
+            </div>
+
             {/* No Changes Message (Right) */}
-            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <div 
+              className="flex flex-col min-w-0 overflow-hidden" 
+              style={{ width: `${100 - splitWidth}%` }}
+            >
               <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/50">
                 <h3 className="text-sm font-semibold">Current</h3>
                 <button
