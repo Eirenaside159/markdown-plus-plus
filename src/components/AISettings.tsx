@@ -3,7 +3,7 @@
  * Manages AI provider configurations (OpenAI, Gemini, Claude)
  */
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sparkles, Key, Check, X, Loader2, ExternalLink, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Switch } from './ui/switch';
@@ -58,12 +58,14 @@ interface ProviderCardProps {
   availableModels: AIModel[];
   onToggle: (enabled: boolean) => void;
   onApiKeyChange: (apiKey: string) => void;
+  onApiKeyBlur: (apiKey: string) => void;
   onModelSelect: (modelId: string) => void;
   onTestConnection: () => void;
   onFetchModels: () => void;
   isTestingConnection: boolean;
   isFetchingModels: boolean;
   connectionStatus?: 'success' | 'error' | null;
+  savedFields: Record<string, boolean>;
 }
 
 function ProviderCard({
@@ -74,12 +76,14 @@ function ProviderCard({
   availableModels,
   onToggle,
   onApiKeyChange,
+  onApiKeyBlur,
   onModelSelect,
   onTestConnection,
   onFetchModels,
   isTestingConnection,
   isFetchingModels,
   connectionStatus,
+  savedFields,
 }: ProviderCardProps) {
   const [showApiKey, setShowApiKey] = useState(false);
   const [lastFetchedApiKey, setLastFetchedApiKey] = useState<string>('');
@@ -159,8 +163,13 @@ function ProviderCard({
                   type={showApiKey ? 'text' : 'password'}
                   value={apiKey}
                   onChange={(e) => onApiKeyChange(e.target.value)}
+                  onBlur={(e) => onApiKeyBlur(e.target.value)}
                   placeholder="Enter your API key"
-                  className="w-full h-10 px-3 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring font-mono pr-10"
+                  className={`w-full h-10 px-3 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 font-mono pr-10 transition-colors ${
+                    savedFields[`api-key-${providerType}`]
+                      ? 'border-green-500 focus:ring-green-500'
+                      : 'border-input focus:ring-ring'
+                  }`}
                 />
                 <button
                   type="button"
@@ -189,6 +198,12 @@ function ProviderCard({
                 <span>Test</span>
               </button>
             </div>
+            {savedFields[`api-key-${providerType}`] && (
+              <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
+                <Check className="h-3 w-3" />
+                Saved
+              </p>
+            )}
           </div>
 
           {/* Model Selection */}
@@ -222,7 +237,11 @@ function ProviderCard({
                       value={defaultModel || ''}
                       onValueChange={onModelSelect}
                     >
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger className={`w-full transition-colors ${
+                        savedFields[`model-${providerType}`]
+                          ? 'border-green-500 focus:ring-green-500'
+                          : ''
+                      }`}>
                         <SelectValue placeholder="Select default model" />
                       </SelectTrigger>
                       <SelectContent className="max-h-[300px]">
@@ -234,6 +253,12 @@ function ProviderCard({
                       </SelectContent>
                     </Select>
                   </div>
+                  {savedFields[`model-${providerType}`] && (
+                    <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
+                      <Check className="h-3 w-3" />
+                      Saved
+                    </p>
+                  )}
                   <p className="text-xs text-muted-foreground">
                     {availableModels.length} model{availableModels.length !== 1 ? 's' : ''} available
                     {defaultModel && ` • Selected: ${defaultModel}`}
@@ -275,6 +300,29 @@ export function AISettings() {
     gemini: null,
     claude: null,
   });
+  
+  // Save feedback state
+  const [savedFields, setSavedFields] = useState<Record<string, boolean>>({});
+  const saveTimeoutRef = React.useRef<Record<string, number>>({});
+  
+  // Show save feedback
+  const showSaveFeedback = (fieldId: string) => {
+    // Clear existing timeout for this field
+    if (saveTimeoutRef.current[fieldId]) {
+      clearTimeout(saveTimeoutRef.current[fieldId]);
+    }
+    
+    // Mark field as saved
+    setSavedFields(prev => ({ ...prev, [fieldId]: true }));
+    
+    // Show toast
+    toast.success('Saved', { duration: 2000 });
+    
+    // Clear saved indicator after 2 seconds
+    saveTimeoutRef.current[fieldId] = setTimeout(() => {
+      setSavedFields(prev => ({ ...prev, [fieldId]: false }));
+    }, 2000);
+  };
 
   useEffect(() => {
     loadAISettings().then(setSettings);
@@ -298,6 +346,28 @@ export function AISettings() {
     toast.success(`${PROVIDER_NAMES[provider]} ${enabled ? 'enabled' : 'disabled'}`);
   };
 
+  const handleApiKeyChangeLocal = async (provider: AIProviderType, apiKey: string) => {
+    if (!settings) return;
+
+    const currentConfig = settings.providers[provider];
+    const newConfig = {
+      type: provider,
+      enabled: currentConfig?.enabled || false,
+      apiKey,
+      availableModels: currentConfig?.availableModels || [],
+      defaultModel: currentConfig?.defaultModel,
+    };
+
+    // Update local state only
+    setSettings(prev => prev ? {
+      ...prev,
+      providers: {
+        ...prev.providers,
+        [provider]: newConfig
+      }
+    } : prev);
+  };
+
   const handleApiKeyChange = async (provider: AIProviderType, apiKey: string) => {
     if (!settings) return;
 
@@ -315,6 +385,9 @@ export function AISettings() {
 
     // Reset connection status when API key changes
     setConnectionStatus((prev) => ({ ...prev, [provider]: null }));
+    
+    // Show save feedback
+    showSaveFeedback(`api-key-${provider}`);
   };
 
   const handleTestConnection = async (provider: AIProviderType) => {
@@ -400,6 +473,9 @@ export function AISettings() {
     setSettings(updatedSettings);
 
     toast.success(`Default model set to ${modelId}`);
+    
+    // Show save feedback
+    showSaveFeedback(`model-${provider}`);
   };
 
   if (!settings) {
@@ -438,13 +514,15 @@ export function AISettings() {
                 defaultModel={config?.defaultModel}
                 availableModels={config?.availableModels || []}
                 onToggle={(enabled) => handleToggleProvider(provider, enabled)}
-                onApiKeyChange={(apiKey) => handleApiKeyChange(provider, apiKey)}
+                onApiKeyChange={(apiKey) => handleApiKeyChangeLocal(provider, apiKey)}
+                onApiKeyBlur={(apiKey) => handleApiKeyChange(provider, apiKey)}
                 onModelSelect={(modelId) => handleModelSelect(provider, modelId)}
                 onTestConnection={() => handleTestConnection(provider)}
                 onFetchModels={() => handleFetchModels(provider)}
                 isTestingConnection={testingConnection[provider]}
                 isFetchingModels={fetchingModels[provider]}
                 connectionStatus={connectionStatus[provider]}
+                savedFields={savedFields}
               />
             );
           })}

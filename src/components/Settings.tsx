@@ -93,6 +93,31 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
   const { confirm, ConfirmDialog } = useConfirm();
   const urlFormatInputRef = useRef<HTMLInputElement>(null);
   
+  // Save feedback state
+  const [savedFields, setSavedFields] = useState<Record<string, boolean>>({});
+  const saveTimeoutRef = useRef<Record<string, number>>({});
+  
+  // Show save feedback
+  const showSaveFeedback = (fieldId: string, showToast: boolean = true) => {
+    // Clear existing timeout for this field
+    if (saveTimeoutRef.current[fieldId]) {
+      clearTimeout(saveTimeoutRef.current[fieldId]);
+    }
+    
+    // Mark field as saved
+    setSavedFields(prev => ({ ...prev, [fieldId]: true }));
+    
+    // Show toast (only once per save action)
+    if (showToast) {
+      toast.success('Saved', { duration: 2000 });
+    }
+    
+    // Clear saved indicator after 2 seconds
+    saveTimeoutRef.current[fieldId] = setTimeout(() => {
+      setSavedFields(prev => ({ ...prev, [fieldId]: false }));
+    }, 2000);
+  };
+  
   // Local state for URL input to preserve user's exact input
   const [urlInputValue, setUrlInputValue] = useState(() => {
     const saved = getSettings();
@@ -171,6 +196,17 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
     toast.success('Meta field removed');
   };
 
+  const handleUpdateMetaLocal = (key: string, value: string) => {
+    const updatedSettings = {
+      ...settings,
+      defaultMeta: {
+        ...settings.defaultMeta,
+        [key]: value,
+      },
+    };
+    setSettings(updatedSettings);
+  };
+
   const handleUpdateMeta = (key: string, value: string) => {
     const updatedSettings = {
       ...settings,
@@ -182,6 +218,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
     
     setSettings(updatedSettings);
     saveSettings(updatedSettings);
+    showSaveFeedback(`meta-${key}`);
   };
 
   const handleSetMultiplicity = (key: string, mode: 'single' | 'multi') => {
@@ -196,6 +233,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
     setSettings(updatedSettings);
     saveSettings(updatedSettings);
     toast.success(`'${key}' set to ${mode === 'multi' ? 'Multiple' : 'Single'}`);
+    showSaveFeedback(`multiplicity-${key}`, false); // Don't show duplicate toast
   };
 
   const handleRemoveMultiplicity = (key: string) => {
@@ -494,16 +532,30 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                   id="git-author-input"
                   name="gitAuthor"
                   type="text"
-                  autoComplete="name"
+                  autoComplete="off"
                   value={settings.gitAuthor || ''}
                   onChange={(e) => {
                     const updatedSettings = { ...settings, gitAuthor: e.target.value };
                     setSettings(updatedSettings);
+                  }}
+                  onBlur={(e) => {
+                    const updatedSettings = { ...settings, gitAuthor: e.target.value };
                     saveSettings(updatedSettings);
+                    showSaveFeedback('git-author');
                   }}
                   placeholder="Your Name"
-                  className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  className={`w-full px-3 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 transition-colors ${
+                    savedFields['git-author'] 
+                      ? 'border-green-500 focus:ring-green-500' 
+                      : 'border-input focus:ring-ring'
+                  }`}
                 />
+                {savedFields['git-author'] && (
+                  <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
+                    <Save className="h-3 w-3" />
+                    Saved
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <label htmlFor="git-email-input" className="text-sm font-medium text-foreground">Email Address</label>
@@ -511,16 +563,30 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                   id="git-email-input"
                   name="gitEmail"
                   type="email"
-                  autoComplete="email"
+                  autoComplete="off"
                   value={settings.gitEmail || ''}
                   onChange={(e) => {
                     const updatedSettings = { ...settings, gitEmail: e.target.value };
                     setSettings(updatedSettings);
+                  }}
+                  onBlur={(e) => {
+                    const updatedSettings = { ...settings, gitEmail: e.target.value };
                     saveSettings(updatedSettings);
+                    showSaveFeedback('git-email');
                   }}
                   placeholder="your.email@example.com"
-                  className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  className={`w-full px-3 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 transition-colors ${
+                    savedFields['git-email'] 
+                      ? 'border-green-500 focus:ring-green-500' 
+                      : 'border-input focus:ring-ring'
+                  }`}
                 />
+                {savedFields['git-email'] && (
+                  <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
+                    <Save className="h-3 w-3" />
+                    Saved
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <label htmlFor="git-token-input" className="text-sm font-medium text-foreground">
@@ -535,11 +601,25 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                   onChange={(e) => {
                     const updatedSettings = { ...settings, gitToken: e.target.value };
                     setSettings(updatedSettings);
+                  }}
+                  onBlur={(e) => {
+                    const updatedSettings = { ...settings, gitToken: e.target.value };
                     saveSettings(updatedSettings);
+                    showSaveFeedback('git-token');
                   }}
                   placeholder="ghp_xxxxxxxxxxxx or glpat-xxxxxxxxxxxx"
-                  className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring font-mono"
+                  className={`w-full px-3 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 font-mono transition-colors ${
+                    savedFields['git-token'] 
+                      ? 'border-green-500 focus:ring-green-500' 
+                      : 'border-input focus:ring-ring'
+                  }`}
                 />
+                {savedFields['git-token'] && (
+                  <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
+                    <Save className="h-3 w-3" />
+                    Saved
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   Required for pushing to private repos from browser. Get token from{' '}
                   <a 
@@ -585,9 +665,11 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                   spellCheck="false"
                   value={urlInputValue}
                   onChange={(e) => {
-                    const fullUrl = e.target.value;
                     // Update local state immediately to show user's input
-                    setUrlInputValue(fullUrl);
+                    setUrlInputValue(e.target.value);
+                  }}
+                  onBlur={(e) => {
+                    const fullUrl = e.target.value;
                     
                     // Parse the URL to extract domain and path - preserve special characters
                     // Use regex matching instead of URL constructor to preserve special chars like {}
@@ -603,6 +685,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                       };
                       setSettings(updatedSettings);
                       saveSettings(updatedSettings);
+                      showSaveFeedback('url-pattern');
                     } else {
                       // If no protocol found, save the whole thing as baseUrl or urlFormat
                       if (fullUrl.startsWith('/')) {
@@ -613,6 +696,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                         };
                         setSettings(updatedSettings);
                         saveSettings(updatedSettings);
+                        showSaveFeedback('url-pattern');
                       } else {
                         // No slash, treat as baseUrl
                         const updatedSettings = { 
@@ -622,12 +706,23 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                         };
                         setSettings(updatedSettings);
                         saveSettings(updatedSettings);
+                        showSaveFeedback('url-pattern');
                       }
                     }
                   }}
                   placeholder="https://myblog.com/blog/{SLUG}"
-                  className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring font-mono"
+                  className={`w-full px-3 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 font-mono transition-colors ${
+                    savedFields['url-pattern'] 
+                      ? 'border-green-500 focus:ring-green-500' 
+                      : 'border-input focus:ring-ring'
+                  }`}
                 />
+                {savedFields['url-pattern'] && (
+                  <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
+                    <Save className="h-3 w-3" />
+                    Saved
+                  </p>
+                )}
                 <p className="text-sm text-muted-foreground">
                   Use tokens: <code className="px-1.5 py-0.5 bg-muted rounded text-xs">{`{SLUG}`}</code> <code className="px-1.5 py-0.5 bg-muted rounded text-xs">{`{CATEGORY}`}</code> <code className="px-1.5 py-0.5 bg-muted rounded text-xs">{`{YEAR}`}</code> <code className="px-1.5 py-0.5 bg-muted rounded text-xs">{`{MONTH}`}</code> <code className="px-1.5 py-0.5 bg-muted rounded text-xs">{`{DAY}`}</code>
                 </p>
@@ -697,31 +792,45 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                 <div className="text-sm text-muted-foreground py-2">No default meta fields defined yet.</div>
               ) : (
                 Object.entries(settings.defaultMeta).map(([key, value]) => (
-                  <div key={key} className="flex gap-2 items-center">
-                    <input
-                      id={`meta-key-${key}`}
-                      name={`metaKey-${key}`}
-                      type="text"
-                      value={key}
-                      disabled
-                      className="w-40 px-3 py-2 text-sm rounded-md border border-input bg-muted cursor-not-allowed font-medium"
-                    />
-                    <input
-                      id={`meta-value-${key}`}
-                      name={`metaValue-${key}`}
-                      type="text"
-                      value={typeof value === 'string' ? value : JSON.stringify(value)}
-                      onChange={(e) => handleUpdateMeta(key, e.target.value)}
-                      placeholder="Value"
-                      className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
-                    <button
-                      onClick={() => handleRemoveMeta(key)}
-                      className="inline-flex items-center justify-center h-9 w-9 rounded-md text-destructive hover:bg-destructive hover:text-white transition-colors shrink-0"
-                      title="Remove field"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                  <div key={key} className="space-y-1">
+                    <div className="flex gap-2 items-center">
+                      <input
+                        id={`meta-key-${key}`}
+                        name={`metaKey-${key}`}
+                        type="text"
+                        value={key}
+                        disabled
+                        className="w-40 px-3 py-2 text-sm rounded-md border border-input bg-muted cursor-not-allowed font-medium"
+                      />
+                      <input
+                        id={`meta-value-${key}`}
+                        name={`metaValue-${key}`}
+                        type="text"
+                        autoComplete="off"
+                        value={typeof value === 'string' ? value : JSON.stringify(value)}
+                        onChange={(e) => handleUpdateMetaLocal(key, e.target.value)}
+                        onBlur={(e) => handleUpdateMeta(key, e.target.value)}
+                        placeholder="Value"
+                        className={`flex-1 px-3 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 transition-colors ${
+                          savedFields[`meta-${key}`]
+                            ? 'border-green-500 focus:ring-green-500'
+                            : 'border-input focus:ring-ring'
+                        }`}
+                      />
+                      <button
+                        onClick={() => handleRemoveMeta(key)}
+                        className="inline-flex items-center justify-center h-9 w-9 rounded-md text-destructive hover:bg-destructive hover:text-white transition-colors shrink-0"
+                        title="Remove field"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {savedFields[`meta-${key}`] && (
+                      <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1 ml-44">
+                        <Save className="h-3 w-3" />
+                        Saved
+                      </p>
+                    )}
                   </div>
                 ))
               )}
@@ -732,6 +841,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                     id="new-meta-key"
                     name="newMetaKey"
                     type="text"
+                    autoComplete="off"
                     value={newMetaKey}
                     onChange={(e) => setNewMetaKey(e.target.value)}
                     placeholder="Field name (e.g., author)"
@@ -748,6 +858,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                     id="new-meta-value"
                     name="newMetaValue"
                     type="text"
+                    autoComplete="off"
                     value={newMetaValue}
                     onChange={(e) => setNewMetaValue(e.target.value)}
                     placeholder="Default value"
@@ -785,40 +896,52 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                 <div className="text-sm text-muted-foreground py-2">No custom field type settings defined yet.</div>
               ) : (
                 Object.entries(settings.metaFieldMultiplicity || {}).map(([key, mode]) => (
-                  <div key={key} className="flex items-center gap-2">
-                    <input
-                      id={`field-type-${key}`}
-                      name={`fieldType-${key}`}
-                      type="text"
-                      value={key}
-                      disabled
-                      className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-muted cursor-not-allowed font-medium"
-                    />
-                    <div className="inline-flex rounded-md border border-input p-0.5">
+                  <div key={key} className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <input
+                        id={`field-type-${key}`}
+                        name={`fieldType-${key}`}
+                        type="text"
+                        value={key}
+                        disabled
+                        className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-muted cursor-not-allowed font-medium"
+                      />
+                      <div className={`inline-flex rounded-md border p-0.5 transition-colors ${
+                        savedFields[`multiplicity-${key}`]
+                          ? 'border-green-500'
+                          : 'border-input'
+                      }`}>
+                        <button
+                          type="button"
+                          className={`px-3 py-1.5 rounded text-sm ${mode === 'single' ? 'bg-accent text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'}`}
+                          onClick={() => handleSetMultiplicity(key, 'single')}
+                          title="Single value"
+                        >
+                          Single
+                        </button>
+                        <button
+                          type="button"
+                          className={`px-3 py-1.5 rounded text-sm ${mode === 'multi' ? 'bg-accent text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'}`}
+                          onClick={() => handleSetMultiplicity(key, 'multi')}
+                          title="Multiple values"
+                        >
+                          Multi
+                        </button>
+                      </div>
                       <button
-                        type="button"
-                        className={`px-3 py-1.5 rounded text-sm ${mode === 'single' ? 'bg-accent text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'}`}
-                        onClick={() => handleSetMultiplicity(key, 'single')}
-                        title="Single value"
+                        onClick={() => handleRemoveMultiplicity(key)}
+                        className="inline-flex items-center justify-center h-9 w-9 rounded-md text-destructive hover:bg-destructive hover:text-white transition-colors shrink-0"
+                        title="Remove setting"
                       >
-                        Single
-                      </button>
-                      <button
-                        type="button"
-                        className={`px-3 py-1.5 rounded text-sm ${mode === 'multi' ? 'bg-accent text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'}`}
-                        onClick={() => handleSetMultiplicity(key, 'multi')}
-                        title="Multiple values"
-                      >
-                        Multi
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
-                    <button
-                      onClick={() => handleRemoveMultiplicity(key)}
-                      className="inline-flex items-center justify-center h-9 w-9 rounded-md text-destructive hover:bg-destructive hover:text-white transition-colors shrink-0"
-                      title="Remove setting"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    {savedFields[`multiplicity-${key}`] && (
+                      <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
+                        <Save className="h-3 w-3" />
+                        Saved
+                      </p>
+                    )}
                   </div>
                 ))
               )}
@@ -829,6 +952,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                     id="new-multiplicity-key"
                     name="newMultiplicityKey"
                     type="text"
+                    autoComplete="off"
                     value={newMultiplicityKey}
                     onChange={(e) => setNewMultiplicityKey(e.target.value)}
                     placeholder="Field name (e.g., tags)"
