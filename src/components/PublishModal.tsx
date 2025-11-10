@@ -394,17 +394,33 @@ export function PublishModal({
               <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
                 <div className="flex gap-3">
                   <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-                  <div className="space-y-2 text-sm flex-1">
-                    <p className="font-medium text-destructive">Publish Failed</p>
-                    <p className="text-muted-foreground">{publishError}</p>
-                    <button
-                      onClick={handlePublish}
-                      disabled={isPublishing || !commitMessage.trim()}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                  <div className="space-y-3 text-sm flex-1">
+                    <p className="font-medium text-destructive text-base">Publish Failed</p>
+                    <div 
+                      className="text-muted-foreground whitespace-pre-line leading-relaxed"
+                      style={{ wordBreak: 'break-word' }}
                     >
-                      <Upload className="h-4 w-4" />
-                      Try Again
-                    </button>
+                      {publishError}
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={handlePublish}
+                        disabled={isPublishing || !commitMessage.trim()}
+                        className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                      >
+                        <Upload className="h-4 w-4" />
+                        Try Again
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(publishError);
+                        }}
+                        className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-md border border-border bg-background hover:bg-accent transition-colors"
+                        title="Copy error message"
+                      >
+                        Copy Error
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -522,6 +522,46 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                   className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
+              <div className="space-y-2">
+                <label htmlFor="git-token-input" className="text-sm font-medium text-foreground">
+                  Personal Access Token (Optional)
+                </label>
+                <input
+                  id="git-token-input"
+                  name="gitToken"
+                  type="password"
+                  autoComplete="off"
+                  value={settings.gitToken || ''}
+                  onChange={(e) => {
+                    const updatedSettings = { ...settings, gitToken: e.target.value };
+                    setSettings(updatedSettings);
+                    saveSettings(updatedSettings);
+                  }}
+                  placeholder="ghp_xxxxxxxxxxxx or glpat-xxxxxxxxxxxx"
+                  className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring font-mono"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Required for pushing to private repos from browser. Get token from{' '}
+                  <a 
+                    href="https://github.com/settings/tokens" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    GitHub
+                  </a>
+                  {' '}or{' '}
+                  <a 
+                    href="https://gitlab.com/-/profile/personal_access_tokens" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    GitLab
+                  </a>
+                  {' '}with <code className="px-1 py-0.5 bg-muted rounded text-xs">write_repository</code> scope.
+                </p>
+              </div>
             </div>
           </Section>
             </TabsContent>

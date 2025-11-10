@@ -911,6 +911,7 @@ function App() {
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCreatingPost, setIsCreatingPost] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
   const [currentFile, setCurrentFile] = useState<MarkdownFile | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
@@ -1518,7 +1519,7 @@ function App() {
   };
 
   const handlePublishClick = async () => {
-    if (!dirHandle || !currentFile || !selectedFilePath) return;
+    if (!dirHandle || !currentFile || !selectedFilePath || isPublishing) return;
     
     // First save the file if there are changes
     if (hasChanges) {
@@ -1530,7 +1531,10 @@ function App() {
   };
 
   const handlePublish = async (commitMessage: string) => {
-    if (!dirHandle || !currentFile || !selectedFilePath) return;
+    if (!dirHandle || !currentFile || !selectedFilePath || isPublishing) return;
+    
+    // Prevent multiple concurrent publish operations
+    setIsPublishing(true);
     
     try {
       // Get git author and email from settings
@@ -1542,6 +1546,7 @@ function App() {
         branch: gitStatus?.currentBranch || 'main',
         gitAuthor: settings.gitAuthor,
         gitEmail: settings.gitEmail,
+        gitToken: settings.gitToken,
       });
       
       if (result.success) {
@@ -1560,6 +1565,9 @@ function App() {
     } catch (error) {
       // Re-throw error so modal can catch it
       throw error;
+    } finally {
+      // Always reset publishing state
+      setIsPublishing(false);
     }
   };
 
@@ -2347,18 +2355,20 @@ function App() {
                               handlePublishClick();
                               setShowActionsDropdown(false);
                             }}
-                            disabled={hasChanges || !hasPendingPublish}
+                            disabled={hasChanges || !hasPendingPublish || isPublishing}
                             className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
                             title={
-                              hasChanges 
-                                ? "Save changes before publishing" 
-                                : !hasPendingPublish 
-                                  ? "No changes to publish" 
-                                  : "Publish to Git"
+                              isPublishing
+                                ? "Publishing in progress..."
+                                : hasChanges 
+                                  ? "Save changes before publishing" 
+                                  : !hasPendingPublish 
+                                    ? "No changes to publish" 
+                                    : "Publish to Git"
                             }
                           >
                             <Upload className="h-4 w-4" />
-                            <span>Publish</span>
+                            <span>{isPublishing ? 'Publishing...' : 'Publish'}</span>
                           </button>
                           
                           <div className="h-px bg-border my-1" />

@@ -20,6 +20,7 @@ export interface AppSettings {
   theme?: ThemeMode;
   gitAuthor?: string;
   gitEmail?: string;
+  gitToken?: string;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -31,5 +32,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'system',
   gitAuthor: '',
   gitEmail: '',
+  gitToken: '',
 };
 

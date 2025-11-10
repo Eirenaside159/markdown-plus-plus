@@ -21,6 +21,7 @@ export function getSettings(): AppSettings {
         theme: parsed.theme ?? DEFAULT_SETTINGS.theme,
         gitAuthor: parsed.gitAuthor ?? DEFAULT_SETTINGS.gitAuthor,
         gitEmail: parsed.gitEmail ?? DEFAULT_SETTINGS.gitEmail,
+        gitToken: parsed.gitToken ?? DEFAULT_SETTINGS.gitToken,
       };
     }
   } catch (error) {

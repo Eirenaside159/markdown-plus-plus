@@ -84,10 +84,18 @@ Built for developers who love static sites but want a better content editing exp
 
 ### 🚀 Git Integration
 - **One-Click Publishing** - Commit and push changes to Git with a single button
+- **CORS Proxy Support** - Pushes via cors.isomorphic-git.org to bypass browser restrictions
+- **Smart Error Handling** - Categorized errors with specific solutions (auth, network, rate limit, etc.)
+- **Personal Access Token** - Secure authentication for GitHub and GitLab private repos
 - **Auto-Commit Messages** - Intelligent commit messages generated from your changes
 - **Branch Detection** - Automatically detects your current Git branch
+- **Concurrent Protection** - Prevents multiple simultaneous publish operations
+- **Platform Detection** - Different authentication for GitHub vs GitLab
+- **Retry Mechanism** - "Try Again" button with error recovery
+- **Copy Error Details** - Copy full error messages for debugging
+- **Console Logging** - Detailed [Git Publish] logs for troubleshooting
 - **Git Status** - See which files have been modified
-- **Works Locally** - No server needed, uses isomorphic-git in the browser
+- **Works in Browser** - No server needed, uses isomorphic-git
 
 ### 🔧 Smart Features
 - **Demo Mode** - Try the app without selecting files - explore with sample content
@@ -247,35 +255,153 @@ Markdown++ includes built-in Git integration that works entirely in your browser
    - Update frontmatter fields
    - Save your changes (Ctrl/Cmd + S)
 
-2. **Click Publish**
+2. **Configure Git Settings (One-Time)**
+   - Go to Settings → Git tab
+   - Enter your name and email
+   - For private repos: Add your Personal Access Token (see below)
+
+3. **Click Publish**
    - Look for the "Publish" button in the editor toolbar
    - Only appears when editing a file in a Git repository
 
-3. **Review & Confirm**
+4. **Review & Confirm**
    - See the auto-generated commit message (e.g., "Update: post-title.md")
    - Edit the message if needed
    - Click "Publish" to proceed
 
-4. **Automatic Git Operations**
-   - Stages the file: `git add <file>`
-   - Commits changes: `git commit -m "message"`
-   - Pushes to remote: `git push origin <branch>`
+5. **Automatic Git Operations**
+   - ✅ Stages the file: `git add <file>`
+   - ✅ Commits changes: `git commit -m "message"`
+   - ✅ Pushes to remote: `git push origin <branch>` (via CORS proxy)
    - All done in your browser using [isomorphic-git](https://isomorphic-git.org/)
+
+**🔐 Authentication Setup**
+
+For pushing to **private repositories**, you need a Personal Access Token:
+
+**GitHub:**
+1. Go to [GitHub Settings → Tokens](https://github.com/settings/tokens)
+2. Click "Generate new token (classic)"
+3. Select scopes: `repo` (full control of private repositories)
+4. Copy the token and paste it in Settings → Git → Personal Access Token
+
+**GitLab:**
+1. Go to [GitLab Profile → Access Tokens](https://gitlab.com/-/profile/personal_access_tokens)
+2. Create a new token with `write_repository` scope
+3. Copy the token and paste it in Settings → Git → Personal Access Token
+
+**Public repositories** don't require a token.
+
+**🌐 CORS Proxy**
+
+Browser security (CORS policy) prevents direct push to Git servers. Markdown++ uses the free [cors.isomorphic-git.org](https://cors.isomorphic-git.org) proxy service to bypass this limitation. Your code and credentials pass through this proxy to reach GitLab/GitHub.
+
+**Security Notes:**
+- Tokens are stored locally in your browser (localStorage)
+- HTTPS connection encrypts token in transit
+- For maximum security, use repository-specific tokens with minimal scopes
+- Never share your tokens or commit them to code
 
 **Requirements:**
 
 - Your folder must be a Git repository (`.git` folder present)
-- Git credentials must be configured on your system
-- For private repos, set up SSH keys or credential storage
+- HTTPS remote URL (SSH not supported in browser)
+- For private repos: Personal Access Token configured in Settings
 - An active internet connection for pushing changes
 
-**Troubleshooting:**
+**🛡️ Smart Error Handling**
 
-- **"Not a Git repository" warning:** Initialize Git in your folder first
-- **Push fails:** Check your Git credentials and remote configuration
-- **Authentication errors:** Configure SSH keys or use credential helpers
+Markdown++ provides detailed error messages with actionable solutions:
 
-The Git integration is completely optional—you can still edit and save files without it!
+| Error Type | What It Means | Solution |
+|------------|---------------|----------|
+| **🔐 Authentication Error** | Token missing/invalid | Add/update token in Settings → Git |
+| **🌐 Network Error** | No internet/CORS proxy down | Check connection, retry in moments |
+| **⏱️ Rate Limit** | Too many requests | Wait a few minutes before retry |
+| **🚫 Permission Denied** | No write access | Check repo permissions, update token |
+| **❌ Repository Not Found** | Repo deleted/no access | Verify repo URL and access rights |
+
+**Features:**
+- ✅ **Concurrent Protection:** Prevents multiple simultaneous publishes
+- ✅ **Automatic Retries:** "Try Again" button after failures
+- ✅ **Copy Error:** Copy full error message for debugging
+- ✅ **Console Logs:** Detailed logs in browser console (F12)
+- ✅ **Context-Aware:** Different advice for GitHub vs GitLab
+
+**Common Issues & Solutions:**
+
+**❌ "Not a Git repository"**
+```bash
+# Initialize Git in your project root
+git init
+git remote add origin https://github.com/user/repo.git
+```
+
+**❌ "SSH protocol cannot be pushed from browser"**
+```bash
+# Change SSH to HTTPS
+git remote set-url origin https://github.com/user/repo.git
+# For GitLab
+git remote set-url origin https://gitlab.com/user/repo.git
+```
+
+**❌ "Authentication failed (401)"**
+- Go to Settings → Git
+- Add Personal Access Token with correct scopes
+- GitHub: `repo` scope | GitLab: `write_repository` scope
+
+**❌ "Permission denied (403)"**
+- Verify you're a collaborator on the repository
+- Check token hasn't expired or been revoked
+- Ensure token has write permissions
+- Protected branches may require admin access
+
+**❌ "Network error / CORS timeout"**
+- Check your internet connection
+- CORS proxy might be temporarily down
+- Try again in a few moments
+- Use manual push as fallback
+
+**❌ "Rate limit exceeded (429)"**
+- You've made too many requests
+- Wait 5-10 minutes before retrying
+- Manual push works immediately
+
+**💡 Best Practices:**
+
+1. **First Time Setup:**
+   - Configure name, email, and token in Settings
+   - Test with a small change first
+   - Verify token has correct permissions
+
+2. **Daily Usage:**
+   - Save before publishing (Ctrl/Cmd + S)
+   - Review commit message
+   - Wait for "Successfully published" confirmation
+   - Don't click multiple times (protected automatically)
+
+3. **When Push Fails:**
+   - Read the error message carefully
+   - Check Settings → Git configuration
+   - Use "Copy Error" button for debugging
+   - Check browser console (F12) for detailed logs
+   - Manual push always works as fallback
+
+**Alternative: Manual Push**
+
+Browser push uses CORS proxy and may occasionally fail. You can always:
+
+1. **Commit via browser:** Click "Publish" - commits locally
+2. **Push via terminal:** Use command shown in modal
+3. **Or use GUI tools:** GitHub Desktop, GitKraken, SourceTree
+
+```bash
+# Modal provides this command:
+cd your-project
+git push origin main
+```
+
+The Git integration is **completely optional**—you can edit and save files without it!
 
 ## 🛠️ Tech Stack
 
@@ -298,7 +424,9 @@ The Git integration is completely optional—you can still edit and save files w
 
 **Git Integration:**
 - **isomorphic-git** - Complete Git implementation in JavaScript
+- **CORS Proxy** - cors.isomorphic-git.org for browser push operations
 - **buffer** - Buffer polyfill for browser Git operations
+- **Smart Error Detection** - Categorized error handling with actionable solutions
 
 **UI Components:**
 - **Lucide React** - Beautiful, consistent icons
@@ -442,9 +570,11 @@ Markdown++ is built with privacy as a core principle.
 **How Your Data Stays Private:**
 - ✅ **100% Client-Side** - All processing happens in your browser
 - ✅ **Local File Access** - Uses native browser APIs to read/write files directly
-- ✅ **IndexedDB Storage** - Preferences stored locally in your browser
-- ✅ **No Network Requests** - Except for Git operations (push/pull) which go directly to your Git remote
-- ✅ **Open Source** - Inspect the code yourself
+- ✅ **IndexedDB Storage** - Preferences and tokens stored locally in your browser
+- ✅ **Minimal Network** - Only Git push/pull operations communicate externally
+- ✅ **CORS Proxy** - Git operations go through cors.isomorphic-git.org (open source proxy)
+- ✅ **HTTPS Encrypted** - All network traffic is encrypted
+- ✅ **Open Source** - Inspect the code yourself on GitHub
 
 **For Team Deployments:**
 
@@ -517,7 +647,31 @@ The app only modifies files when you explicitly save changes. It preserves your 
 Yes! The settings panel lets you configure editor behavior, visible columns, and more. The app is also open source, so you can modify it to fit your needs.
 
 ### What about my private Git repositories?
-For private repos, you'll need Git credentials configured on your system (SSH keys or credential helpers). The app uses your system's Git configuration.
+For private repos, you need a Personal Access Token. Go to Settings → Git and add your token:
+- **GitHub:** [Create token](https://github.com/settings/tokens) with `repo` scope
+- **GitLab:** [Create token](https://gitlab.com/-/profile/personal_access_tokens) with `write_repository` scope
+
+Tokens are stored locally in your browser and never sent to our servers.
+
+### Why does Git push fail in the browser?
+Browser push uses a CORS proxy and may fail due to:
+- Missing or invalid Personal Access Token
+- No internet connection / CORS proxy down
+- SSH protocol (change to HTTPS: `git remote set-url origin https://...`)
+- Rate limiting from too many requests
+- No write permissions on repository
+
+The error message will tell you exactly what's wrong and how to fix it. You can always commit locally and push via terminal as a fallback.
+
+### Can I push to SSH repositories?
+No, SSH protocol doesn't work in browsers. Change your remote to HTTPS:
+```bash
+git remote set-url origin https://github.com/user/repo.git
+```
+Then add your Personal Access Token in Settings → Git.
+
+### What if multiple people click Publish at once?
+The app prevents concurrent publish operations automatically. Only one publish can run at a time, preventing duplicate commits or race conditions.
 
 ### How do I report a bug or request a feature?
 Open an issue on GitHub! We welcome bug reports, feature requests, and contributions from the community.

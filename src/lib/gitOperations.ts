@@ -14,6 +14,7 @@ export interface PublishOptions {
   branch?: string;
   gitAuthor?: string;
   gitEmail?: string;
+  gitToken?: string;
 }
 
 export interface PublishResult {
@@ -107,6 +108,9 @@ export async function checkGitStatus(
   }
 }
 
+// Track ongoing publish operations to prevent concurrent pushes
+let isPublishInProgress = false;
+
 /**
  * Publish changes (add, commit, and push)
  */
@@ -114,7 +118,18 @@ export async function publishFile(
   dirHandle: FileSystemDirectoryHandle,
   options: PublishOptions
 ): Promise<PublishResult> {
-  const { filePath, commitMessage, branch = 'main', gitAuthor, gitEmail } = options;
+  const { filePath, commitMessage, branch = 'main', gitAuthor, gitEmail, gitToken } = options;
+
+  // Prevent concurrent publish operations
+  if (isPublishInProgress) {
+    return {
+      success: false,
+      message: 'Another publish operation is already in progress',
+      error: 'A publish operation is already running. Please wait for it to complete.',
+    };
+  }
+
+  isPublishInProgress = true;
 
   try {
     const fs = createFileSystemAdapter(dirHandle);
@@ -123,7 +138,8 @@ export async function publishFile(
     try {
       await fs.promises.readFile('/' + filePath);
     } catch (readError) {
-      throw new Error('File not found: ' + filePath);
+      console.error('[Git Publish] File read error:', readError);
+      throw new Error(`File not found: ${filePath}\n\nMake sure the file exists and hasn't been deleted.`);
     }
 
     // Prepare cache with config to avoid reading issues
@@ -138,7 +154,9 @@ export async function publishFile(
         cache,
       });
     } catch (addError) {
-      throw new Error('Failed to stage file: ' + (addError instanceof Error ? addError.message : 'Unknown error'));
+      console.error('[Git Publish] Stage error:', addError);
+      const addErrorMsg = addError instanceof Error ? addError.message : 'Unknown error';
+      throw new Error(`Failed to stage file: ${addErrorMsg}\n\nThis might happen if:\n• The .git directory is corrupted\n• File permissions are incorrect\n• The file path is invalid`);
     }
 
     // Get git config for author info
@@ -197,20 +215,35 @@ export async function publishFile(
         cache,
       });
     } catch (commitError) {
-      throw new Error('Failed to commit: ' + (commitError instanceof Error ? commitError.message : 'Unknown error'));
+      console.error('[Git Publish] Commit error:', commitError);
+      const commitErrorMsg = commitError instanceof Error ? commitError.message : 'Unknown error';
+      throw new Error(`Failed to create commit: ${commitErrorMsg}\n\nPossible causes:\n• No changes to commit (file unchanged)\n• Author name/email not configured\n• .git repository is corrupted\n\nTry:\n• Make sure you've changed the file\n• Check Settings → Git for author info\n• Verify .git directory is valid`);
     }
 
-    // Get remote URL to check protocol
+    // Get remote URL to check protocol and provider
     let remoteUrl = '';
     let usesSsh = false;
+    let isGitLab = false;
     try {
       remoteUrl = await git.getConfig({ fs, dir: '/', path: 'remote.origin.url' }) || '';
       usesSsh = remoteUrl.startsWith('git@') || remoteUrl.startsWith('ssh://');
+      isGitLab = remoteUrl.includes('gitlab.com') || remoteUrl.includes('gitlab');
     } catch (error) {
       // Could not detect remote URL
     }
 
-    // Try to push to remote (may fail due to browser limitations, that's OK)
+    // SSH protocol cannot be used from browser
+    if (usesSsh) {
+      return {
+        success: true,
+        message: `✅ Changes committed successfully!\n\nCommit: ${commitSha.substring(0, 7)}\n\n📡 Your repository uses SSH protocol which cannot be pushed from browser.\n\nTo publish, run in your terminal:\n\ncd ${dirHandle.name}\ngit push origin ${branch}\n\n💡 Tip: For automatic push from browser, change remote URL to HTTPS:\ngit remote set-url origin https://gitlab.com/itsmoneo/moneo.com.tr.git`,
+        pushed: false,
+        needsManualPush: true,
+        commitSha: commitSha.substring(0, 7),
+      };
+    }
+
+    // Try to push to remote using CORS proxy for HTTPS repos
     try {
       await git.push({
         fs,
@@ -219,6 +252,30 @@ export async function publishFile(
         remote: 'origin',
         ref: branch,
         cache,
+        corsProxy: 'https://cors.isomorphic-git.org',
+        onAuth: () => {
+          // If user provided a Personal Access Token, use it
+          if (gitToken && gitToken.trim()) {
+            const token = gitToken.trim();
+            
+            // GitLab uses different auth format than GitHub
+            if (isGitLab) {
+              // GitLab: username can be anything (oauth2, token, etc), password is the token
+              return {
+                username: 'oauth2',
+                password: token,
+              };
+            } else {
+              // GitHub/others: username is the token, password can be empty or x-oauth-basic
+              return {
+                username: token,
+                password: '',
+              };
+            }
+          }
+          // Try without auth (works for public repos)
+          return { username: '', password: '' };
+        },
       });
 
       return {
@@ -229,32 +286,127 @@ export async function publishFile(
         commitSha: commitSha.substring(0, 7),
       };
     } catch (pushError) {
-      // Check if it's SSH protocol issue
-      if (usesSsh) {
+      // Get error details for better user feedback
+      const errorMessage = pushError instanceof Error ? pushError.message : String(pushError);
+      const errorLower = errorMessage.toLowerCase();
+      
+      console.error('[Git Push Error]', pushError);
+      
+      // Classify error types for better user guidance
+      const isAuthError = errorMessage.includes('401') || 
+                         errorMessage.includes('403') || 
+                         errorLower.includes('unauthorized') ||
+                         errorLower.includes('authentication') ||
+                         errorLower.includes('credentials');
+      
+      const isNetworkError = errorLower.includes('network') ||
+                            errorLower.includes('fetch failed') ||
+                            errorLower.includes('connection') ||
+                            errorLower.includes('timeout') ||
+                            errorLower.includes('enotfound') ||
+                            errorLower.includes('cors');
+      
+      const isRateLimitError = errorMessage.includes('429') ||
+                              errorLower.includes('rate limit') ||
+                              errorLower.includes('too many requests');
+      
+      const isTokenError = errorLower.includes('token') && 
+                          (errorLower.includes('invalid') || 
+                           errorLower.includes('expired') || 
+                           errorLower.includes('revoked'));
+      
+      const isPermissionError = errorLower.includes('permission') ||
+                               errorLower.includes('forbidden') ||
+                               errorMessage.includes('403');
+      
+      const isNotFoundError = errorMessage.includes('404') ||
+                             errorLower.includes('not found') ||
+                             errorLower.includes('repository does not exist');
+      
+      // Authentication error - wrong/missing token
+      if (isAuthError || isTokenError) {
+        const tokenAdvice = isGitLab 
+          ? 'GitLab Personal Access Token with write_repository scope'
+          : 'GitHub Personal Access Token with repo scope';
+        
         return {
           success: true,
-          message: `✅ Changes committed successfully!\n\nCommit: ${commitSha.substring(0, 7)}\n\n📡 Your repository uses SSH protocol which cannot be pushed from browser.\n\nTo publish, run in your terminal:\n\ncd ${dirHandle.name}\ngit push origin ${branch}\n\n💡 Tip: If you want automatic push, change remote URL to HTTPS:\ngit remote set-url origin https://gitlab.com/itsmoneo/moneo.com.tr.git`,
+          message: `✅ Changes committed locally!\n\nCommit: ${commitSha.substring(0, 7)}\n\n🔐 Push failed: Authentication Error\n\n${
+            isTokenError 
+              ? 'Your access token is invalid, expired, or revoked.' 
+              : 'Authentication required to push to this repository.'
+          }\n\n**Solution:**\n1. Go to Settings → Git\n2. Add a valid ${tokenAdvice}\n3. Try publishing again\n\n**Or push manually:**\ncd ${dirHandle.name}\ngit push origin ${branch}`,
           pushed: false,
           needsManualPush: true,
           commitSha: commitSha.substring(0, 7),
         };
       }
       
-      // Generic push failure
+      // Network/CORS error
+      if (isNetworkError) {
+        return {
+          success: true,
+          message: `✅ Changes committed locally!\n\nCommit: ${commitSha.substring(0, 7)}\n\n🌐 Push failed: Network Error\n\nCouldn't reach the remote repository. This might be due to:\n• No internet connection\n• CORS proxy unavailable\n• Firewall blocking the request\n• Remote server is down\n\n**Solutions:**\n1. Check your internet connection\n2. Try again in a few moments\n3. Or push manually:\n\ncd ${dirHandle.name}\ngit push origin ${branch}\n\n💡 Tip: Manual push always works when browser fails`,
+          pushed: false,
+          needsManualPush: true,
+          commitSha: commitSha.substring(0, 7),
+        };
+      }
+      
+      // Rate limit error
+      if (isRateLimitError) {
+        return {
+          success: true,
+          message: `✅ Changes committed locally!\n\nCommit: ${commitSha.substring(0, 7)}\n\n⏱️ Push failed: Rate Limit Exceeded\n\nYou've made too many requests. Please wait a few minutes and try again.\n\n**Or push manually now:**\ncd ${dirHandle.name}\ngit push origin ${branch}`,
+          pushed: false,
+          needsManualPush: true,
+          commitSha: commitSha.substring(0, 7),
+        };
+      }
+      
+      // Permission error
+      if (isPermissionError) {
+        return {
+          success: true,
+          message: `✅ Changes committed locally!\n\nCommit: ${commitSha.substring(0, 7)}\n\n🚫 Push failed: Permission Denied\n\nYou don't have permission to push to this repository.\n\n**Possible causes:**\n• Token doesn't have write access\n• Not a collaborator on this repo\n• Branch is protected\n\n**Solution:**\n1. Check repository permissions\n2. Generate a new token with write access\n3. Add token in Settings → Git\n\n**Or push manually:**\ncd ${dirHandle.name}\ngit push origin ${branch}`,
+          pushed: false,
+          needsManualPush: true,
+          commitSha: commitSha.substring(0, 7),
+        };
+      }
+      
+      // Repository not found
+      if (isNotFoundError) {
+        return {
+          success: true,
+          message: `✅ Changes committed locally!\n\nCommit: ${commitSha.substring(0, 7)}\n\n❌ Push failed: Repository Not Found\n\nThe remote repository doesn't exist or you don't have access.\n\n**Check:**\n• Repository URL is correct: ${remoteUrl}\n• Repository hasn't been deleted\n• You have access to the repository\n\n**Push manually to verify:**\ncd ${dirHandle.name}\ngit push origin ${branch}`,
+          pushed: false,
+          needsManualPush: true,
+          commitSha: commitSha.substring(0, 7),
+        };
+      }
+      
+      // Generic push failure with detailed error
       return {
         success: true,
-        message: `✅ Changes committed successfully!\n\nCommit: ${commitSha.substring(0, 7)}\n\nTo publish to remote, run this in your terminal:\n\ncd ${dirHandle.name}\ngit push origin ${branch}`,
+        message: `✅ Changes committed locally!\n\nCommit: ${commitSha.substring(0, 7)}\n\n⚠️ Push failed: ${errorMessage}\n\n**Push manually:**\ncd ${dirHandle.name}\ngit push origin ${branch}\n\n💡 If this error persists, try:\n• Checking your token permissions\n• Verifying remote URL: ${remoteUrl}\n• Using terminal or GitHub Desktop`,
         pushed: false,
         needsManualPush: true,
         commitSha: commitSha.substring(0, 7),
       };
     }
   } catch (error) {
+    console.error('[Git Publish] Unexpected error:', error);
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+    
     return {
       success: false,
       message: 'Failed to publish changes',
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: `❌ Publish failed: ${errorMsg}\n\n**What happened:**\nAn error occurred during the git operations (add, commit, or push).\n\n**Next steps:**\n1. Check the browser console for detailed error logs\n2. Verify your .git directory is not corrupted\n3. Make sure the file exists and has been saved\n4. Try refreshing the page and trying again\n\n**Need help?** Open browser console (F12) and look for [Git Publish] logs.`,
     };
+  } finally {
+    // Always reset the flag, even if an error occurred
+    isPublishInProgress = false;
   }
 }
 
