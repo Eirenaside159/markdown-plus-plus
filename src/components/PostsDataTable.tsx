@@ -162,6 +162,11 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
     return columnsArray;
   }, [posts]);
 
+  // Force re-render of ColumnSelector when columns change
+  useEffect(() => {
+    setVisibilityKey(k => k + 1);
+  }, [allColumns.length]);
+
   // Define columns
   const columns = useMemo<ColumnDef<MarkdownFile>[]>(() => {
     return allColumns.map(columnKey => {

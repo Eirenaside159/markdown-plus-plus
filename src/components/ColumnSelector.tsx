@@ -23,16 +23,14 @@ export function ColumnSelector({ table, onVisibilityChange }: ColumnSelectorProp
   const [isOpen, setIsOpen] = useState(false);
 
   const columns = useMemo(() => {
-    return table
-      .getAllColumns()
-      .filter((column) => column.getCanHide())
-      .map((column) => ({
-        id: column.id,
-        label: formatFieldLabel(column.id),
-        isVisible: column.getIsVisible(),
-        toggle: (value: boolean) => column.toggleVisibility(value),
-      }));
-  }, [table, isOpen]); // Re-compute when dropdown opens
+    const allTableColumns = table.getAllColumns().filter((column) => column.getCanHide());
+    return allTableColumns.map((column) => ({
+      id: column.id,
+      label: formatFieldLabel(column.id),
+      isVisible: column.getIsVisible(),
+      toggle: (value: boolean) => column.toggleVisibility(value),
+    }));
+  }, [table, table.getState().columnVisibility, isOpen]); // Re-compute when table or visibility changes
 
   const filteredColumns = useMemo(() => {
     if (!searchQuery.trim()) return columns;
