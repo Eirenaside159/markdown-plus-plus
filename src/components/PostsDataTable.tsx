@@ -429,9 +429,9 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
       </div>
 
       {/* Pagination */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 py-3 sm:py-4">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 py-3 sm:py-4">
         <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start">
-          <p className="text-xs sm:text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
             Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{" "}
             {Math.min(
               (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
@@ -441,7 +441,7 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
           </p>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6 w-full sm:w-auto">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <p className="text-xs sm:text-sm font-medium whitespace-nowrap">Rows per page</p>
             <select
               value={table.getState().pagination.pageSize}
