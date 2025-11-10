@@ -92,10 +92,23 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { confirm, ConfirmDialog } = useConfirm();
   const urlFormatInputRef = useRef<HTMLInputElement>(null);
+  
+  // Local state for URL input to preserve user's exact input
+  const [urlInputValue, setUrlInputValue] = useState(() => {
+    const saved = getSettings();
+    return saved.baseUrl && saved.urlFormat 
+      ? `${saved.baseUrl.replace(/\/+$/, '')}/${saved.urlFormat.replace(/^\/+/, '')}`
+      : saved.baseUrl || saved.urlFormat || '';
+  });
 
   useEffect(() => {
     const saved = getSettings();
     setSettings(saved);
+    // Update local URL input value when settings are loaded
+    const urlValue = saved.baseUrl && saved.urlFormat 
+      ? `${saved.baseUrl.replace(/\/+$/, '')}/${saved.urlFormat.replace(/^\/+/, '')}`
+      : saved.baseUrl || saved.urlFormat || '';
+    setUrlInputValue(urlValue);
   }, []);
 
   // Parse desired tab from location hash (e.g., #settings?tab=ai)
@@ -472,40 +485,43 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                 <label htmlFor="url-pattern-input" className="text-sm font-medium text-foreground">Complete URL Pattern</label>
                 <input
                   id="url-pattern-input"
-                  name="urlPattern"
+                  name="urlPatternConfig"
                   ref={urlFormatInputRef}
                   type="text"
-                  value={settings.baseUrl && settings.urlFormat 
-                    ? `${settings.baseUrl.replace(/\/+$/, '')}/${settings.urlFormat.replace(/^\/+/, '')}`
-                    : settings.baseUrl || settings.urlFormat || ''}
+                  autoComplete="off"
+                  spellCheck="false"
+                  value={urlInputValue}
                   onChange={(e) => {
                     const fullUrl = e.target.value;
-                    // Parse the URL to extract domain and path
-                    try {
-                      const url = new URL(fullUrl);
-                      const baseUrl = `${url.protocol}//${url.host}`;
-                      const urlFormat = url.pathname.replace(/^\/+/, '');
+                    // Update local state immediately to show user's input
+                    setUrlInputValue(fullUrl);
+                    
+                    // Parse the URL to extract domain and path - preserve special characters
+                    // Use regex matching instead of URL constructor to preserve special chars like {}
+                    const match = fullUrl.match(/^(https?:\/\/[^\/]+)(.*)$/);
+                    if (match) {
+                      const baseUrl = match[1];
+                      const path = match[2].replace(/^\/+/, ''); // Remove leading slashes from path
                       
                       const updatedSettings = { 
                         ...settings, 
                         baseUrl: baseUrl,
-                        urlFormat: urlFormat 
+                        urlFormat: path
                       };
                       setSettings(updatedSettings);
                       saveSettings(updatedSettings);
-                    } catch {
-                      // If not a valid URL, try to split by first slash after protocol
-                      const match = fullUrl.match(/^(https?:\/\/[^\/]+)\/(.*)$/);
-                      if (match) {
+                    } else {
+                      // If no protocol found, save the whole thing as baseUrl or urlFormat
+                      if (fullUrl.startsWith('/')) {
+                        // Starts with slash, treat as urlFormat only
                         const updatedSettings = { 
                           ...settings, 
-                          baseUrl: match[1],
-                          urlFormat: match[2]
+                          urlFormat: fullUrl.replace(/^\/+/, '')
                         };
                         setSettings(updatedSettings);
                         saveSettings(updatedSettings);
                       } else {
-                        // Just save as baseUrl if no slash found
+                        // No slash, treat as baseUrl
                         const updatedSettings = { 
                           ...settings, 
                           baseUrl: fullUrl,
