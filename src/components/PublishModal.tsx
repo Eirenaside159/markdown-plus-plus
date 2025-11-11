@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, GitBranch, Upload, AlertCircle, CheckCircle, Terminal, Copy, Lightbulb, Send } from 'lucide-react';
+import { X, GitBranch, Upload, AlertCircle, CheckCircle, Terminal, Copy, Lightbulb, Send, Loader2 } from 'lucide-react';
 import type { GitStatus } from '@/lib/gitOperations';
 
 interface PublishResult {
@@ -535,9 +535,8 @@ export function PublishModal({
                 >
                   {isPublishing ? (
                     <>
-                      <div className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                      <span className="hidden xs:inline">Publishing...</span>
-                      <span className="xs:hidden">...</span>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Publishing...</span>
                     </>
                   ) : (
                     <>
