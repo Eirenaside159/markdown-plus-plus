@@ -2,11 +2,9 @@
  * Favicon badge utility for showing unsaved changes indicator
  */
 
-let animationFrameId: number | null = null;
-let currentOpacity = 1;
-let fadingOut = false;
 let cachedImage: HTMLImageElement | null = null;
 let isImageLoading = false;
+let currentBadgeState = false; // Track current badge state to avoid redundant updates
 
 // Preload the favicon image
 function preloadFavicon(): Promise<HTMLImageElement> {
@@ -54,11 +52,12 @@ preloadFavicon().catch(() => {
  * Updates the favicon with a yellow badge indicator
  */
 export function updateFaviconBadge(hasChanges: boolean) {
-  // Cancel any existing animation
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId);
-    animationFrameId = null;
+  // Skip update if badge state hasn't changed
+  if (hasChanges === currentBadgeState) {
+    return;
   }
+  
+  currentBadgeState = hasChanges;
 
   const canvas = document.createElement('canvas');
   canvas.width = 32;
@@ -71,84 +70,40 @@ export function updateFaviconBadge(hasChanges: boolean) {
 
   // Use preloaded image
   preloadFavicon().then((img) => {
-    // Function to draw the favicon with optional badge
-    const drawFavicon = (opacity: number = 1) => {
-      // Clear canvas
-      ctx.clearRect(0, 0, 32, 32);
-      
-      // Draw original favicon
-      ctx.drawImage(img, 0, 0, 32, 32);
-      
-      // Add yellow badge if there are changes
-      if (hasChanges) {
-        // Badge position: bottom-right corner (more visible)
-        const badgeX = 24;
-        const badgeY = 24;
-        const badgeRadius = 7;
-        
-        // Draw badge shadow (stronger)
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-        ctx.shadowBlur = 3;
-        ctx.shadowOffsetX = 1;
-        ctx.shadowOffsetY = 1;
-        
-        // Draw badge circle
-        ctx.beginPath();
-        ctx.arc(badgeX, badgeY, badgeRadius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(234, 179, 8, ${opacity})`; // yellow-500 with opacity
-        ctx.fill();
-        
-        // Reset shadow
-        ctx.shadowColor = 'transparent';
-        ctx.shadowBlur = 0;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 0;
-        
-        // Draw badge border (thicker, more visible)
-        ctx.beginPath();
-        ctx.arc(badgeX, badgeY, badgeRadius, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      }
-      
-      // Update favicon
-      updateFaviconLink(canvas.toDataURL());
-    };
-
+    // Clear canvas
+    ctx.clearRect(0, 0, 32, 32);
+    
+    // Draw original favicon
+    ctx.drawImage(img, 0, 0, 32, 32);
+    
+    // Add yellow badge if there are changes
     if (hasChanges) {
-      // Start with full opacity for immediate visibility
-      currentOpacity = 1;
-      fadingOut = true;
+      // Badge position: bottom-right corner (more visible)
+      const badgeX = 24;
+      const badgeY = 24;
+      const badgeRadius = 7;
       
-      // Draw immediately
-      drawFavicon(currentOpacity);
+      // Draw badge shadow
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      ctx.shadowBlur = 3;
+      ctx.shadowOffsetX = 1;
+      ctx.shadowOffsetY = 1;
       
-      // Then animate the badge with pulsing effect
-      const animate = () => {
-        if (fadingOut) {
-          currentOpacity -= 0.025;
-          if (currentOpacity <= 0.5) {
-            fadingOut = false;
-          }
-        } else {
-          currentOpacity += 0.025;
-          if (currentOpacity >= 1) {
-            fadingOut = true;
-          }
-        }
-        
-        drawFavicon(currentOpacity);
-        animationFrameId = requestAnimationFrame(animate);
-      };
+      // Draw badge circle
+      ctx.beginPath();
+      ctx.arc(badgeX, badgeY, badgeRadius, 0, Math.PI * 2);
+      ctx.fillStyle = '#eab308'; // yellow-500
+      ctx.fill();
       
-      animationFrameId = requestAnimationFrame(animate);
-    } else {
-      // Reset to original without badge
-      currentOpacity = 1;
-      fadingOut = false;
-      drawFavicon();
+      // Reset shadow
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
     }
+    
+    // Update favicon
+    updateFaviconLink(canvas.toDataURL());
   }).catch(() => {
     // Failed to update favicon badge
   });
@@ -173,13 +128,7 @@ function updateFaviconLink(dataUrl: string) {
  * Resets the favicon to original
  */
 export function resetFavicon() {
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId);
-    animationFrameId = null;
-  }
-  
-  currentOpacity = 1;
-  fadingOut = false;
+  currentBadgeState = false; // Reset badge state
   
   const link = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
   if (link) {
