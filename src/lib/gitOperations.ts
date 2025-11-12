@@ -252,7 +252,7 @@ export async function publishFile(
         remote: 'origin',
         ref: branch,
         cache,
-        corsProxy: 'https://cors.isomorphic-git.org',
+        corsProxy: 'https://git-cors-worker.moneo.workers.dev/',
         onAuth: () => {
           // If user provided a Personal Access Token, use it
           if (gitToken && gitToken.trim()) {
