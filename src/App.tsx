@@ -905,6 +905,40 @@ function useTypewriter(text: string, speed: number = 100) {
   return { displayedText, isComplete };
 }
 
+// Confetti celebration animation
+function fireCelebrationConfetti() {
+  const duration = 1 * 1000;
+  const animationEnd = Date.now() + duration;
+  const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+  function randomInRange(min: number, max: number) {
+    return Math.random() * (max - min) + min;
+  }
+
+  const interval = setInterval(function() {
+    const timeLeft = animationEnd - Date.now();
+
+    if (timeLeft <= 0) {
+      return clearInterval(interval);
+    }
+
+    const particleCount = 50 * (timeLeft / duration);
+    // since particles fall down, start a bit higher than random
+    confetti(
+      Object.assign({}, defaults, {
+        particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+      })
+    );
+    confetti(
+      Object.assign({}, defaults, {
+        particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+      })
+    );
+  }, 250);
+}
+
 function App() {
   const [dirHandle, setDirHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [allPosts, setAllPosts] = useState<MarkdownFile[]>([]);
@@ -943,6 +977,10 @@ function App() {
   const [showDemoModal, setShowDemoModal] = useState(false);
   const [recentFolders, setRecentFolders] = useState(() => getRecentFolders());
   const [hiddenFiles, setHiddenFiles] = useState<string[]>([]);
+  
+  // PWA Install Prompt
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallButton, setShowInstallButton] = useState(false);
   
   // Update hidden files when directory changes
   useEffect(() => {
@@ -997,6 +1035,38 @@ function App() {
   useEffect(() => {
     setShowWarningModal(!isDemoMode && shouldShowWarning());
   }, [isDemoMode]);
+
+  // PWA Install Prompt Handler
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later
+      setDeferredPrompt(e);
+      // Show the install button
+      setShowInstallButton(true);
+    };
+
+    const handleAppInstalled = () => {
+      // Hide the install button after app is installed
+      setShowInstallButton(false);
+      setDeferredPrompt(null);
+      toast.success('Markdown++ installed successfully!');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    // Check if app is already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setShowInstallButton(false);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
 
   // Update page title
   useEffect(() => {
@@ -1075,6 +1145,26 @@ function App() {
     setViewMode('table');
     
     toast.info('Demo exited');
+  };
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) {
+      return;
+    }
+
+    // Show the install prompt
+    deferredPrompt.prompt();
+
+    // Wait for the user to respond to the prompt
+    const { outcome } = await deferredPrompt.userChoice;
+
+    if (outcome === 'accepted') {
+      toast.success('Thanks! App is installing...');
+    }
+
+    // Clear the deferred prompt
+    setDeferredPrompt(null);
+    setShowInstallButton(false);
   };
 
   const handleSelectDirectory = async () => {
@@ -1506,11 +1596,7 @@ function App() {
       toast.success('Changes saved');
       
       // Celebrate with confetti! 🎉
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
+      fireCelebrationConfetti();
     } catch (error) {
       toast.error('Failed to save file');
     } finally {
@@ -2070,6 +2156,54 @@ function App() {
           </div>
 
         </div>
+
+        {/* PWA Install Banner - Bottom Right */}
+        {showInstallButton && (
+          <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[calc(100%-2rem)] sm:w-auto sm:max-w-md bg-gradient-to-r from-neutral-900 via-neutral-900 to-neutral-800 dark:from-neutral-100 dark:via-neutral-100 dark:to-neutral-200 text-white dark:text-neutral-900 shadow-2xl border border-neutral-700 dark:border-neutral-300 rounded-2xl animate-in slide-in-from-bottom-4 duration-500">
+            <div className="px-4 sm:px-5 py-3 sm:py-4">
+              <div className="flex items-start gap-3 sm:gap-4">
+                {/* Left side - Icon + Text */}
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <div className="flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 bg-white/10 dark:bg-neutral-900/10 rounded-xl flex items-center justify-center mt-0.5">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0 pt-1">
+                    <p className="text-sm sm:text-base font-semibold mb-1">Install Markdown++</p>
+                    <p className="text-xs sm:text-sm opacity-80 mb-3">Get quick access from your home screen</p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleInstallClick}
+                        className="px-4 sm:px-5 py-2 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white rounded-lg font-medium text-sm hover:scale-105 active:scale-95 transition-transform shadow-lg"
+                      >
+                        Install
+                      </button>
+                      <button
+                        onClick={() => setShowInstallButton(false)}
+                        className="px-3 py-2 hover:bg-white/10 dark:hover:bg-neutral-900/10 rounded-lg transition-colors text-xs sm:text-sm opacity-80 hover:opacity-100"
+                      >
+                        Not now
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Close button */}
+                <button
+                  onClick={() => setShowInstallButton(false)}
+                  className="flex-shrink-0 p-1 hover:bg-white/10 dark:hover:bg-neutral-900/10 rounded-lg transition-colors"
+                  aria-label="Dismiss"
+                >
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <ConfirmDialog />
       </div>
     );

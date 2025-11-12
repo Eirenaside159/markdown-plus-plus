@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, GitBranch, Upload, AlertCircle, CheckCircle, Terminal, Copy, Lightbulb, Send, Loader2 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import type { GitStatus } from '@/lib/gitOperations';
 
 interface PublishResult {
@@ -56,6 +57,39 @@ export function PublishModal({
     return () => window.removeEventListener('keydown', handleEscape);
   }, [isOpen, isPublishing]);
 
+  const fireConfetti = () => {
+    const duration = 1 * 1000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+    function randomInRange(min: number, max: number) {
+      return Math.random() * (max - min) + min;
+    }
+
+    const interval = setInterval(function() {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+      // since particles fall down, start a bit higher than random
+      confetti(
+        Object.assign({}, defaults, {
+          particleCount,
+          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+        })
+      );
+      confetti(
+        Object.assign({}, defaults, {
+          particleCount,
+          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+        })
+      );
+    }, 250);
+  };
+
   const handlePublish = async () => {
     if (!commitMessage.trim() || isPublishing) {
       return;
@@ -69,6 +103,11 @@ export function PublishModal({
       setPublishSuccess(true);
       setPublishError(null);
       setPublishResult(result || null);
+      
+      // Fire confetti if push was successful
+      if (result?.pushed) {
+        fireConfetti();
+      }
     } catch (error) {
       setPublishSuccess(false);
       setPublishError(error instanceof Error ? error.message : 'Failed to publish changes');
@@ -150,7 +189,7 @@ export function PublishModal({
       onClick={isPublishing || publishSuccess ? undefined : handleClose}
     >
       <div 
-        className="bg-background rounded-lg shadow-xl border w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
+        className={`bg-background rounded-lg shadow-xl border w-full ${publishSuccess ? 'max-w-lg' : 'max-w-2xl'} max-h-[90vh] flex flex-col overflow-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
