@@ -9,13 +9,13 @@
   "orientation": "any",
   "icons": [
     {
-      "src": "/logo-192x192.png",
+      "src": "/markdown-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/logo-512x512.png",
+      "src": "/markdown-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -33,7 +33,7 @@
       "url": "/?action=new",
       "icons": [
         {
-          "src": "/logo.png",
+          "src": "/markdown-96x96.png",
           "sizes": "96x96"
         }
       ]
