@@ -69,6 +69,7 @@ interface FilePickerOptions {
   types?: FilePickerAcceptType[];
   excludeAcceptAllOption?: boolean;
   multiple?: boolean;
+  suggestedName?: string;
 }
 
 interface DirectoryPickerOptions {
