@@ -12,18 +12,18 @@ import { DemoInfoModal } from '@/components/DemoInfoModal';
 import { FileBrowser } from '@/components/FileBrowser';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import confetti from 'canvas-confetti';
-import { selectDirectory, readFile, writeFile, deleteFile, renameFile, moveFile, isFileSystemAccessSupported } from '@/lib/fileSystem';
+import { selectDirectory, readFile, writeFile, deleteFile, renameFile, moveFile, isFileSystemAccessSupported, selectSingleFile, createNewFile, readSingleFile, writeSingleFile } from '@/lib/fileSystem';
 import { parseMarkdown, stringifyMarkdown, updateFrontmatter } from '@/lib/markdown';
 import { getRecentFolders, addRecentFolder, clearRecentFolders, formatTimestamp } from '@/lib/recentFolders';
 import { getSettings, saveSettings } from '@/lib/settings';
 import { setTheme } from '@/lib/theme';
-import { saveDirectoryHandle, loadDirectoryHandle, saveAppState, loadAppState, clearCurrentWorkspace, saveRecentFolderHandle, loadRecentFolderHandle, clearAllRecentFolderHandles } from '@/lib/persistedState';
+import { saveDirectoryHandle, loadDirectoryHandle, saveAppState, loadAppState, clearCurrentWorkspace, saveRecentFolderHandle, loadRecentFolderHandle, clearAllRecentFolderHandles, saveSingleFileHandle, loadSingleFileHandle, clearSingleFileHandle } from '@/lib/persistedState';
 import { subscribePosts, initializePosts, refreshPosts, refreshFileTree, applyPostAdded, applyPostUpdated, applyPostDeleted, applyPostPathChanged } from '@/lib/postsStore';
 import { checkGitStatus, publishFile, generateCommitMessage, type GitStatus } from '@/lib/gitOperations';
 import { hideFile, getHiddenFiles } from '@/lib/hiddenFiles';
 import { updateFaviconBadge } from '@/lib/faviconBadge';
 import type { FileTreeItem, MarkdownFile } from '@/types';
-import { FolderOpen, Save, Clock, FileCode, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen, Loader2, BookOpen, Sun, Moon, Monitor, LogOut, Eye, Search, X, Sliders } from 'lucide-react';
+import { FolderOpen, Save, Clock, FileCode, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen, Loader2, BookOpen, Sun, Moon, Monitor, LogOut, Eye, Search, X, Sliders, File } from 'lucide-react';
 
 type ViewMode = 'table' | 'editor' | 'settings';
 
@@ -941,6 +941,8 @@ function fireCelebrationConfetti() {
 
 function App() {
   const [dirHandle, setDirHandle] = useState<FileSystemDirectoryHandle | null>(null);
+  const [singleFileHandle, setSingleFileHandle] = useState<FileSystemFileHandle | null>(null);
+  const [isSingleFileMode, setIsSingleFileMode] = useState(false);
   const [allPosts, setAllPosts] = useState<MarkdownFile[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -959,6 +961,7 @@ function App() {
   const [gitStatus, setGitStatus] = useState<GitStatus | null>(null);
   const [showActionsDropdown, setShowActionsDropdown] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+  const [showFolderOptionsDropdown, setShowFolderOptionsDropdown] = useState(false);
   const [showTitleInHeader, setShowTitleInHeader] = useState(false);
   const [fileTree, setFileTree] = useState<FileTreeItem[]>([]);
   const [selectedFolderPath, setSelectedFolderPath] = useState<string | null>(null);
@@ -1089,7 +1092,10 @@ function App() {
       const baseTitle = currentFile.frontmatter.title === 'Untitled Post' 
         ? 'Untitled' 
         : (currentFile.frontmatter.title || currentFile.name || 'Untitled');
-      document.title = `${baseTitle} - Markdown++`;
+      const suffix = isSingleFileMode && singleFileHandle 
+        ? ` - ${singleFileHandle.name}` 
+        : '';
+      document.title = `${baseTitle}${suffix} - Markdown++`;
     } else if (viewMode === 'settings') {
       document.title = 'Settings - Markdown++';
     } else if (viewMode === 'table' && dirHandle) {
@@ -1097,7 +1103,7 @@ function App() {
     } else {
       document.title = 'Markdown++';
     }
-  }, [viewMode, currentFile, dirHandle]);
+  }, [viewMode, currentFile, dirHandle, isSingleFileMode, singleFileHandle]);
 
   // Update favicon badge based on changes (only in editor mode)
   useEffect(() => {
@@ -1108,7 +1114,7 @@ function App() {
 
   // Fast, non-blocking reload helper: refresh posts without clearing UI
   const reloadPosts = async () => {
-    if (!dirHandle || isRefreshingPosts) return;
+    if (!dirHandle || isRefreshingPosts || isDemoMode) return;
     setIsRefreshingPosts(true);
     try {
       // Cache-first: initializePosts loads from cache then refreshes in background
@@ -1122,14 +1128,22 @@ function App() {
     // Clear any existing toasts
     toast.dismiss();
     
-    // Set demo mode
+    // Clear single file mode first
+    setIsSingleFileMode(false);
+    setSingleFileHandle(null);
+    
+    // Set demo mode FIRST to prevent file system operations
     setIsDemoMode(true);
+    
+    // Set posts and file tree
     setAllPosts(DEMO_POSTS);
     setFileTree(DEMO_FILE_TREE);
-    setViewMode('table');
     
     // Set a mock directory handle name for UI
     setDirHandle({ name: 'Demo Workspace' } as FileSystemDirectoryHandle);
+    
+    // Set view mode
+    setViewMode('table');
     
     // Initialize browser history with table view
     window.history.replaceState({ viewMode: 'table' }, '', '#posts');
@@ -1151,6 +1165,8 @@ function App() {
     // Clear demo state
     setIsDemoMode(false);
     setDirHandle(null);
+    setSingleFileHandle(null);
+    setIsSingleFileMode(false);
     setAllPosts([]);
     setFileTree([]);
     setSelectedFolderPath(null);
@@ -1194,6 +1210,12 @@ function App() {
       // Clear any existing toasts first
       toast.dismiss();
       
+      // Clear single file mode and demo mode
+      setIsSingleFileMode(false);
+      setSingleFileHandle(null);
+      setIsDemoMode(false);
+      await clearSingleFileHandle();
+      
       setDirHandle(handle);
       addRecentFolder(handle);
       setRecentFolders(getRecentFolders());
@@ -1225,10 +1247,173 @@ function App() {
     }
   };
 
+  const handleSelectSingleFile = async () => {
+    // Check browser support first
+    if (!isFileSystemAccessSupported()) {
+      toast.error('File API not supported. Use desktop Chrome, Edge, or Safari 15.2+');
+      return;
+    }
+    
+    try {
+      const handle = await selectSingleFile();
+      if (handle) {
+        // Clear any existing toasts first
+        toast.dismiss();
+        
+        // Clear folder mode
+        setDirHandle(null);
+        await clearCurrentWorkspace();
+        
+        // Set single file mode
+        setIsSingleFileMode(true);
+        setSingleFileHandle(handle);
+        await saveSingleFileHandle(handle);
+        
+        // Read and parse the file
+        try {
+          const content = await readSingleFile(handle);
+          const parsed = parseMarkdown(content, handle.name, handle.name);
+          setCurrentFile(parsed);
+          setSelectedFilePath(handle.name);
+          setShouldAutoFocus(false); // Don't auto-focus when opening existing file
+          setViewMode('editor');
+          
+          // Update browser history
+          window.history.replaceState(
+            { viewMode: 'editor', filePath: handle.name },
+            '',
+            '#editor'
+          );
+          
+          toast.success(`Opened ${handle.name}`);
+        } catch (error) {
+          toast.error('Failed to read file');
+          console.error('Error reading file:', error);
+        }
+      }
+    } catch (error: any) {
+      if (error?.message?.includes('not supported')) {
+        toast.error('File picker not supported in this browser');
+      } else {
+        toast.error('Failed to select file');
+      }
+      console.error('Error selecting file:', error);
+    }
+  };
+
+  const handleCreateNewFile = async () => {
+    // Check browser support first
+    if (!isFileSystemAccessSupported()) {
+      toast.error('File API not supported. Use desktop Chrome, Edge, or Safari 15.2+');
+      return;
+    }
+    
+    try {
+      const handle = await createNewFile('untitled.md');
+      if (handle) {
+        // Clear any existing toasts first
+        toast.dismiss();
+        
+        // Clear folder mode
+        setDirHandle(null);
+        await clearCurrentWorkspace();
+        
+        // Set single file mode
+        setIsSingleFileMode(true);
+        setSingleFileHandle(handle);
+        await saveSingleFileHandle(handle);
+        
+        // Create initial content with frontmatter
+        // Generate title from filename (remove .md extension and capitalize)
+        const fileName = handle.name.replace(/\.md$/, '');
+        const title = fileName
+          .split(/[-_]/)
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+        
+        const initialContent = `---
+title: ${title}
+date: ${new Date().toISOString().split('T')[0]}
+author: 
+description: 
+tags: []
+categories: []
+---
+`;
+        
+        // Write initial content to file
+        try {
+          await writeSingleFile(handle, initialContent);
+          const parsed = parseMarkdown(initialContent, handle.name, handle.name);
+          setCurrentFile(parsed);
+          setSelectedFilePath(handle.name);
+          setShouldAutoFocus(true);
+          setViewMode('editor');
+          
+          // Update browser history
+          window.history.replaceState(
+            { viewMode: 'editor', filePath: handle.name },
+            '',
+            '#editor'
+          );
+          
+          toast.success(`Created ${handle.name}`);
+        } catch (error) {
+          toast.error('Failed to write to file');
+          console.error('Error writing file:', error);
+        }
+      }
+    } catch (error: any) {
+      if (error?.message?.includes('not supported')) {
+        toast.error('File picker not supported in this browser');
+      } else {
+        toast.error('Failed to create file');
+      }
+      console.error('Error creating file:', error);
+    }
+  };
+
   // Restore directory and state on mount
   useEffect(() => {
     const restoreState = async () => {
       try {
+        // First, try to load single file handle
+        const savedFileHandle = await loadSingleFileHandle();
+        
+        if (savedFileHandle) {
+          // Clear any existing toasts
+          toast.dismiss();
+          
+          // Set single file mode
+          setIsSingleFileMode(true);
+          setSingleFileHandle(savedFileHandle);
+          
+          // Read and parse the file
+          try {
+            const content = await readSingleFile(savedFileHandle);
+            const parsed = parseMarkdown(content, savedFileHandle.name, savedFileHandle.name);
+            setCurrentFile(parsed);
+            setSelectedFilePath(savedFileHandle.name);
+            setShouldAutoFocus(false); // Don't auto-focus on page restore
+            setViewMode('editor');
+            
+            // Update browser history
+            window.history.replaceState(
+              { viewMode: 'editor', filePath: savedFileHandle.name },
+              '',
+              '#editor'
+            );
+          } catch (error) {
+            // If file cannot be restored, clear single file mode
+            setIsSingleFileMode(false);
+            setSingleFileHandle(null);
+            await clearSingleFileHandle();
+          }
+          
+          setIsRestoring(false);
+          return;
+        }
+        
         // Try to load persisted directory handle
         const savedHandle = await loadDirectoryHandle();
 
@@ -1341,6 +1526,8 @@ function App() {
 
     // Clear state
     setDirHandle(null);
+    setSingleFileHandle(null);
+    setIsSingleFileMode(false);
     setAllPosts([]);
     setSelectedFilePath(null);
     setCurrentFile(null);
@@ -1584,6 +1771,37 @@ function App() {
       return;
     }
     
+    // Single file mode
+    if (isSingleFileMode && singleFileHandle && currentFile) {
+      try {
+        setIsSaving(true);
+        
+        const content = stringifyMarkdown(currentFile);
+        await writeSingleFile(singleFileHandle, content);
+        
+        // Update rawContent to the saved content
+        const updatedFile = {
+          ...currentFile,
+          rawContent: content,
+        };
+        
+        setCurrentFile(updatedFile);
+        setHasChanges(false);
+        setHasPendingPublish(false); // No git operations in single file mode
+        
+        toast.success('Changes saved');
+        
+        // Celebrate with confetti! 🎉
+        fireCelebrationConfetti();
+      } catch (error) {
+        toast.error('Failed to save file');
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
+    
+    // Folder mode
     if (!dirHandle || !currentFile || !selectedFilePath || isSaving) return;
     
     try {
@@ -1786,15 +2004,15 @@ function App() {
     }
   };
 
-  // Save view mode changes
+  // Save view mode changes (only in folder mode)
   useEffect(() => {
-    if (!isRestoring && dirHandle && !isDemoMode) {
+    if (!isRestoring && dirHandle && !isDemoMode && !isSingleFileMode) {
       saveAppState({
         viewMode,
         selectedFilePath: viewMode === 'editor' ? selectedFilePath : null,
       });
     }
-  }, [viewMode, selectedFilePath, dirHandle, isRestoring, isDemoMode]);
+  }, [viewMode, selectedFilePath, dirHandle, isRestoring, isDemoMode, isSingleFileMode]);
 
   // Handle browser back/forward buttons
   useEffect(() => {
@@ -1958,10 +2176,10 @@ function App() {
 
   // Reload file tree when showAllFolders changes
   useEffect(() => {
-    if (dirHandle) {
+    if (dirHandle && !isDemoMode) {
       refreshFileTree(dirHandle, showAllFolders);
     }
-  }, [showAllFolders, dirHandle]);
+  }, [showAllFolders, dirHandle, isDemoMode]);
 
   // Handle resizing file tree panel
   useEffect(() => {
@@ -2016,7 +2234,8 @@ function App() {
     }
   };
 
-  if (!dirHandle) {
+  // Show folder selection screen only if no folder AND no single file
+  if (!dirHandle && !isSingleFileMode && !isDemoMode) {
     // Show loading while restoring
     if (isRestoring) {
       return (
@@ -2080,14 +2299,70 @@ function App() {
 
           {/* Main Buttons */}
           <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
-            <button
-              onClick={handleSelectDirectory}
-              disabled={!isSupported}
-              className="inline-flex items-center justify-center gap-2 sm:gap-3 rounded-md bg-primary px-6 py-3 sm:py-2.5 text-sm sm:text-base font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg hover:shadow-xl touch-target disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary disabled:hover:shadow-lg"
-            >
-              <FolderOpen className="h-4 w-4 sm:h-5 sm:w-5" />
-              Select Folder
-            </button>
+            {/* Select Folder Button Group with Dropdown */}
+            <div className="relative flex items-stretch justify-center">
+              <button
+                onClick={handleSelectDirectory}
+                disabled={!isSupported}
+                className="inline-flex items-center justify-center gap-1.5 sm:gap-2 rounded-l-md bg-primary px-3 sm:px-4 py-3 sm:py-2.5 text-sm sm:text-base font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg hover:shadow-xl touch-target disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary disabled:hover:shadow-lg"
+              >
+                <FolderOpen className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="hidden xs:inline">Select Folder</span>
+                <span className="xs:hidden">Folder</span>
+              </button>
+              
+              <button
+                onClick={() => setShowFolderOptionsDropdown(!showFolderOptionsDropdown)}
+                disabled={!isSupported}
+                className="inline-flex items-center justify-center rounded-r-md bg-primary px-3 sm:px-3.5 py-3 sm:py-2.5 text-primary-foreground hover:bg-primary/90 transition-colors border-l border-primary-foreground/20 shadow-lg hover:shadow-xl touch-target disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary disabled:hover:shadow-lg"
+                title="More options"
+              >
+                <ChevronDown className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+              </button>
+
+              {showFolderOptionsDropdown && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-10" 
+                    onClick={() => setShowFolderOptionsDropdown(false)}
+                  />
+                  
+                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-20 w-56 rounded-md border border-border bg-background shadow-xl">
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          handleSelectSingleFile();
+                          setShowFolderOptionsDropdown(false);
+                        }}
+                        disabled={!isSupported}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
+                      >
+                        <File className="h-4 w-4" />
+                        <div>
+                          <div className="font-medium">Select File</div>
+                          <div className="text-xs text-muted-foreground">Open a single markdown file</div>
+                        </div>
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          handleCreateNewFile();
+                          setShowFolderOptionsDropdown(false);
+                        }}
+                        disabled={!isSupported}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <div>
+                          <div className="font-medium">New File</div>
+                          <div className="text-xs text-muted-foreground">Create a new markdown file</div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
             
             <button
               onClick={handleStartDemo}
@@ -2272,6 +2547,13 @@ function App() {
                   });
                   if (!confirmed) return;
                 }
+                
+                // In single file mode, close the file and go to home
+                if (isSingleFileMode) {
+                  await handleLogout();
+                  return;
+                }
+                
                 // If in editor mode, go to table view and ensure posts are loaded
                 if (viewMode === 'editor') {
                   setViewMode('table');
@@ -2309,6 +2591,16 @@ function App() {
                 <span className="hidden xs:inline">Demo ✕</span>
                 <span className="xs:hidden">✕</span>
               </button>
+            )}
+            
+            {isSingleFileMode && singleFileHandle && (
+              <div
+                className="px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded-full whitespace-nowrap flex items-center gap-1"
+                title={`Editing single file: ${singleFileHandle.name}`}
+              >
+                <File className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                <span className="hidden sm:inline">{singleFileHandle.name}</span>
+              </div>
             )}
           </div>
           
@@ -2519,28 +2811,33 @@ function App() {
                       
                       <div className="absolute right-0 top-full mt-1 z-20 w-48 rounded-md border border-border bg-background shadow-lg">
                         <div className="py-1">
-                          <button
-                            onClick={() => {
-                              handlePublishClick();
-                              setShowActionsDropdown(false);
-                            }}
-                            disabled={hasChanges || !hasPendingPublish || isPublishing}
-                            className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
-                            title={
-                              isPublishing
-                                ? "Publishing in progress..."
-                                : hasChanges 
-                                  ? "Save changes before publishing" 
-                                  : !hasPendingPublish 
-                                    ? "No changes to publish" 
-                                    : "Publish to Git"
-                            }
-                          >
-                            <Upload className="h-4 w-4" />
-                            <span>{isPublishing ? 'Publishing...' : 'Publish'}</span>
-                          </button>
-                          
-                          <div className="h-px bg-border my-1" />
+                          {/* Publish button - Hidden in single file mode */}
+                          {!isSingleFileMode && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  handlePublishClick();
+                                  setShowActionsDropdown(false);
+                                }}
+                                disabled={hasChanges || !hasPendingPublish || isPublishing}
+                                className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-left"
+                                title={
+                                  isPublishing
+                                    ? "Publishing in progress..."
+                                    : hasChanges 
+                                      ? "Save changes before publishing" 
+                                      : !hasPendingPublish 
+                                        ? "No changes to publish" 
+                                        : "Publish to Git"
+                                }
+                              >
+                                <Upload className="h-4 w-4" />
+                                <span>{isPublishing ? 'Publishing...' : 'Publish'}</span>
+                              </button>
+                              
+                              <div className="h-px bg-border my-1" />
+                            </>
+                          )}
                           
                           <button
                             onClick={() => {
@@ -2570,14 +2867,16 @@ function App() {
                   )}
                 </div>
 
-                {/* Sidebar Icon Button */}
-                <button
-                  onClick={() => setIsMobileSidebarOpen(true)}
-                  className="inline-flex items-center justify-center rounded-md bg-white dark:bg-white/10 h-9 w-9 hover:bg-white/90 dark:hover:bg-white/20 transition-colors shadow-sm touch-target"
-                  title="Open Sidebar"
-                >
-                  <PanelRightOpen className="h-4 w-4" />
-                </button>
+                {/* Sidebar Icon Button - Hidden in single file mode */}
+                {!isSingleFileMode && (
+                  <button
+                    onClick={() => setIsMobileSidebarOpen(true)}
+                    className="inline-flex items-center justify-center rounded-md bg-white dark:bg-white/10 h-9 w-9 hover:bg-white/90 dark:hover:bg-white/20 transition-colors shadow-sm touch-target"
+                    title="Open Sidebar"
+                  >
+                    <PanelRightOpen className="h-4 w-4" />
+                  </button>
+                )}
               </>
             )}
           </div>
@@ -2817,8 +3116,8 @@ function App() {
         </div>
       ) : (
         <div className="flex-1 min-h-0 flex relative">
-          {/* Editor File Tree Sidebar */}
-          {isEditorFileTreeVisible && (
+          {/* Editor File Tree Sidebar - Hidden in single file mode */}
+          {!isSingleFileMode && isEditorFileTreeVisible && (
             <div className="relative min-h-0 border-r overflow-y-auto overflow-x-hidden hidden sm:block text-muted-foreground" style={{ width: `${editorFileTreeWidth}px` }}>
                 {/* Loading Overlay */}
                 {isMovingFile && (
@@ -2975,8 +3274,8 @@ function App() {
               </div>
             )}
 
-          {/* Toggle button when file tree is hidden */}
-          {!isEditorFileTreeVisible && (
+          {/* Toggle button when file tree is hidden - Hidden in single file mode */}
+          {!isSingleFileMode && !isEditorFileTreeVisible && (
             <button
               onClick={() => setIsEditorFileTreeVisible(true)}
               className="hidden sm:flex absolute left-0 top-24 z-10 bg-background border border-l-0 rounded-r-md p-2 hover:bg-accent transition-colors shadow-md"
@@ -2989,7 +3288,7 @@ function App() {
           {/* Editor Content - Always centered regardless of sidebar */}
           <div className="flex-1 overflow-y-auto overflow-x-hidden">
             <div className="min-h-full flex justify-center" style={{ 
-              marginLeft: isEditorFileTreeVisible ? `-${editorFileTreeWidth / 2}px` : '0',
+              marginLeft: (!isSingleFileMode && isEditorFileTreeVisible) ? `-${editorFileTreeWidth / 2}px` : '0',
               transition: 'margin-left 0.2s ease-in-out'
             }}>
               {currentFile ? (
@@ -3034,8 +3333,8 @@ function App() {
         </div>
       )}
 
-      {/* Sidebar Sheet */}
-      {viewMode === 'editor' && (
+      {/* Sidebar Sheet - Hidden in single file mode */}
+      {!isSingleFileMode && viewMode === 'editor' && (
         <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen} modal={false}>
           <SheetContent side="right" className="w-full sm:max-w-md p-0" hideOverlay={true}>
             <SheetHeader className="sr-only">

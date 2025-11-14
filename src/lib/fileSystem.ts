@@ -156,7 +156,9 @@ function shouldIgnorePath(name: string, path: string): boolean {
  * Check if File System Access API is supported
  */
 export function isFileSystemAccessSupported(): boolean {
-  return 'showDirectoryPicker' in window;
+  return 'showDirectoryPicker' in window && 
+         'showOpenFilePicker' in window && 
+         'showSaveFilePicker' in window;
 }
 
 export async function selectDirectory(): Promise<FileSystemDirectoryHandle | null> {
@@ -172,6 +174,66 @@ export async function selectDirectory(): Promise<FileSystemDirectoryHandle | nul
     return dirHandle;
   } catch (err) {
     return null;
+  }
+}
+
+/**
+ * Select a single markdown file
+ */
+export async function selectSingleFile(): Promise<FileSystemFileHandle | null> {
+  try {
+    if (!('showOpenFilePicker' in window)) {
+      throw new Error('File System Access API is not supported in this browser');
+    }
+    
+    const [fileHandle] = await window.showOpenFilePicker({
+      types: [{
+        description: 'Markdown Files',
+        accept: {
+          'text/markdown': ['.md', '.markdown']
+        }
+      }],
+      multiple: false,
+    });
+    
+    return fileHandle;
+  } catch (err: any) {
+    // User cancelled the dialog
+    if (err?.name === 'AbortError') {
+      return null;
+    }
+    console.error('Error selecting file:', err);
+    throw err;
+  }
+}
+
+/**
+ * Create a new markdown file
+ */
+export async function createNewFile(defaultName = 'untitled.md'): Promise<FileSystemFileHandle | null> {
+  try {
+    if (!('showSaveFilePicker' in window)) {
+      throw new Error('File System Access API is not supported in this browser');
+    }
+    
+    const fileHandle = await window.showSaveFilePicker({
+      suggestedName: defaultName,
+      types: [{
+        description: 'Markdown Files',
+        accept: {
+          'text/markdown': ['.md', '.markdown']
+        }
+      }],
+    });
+    
+    return fileHandle;
+  } catch (err: any) {
+    // User cancelled the dialog
+    if (err?.name === 'AbortError') {
+      return null;
+    }
+    console.error('Error creating file:', err);
+    throw err;
   }
 }
 
@@ -350,5 +412,25 @@ export async function moveFile(
   await deleteFile(dirHandle, sourcePath);
 
   return newPath;
+}
+
+/**
+ * Read content from a single file handle
+ */
+export async function readSingleFile(fileHandle: FileSystemFileHandle): Promise<string> {
+  const file = await fileHandle.getFile();
+  return await file.text();
+}
+
+/**
+ * Write content to a single file handle
+ */
+export async function writeSingleFile(
+  fileHandle: FileSystemFileHandle,
+  content: string
+): Promise<void> {
+  const writable = await fileHandle.createWritable();
+  await writable.write(content);
+  await writable.close();
 }
 

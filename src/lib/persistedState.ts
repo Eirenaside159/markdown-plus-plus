@@ -219,8 +219,9 @@ export async function clearCurrentWorkspace(): Promise<void> {
     const db = await openDB();
     const transaction = db.transaction([HANDLE_STORE, STATE_STORE, POSTS_STORE, FILETREE_STORE], 'readwrite');
     
-    // Only delete current-directory, keep recent-* handles
+    // Only delete current-directory and current-single-file, keep recent-* handles
     transaction.objectStore(HANDLE_STORE).delete('current-directory');
+    transaction.objectStore(HANDLE_STORE).delete('current-single-file');
     transaction.objectStore(STATE_STORE).clear();
     transaction.objectStore(POSTS_STORE).clear();
     transaction.objectStore(FILETREE_STORE).clear();
@@ -491,6 +492,103 @@ export async function loadRecentFolderHandle(folderName: string): Promise<FileSy
     });
   } catch (error) {
     return null;
+  }
+}
+
+// Save single file handle
+export async function saveSingleFileHandle(handle: FileSystemFileHandle): Promise<void> {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction([HANDLE_STORE], 'readwrite');
+    const store = transaction.objectStore(HANDLE_STORE);
+    
+    store.put(handle, 'current-single-file');
+    
+    return new Promise((resolve, reject) => {
+      transaction.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      transaction.onerror = () => {
+        db.close();
+        reject(transaction.error);
+      };
+    });
+  } catch (error) {
+    // Failed to save single file handle
+  }
+}
+
+// Load single file handle
+export async function loadSingleFileHandle(): Promise<FileSystemFileHandle | null> {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction([HANDLE_STORE], 'readonly');
+    const store = transaction.objectStore(HANDLE_STORE);
+    
+    return new Promise((resolve, reject) => {
+      const request = store.get('current-single-file');
+      
+      request.onsuccess = async () => {
+        db.close();
+        const handle = request.result as FileSystemFileHandle | undefined;
+        
+        if (!handle) {
+          resolve(null);
+          return;
+        }
+
+        // Verify permission
+        try {
+          const permission = await handle.queryPermission({ mode: 'readwrite' });
+          if (permission === 'granted') {
+            resolve(handle);
+          } else {
+            // Try to request permission
+            const requestedPermission = await handle.requestPermission({ mode: 'readwrite' });
+            if (requestedPermission === 'granted') {
+              resolve(handle);
+            } else {
+              resolve(null);
+            }
+          }
+        } catch (error) {
+          // Handle might be invalid
+          resolve(null);
+        }
+      };
+      
+      request.onerror = () => {
+        db.close();
+        reject(request.error);
+      };
+    });
+  } catch (error) {
+    return null;
+  }
+}
+
+// Clear single file handle
+export async function clearSingleFileHandle(): Promise<void> {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction([HANDLE_STORE], 'readwrite');
+    const store = transaction.objectStore(HANDLE_STORE);
+    
+    store.delete('current-single-file');
+    
+    return new Promise((resolve, reject) => {
+      transaction.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      transaction.onerror = () => {
+        db.close();
+        reject(transaction.error);
+      };
+    });
+  } catch (error) {
+    // Failed to clear single file handle
   }
 }
 
