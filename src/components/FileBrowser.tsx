@@ -21,6 +21,7 @@ interface FileBrowserProps {
   onFileEdit?: (path: string) => void;
   onFileHide?: (path: string) => void;
   onFileDelete?: (path: string) => void;
+  searchQuery?: string;
 }
 
 function FileTreeNode({
@@ -36,6 +37,7 @@ function FileTreeNode({
   onFileDelete,
   contextMenuPath,
   setContextMenuPath,
+  searchQuery,
 }: {
   item: FileTreeItem;
   level: number;
@@ -49,12 +51,39 @@ function FileTreeNode({
   onFileDelete?: (path: string) => void;
   contextMenuPath: string | null;
   setContextMenuPath: (path: string | null) => void;
+  searchQuery?: string;
 }) {
   const [isOpen, setIsOpen] = useState(true);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const isHidden = hiddenFiles.includes(item.path);
+  
+  // Auto-expand when searching
+  const shouldBeOpen = (searchQuery && searchQuery.length > 0) ? true : isOpen;
 
+  // Check if item matches search query
+  const matchesSearch = !searchQuery || item.name.toLowerCase().includes(searchQuery.toLowerCase());
+  
   if (item.isDirectory) {
+    // Filter children based on search query
+    const filteredChildren = item.children?.filter(child => {
+      if (!searchQuery) return true;
+      // Recursively check if child or any descendant matches
+      const childMatches = child.name.toLowerCase().includes(searchQuery.toLowerCase());
+      if (childMatches) return true;
+      // Check if any descendant matches
+      const hasMatchingDescendant = (item: FileTreeItem): boolean => {
+        if (item.name.toLowerCase().includes(searchQuery.toLowerCase())) return true;
+        return item.children?.some(hasMatchingDescendant) || false;
+      };
+      return hasMatchingDescendant(child);
+    });
+    
+    // Don't render if no children match the search
+    if (searchQuery && filteredChildren?.length === 0 && !matchesSearch) {
+      return null;
+    }
+    
     const handleDragOver = (e: React.DragEvent) => {
       if (isMoving) return;
       e.preventDefault();
@@ -95,7 +124,7 @@ function FileTreeNode({
             <ChevronRight
               className={cn(
                 'h-4 w-4 shrink-0 transition-transform',
-                isOpen && 'rotate-90'
+                shouldBeOpen && 'rotate-90'
               )}
             />
           </button>
@@ -111,7 +140,7 @@ function FileTreeNode({
               isDragOver && 'bg-primary/20 border-2 border-primary border-dashed'
             )}
           >
-            {isOpen ? (
+            {shouldBeOpen ? (
               <FolderOpen className="h-4 w-4 shrink-0" />
             ) : (
               <Folder className="h-4 w-4 shrink-0" />
@@ -120,9 +149,9 @@ function FileTreeNode({
             {isHidden && <EyeOff className="h-3 w-3 shrink-0 ml-auto" />}
           </button>
         </div>
-        {isOpen && item.children && (
+        {shouldBeOpen && filteredChildren && filteredChildren.length > 0 && (
           <div>
-            {item.children.map((child) => (
+            {filteredChildren.map((child) => (
               <FileTreeNode
                 key={child.path}
                 item={child}
@@ -137,6 +166,7 @@ function FileTreeNode({
                 onFileDelete={onFileDelete}
                 contextMenuPath={contextMenuPath}
                 setContextMenuPath={setContextMenuPath}
+                searchQuery={searchQuery}
               />
             ))}
           </div>
@@ -144,8 +174,11 @@ function FileTreeNode({
       </div>
     );
   }
-
-  const [isDragging, setIsDragging] = useState(false);
+  
+  // Don't render if file doesn't match search
+  if (!matchesSearch) {
+    return null;
+  }
 
   const handleDragStart = (e: React.DragEvent) => {
     if (isMoving) {
@@ -224,7 +257,7 @@ function FileTreeNode({
   );
 }
 
-export function FileBrowser({ files, selectedFile, onFileSelect, hiddenFiles, onFileMove, isMoving, onFileEdit, onFileHide, onFileDelete }: FileBrowserProps) {
+export function FileBrowser({ files, selectedFile, onFileSelect, hiddenFiles, onFileMove, isMoving, onFileEdit, onFileHide, onFileDelete, searchQuery }: FileBrowserProps) {
   const [contextMenuPath, setContextMenuPath] = useState<string | null>(null);
 
   if (files.length === 0) {
@@ -250,6 +283,7 @@ export function FileBrowser({ files, selectedFile, onFileSelect, hiddenFiles, on
           onFileDelete={onFileDelete}
           contextMenuPath={contextMenuPath}
           setContextMenuPath={setContextMenuPath}
+          searchQuery={searchQuery}
         />
       ))}
     </div>

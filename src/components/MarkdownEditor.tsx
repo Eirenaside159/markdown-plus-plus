@@ -244,7 +244,7 @@ export function MarkdownEditor({ content, onChange, title, onTitleChange, autoFo
       onTitleChange={onTitleChange}
       autoFocus={autoFocus}
       onModeToggle={toggleMode}
-        onAIGenerate={() => setIsAIModalOpen(true)}
+      onAIGenerate={() => setIsAIModalOpen(true)}
       />
       
       {/* AI Generator Modal */}

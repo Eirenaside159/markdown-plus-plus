@@ -13,7 +13,7 @@ import type {
   SortingState,
   VisibilityState,
 } from '@tanstack/react-table';
-import { ArrowUpDown, MoreHorizontal, Eye, EyeOff, Trash2, ExternalLink, Loader2, PanelLeft, PanelLeftClose } from 'lucide-react';
+import { ArrowUpDown, MoreHorizontal, Eye, EyeOff, Trash2, ExternalLink, Loader2, PanelRightOpen } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -49,8 +49,8 @@ interface PostsDataTableProps {
   onHide: (post: MarkdownFile) => void;
   title?: string;
   onClearFilter?: () => void;
-  onToggleSidebar?: () => void;
-  isSidebarVisible?: boolean;
+  onToggleFileTree?: () => void;
+  isFileTreeVisible?: boolean;
 }
 
 // Helper functions
@@ -74,7 +74,7 @@ const formatCellValue = (value: unknown): string => {
   return strValue;
 };
 
-export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onHide, title = 'All Posts', onClearFilter, onToggleSidebar, isSidebarVisible }: PostsDataTableProps) {
+export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onHide, title = 'All Posts', onClearFilter, onToggleFileTree, isFileTreeVisible }: PostsDataTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() => loadColumnVisibility());
@@ -318,21 +318,15 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 sm:justify-between">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          {onToggleSidebar && (
+          {onToggleFileTree && !isFileTreeVisible && (
             <>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onToggleSidebar}
-                className="h-8 w-8 sm:h-9 sm:w-9 shrink-0 touch-target"
-                title={isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
+              <button
+                onClick={onToggleFileTree}
+                className="flex items-center justify-center p-1 hover:bg-accent rounded transition-colors"
+                title="Show files"
               >
-                {isSidebarVisible ? (
-                  <PanelLeftClose className="h-4 w-4" />
-                ) : (
-                  <PanelLeft className="h-4 w-4" />
-                )}
-              </Button>
+                <PanelRightOpen className="h-4 w-4 rotate-180" />
+              </button>
               <div className="h-4 w-px bg-border hidden sm:block" />
             </>
           )}

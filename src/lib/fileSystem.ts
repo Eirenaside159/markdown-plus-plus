@@ -177,7 +177,8 @@ export async function selectDirectory(): Promise<FileSystemDirectoryHandle | nul
 
 export async function readDirectory(
   dirHandle: FileSystemDirectoryHandle,
-  path = ''
+  path = '',
+  includeEmptyFolders = false
 ): Promise<FileTreeItem[]> {
   const items: FileTreeItem[] = [];
 
@@ -191,9 +192,9 @@ export async function readDirectory(
 
     if (entry.kind === 'directory') {
       const subDirHandle = await dirHandle.getDirectoryHandle(entry.name);
-      const children = await readDirectory(subDirHandle, itemPath);
-      // Only include directory if it has markdown files
-      if (children.length > 0) {
+      const children = await readDirectory(subDirHandle, itemPath, includeEmptyFolders);
+      // Include directory if it has markdown files OR if includeEmptyFolders is true
+      if (children.length > 0 || includeEmptyFolders) {
         items.push({
           name: entry.name,
           path: itemPath,

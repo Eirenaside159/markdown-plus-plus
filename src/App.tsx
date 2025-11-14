@@ -23,7 +23,7 @@ import { checkGitStatus, publishFile, generateCommitMessage, type GitStatus } fr
 import { hideFile, getHiddenFiles } from '@/lib/hiddenFiles';
 import { updateFaviconBadge } from '@/lib/faviconBadge';
 import type { FileTreeItem, MarkdownFile } from '@/types';
-import { FolderOpen, Save, Clock, FileCode, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen, Loader2, BookOpen, Sun, Moon, Monitor, LogOut, Eye } from 'lucide-react';
+import { FolderOpen, Save, Clock, FileCode, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen, Loader2, BookOpen, Sun, Moon, Monitor, LogOut, Eye, Search, X, Sliders } from 'lucide-react';
 
 type ViewMode = 'table' | 'editor' | 'settings';
 
@@ -970,6 +970,14 @@ function App() {
     const saved = localStorage.getItem('fileTreeWidth');
     return saved ? parseInt(saved, 10) : 256; // Default 256px (w-64 = 16rem = 256px)
   });
+  const [isEditorFileTreeVisible, setIsEditorFileTreeVisible] = useState(() => {
+    const saved = localStorage.getItem('isEditorFileTreeVisible');
+    return saved ? saved === 'true' : false; // Default false (closed)
+  });
+  const [editorFileTreeWidth, setEditorFileTreeWidth] = useState(() => {
+    const saved = localStorage.getItem('editorFileTreeWidth');
+    return saved ? parseInt(saved, 10) : 256; // Default 256px
+  });
   const [isResizing, setIsResizing] = useState(false);
   const [shouldAutoFocus, setShouldAutoFocus] = useState(false);
   const [isMovingFile, setIsMovingFile] = useState(false);
@@ -977,6 +985,13 @@ function App() {
   const [showDemoModal, setShowDemoModal] = useState(false);
   const [recentFolders, setRecentFolders] = useState(() => getRecentFolders());
   const [hiddenFiles, setHiddenFiles] = useState<string[]>([]);
+  
+  // File tree filters
+  const [fileTreeSearchQuery, setFileTreeSearchQuery] = useState('');
+  const [editorFileTreeSearchQuery, setEditorFileTreeSearchQuery] = useState('');
+  const [showAllFolders, setShowAllFolders] = useState(false);
+  const [showFileTreeConfig, setShowFileTreeConfig] = useState(false);
+  const [showEditorFileTreeConfig, setShowEditorFileTreeConfig] = useState(false);
   
   // PWA Install Prompt
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -1916,14 +1931,14 @@ function App() {
     }
 
     const handleScroll = () => {
-      const scrollContainer = document.querySelector('.flex-1.overflow-auto');
+      const scrollContainer = document.querySelector('.flex-1.overflow-y-auto');
       if (scrollContainer) {
         // Show title in header when scrolled more than 100px
         setShowTitleInHeader(scrollContainer.scrollTop > 100);
       }
     };
 
-    const scrollContainer = document.querySelector('.flex-1.overflow-auto');
+    const scrollContainer = document.querySelector('.flex-1.overflow-y-auto');
     if (scrollContainer) {
       scrollContainer.addEventListener('scroll', handleScroll);
       handleScroll(); // Initial check
@@ -1936,6 +1951,18 @@ function App() {
     localStorage.setItem('isFileTreeVisible', isFileTreeVisible.toString());
   }, [isFileTreeVisible]);
 
+  // Save editor file tree visibility preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('isEditorFileTreeVisible', isEditorFileTreeVisible.toString());
+  }, [isEditorFileTreeVisible]);
+
+  // Reload file tree when showAllFolders changes
+  useEffect(() => {
+    if (dirHandle) {
+      refreshFileTree(dirHandle, showAllFolders);
+    }
+  }, [showAllFolders, dirHandle]);
+
   // Handle resizing file tree panel
   useEffect(() => {
     if (!isResizing) return;
@@ -1947,7 +1974,11 @@ function App() {
     const handleMouseMove = (e: MouseEvent) => {
       // Min width: 200px, Max width: 500px
       const newWidth = Math.max(200, Math.min(500, e.clientX));
-      setFileTreeWidth(newWidth);
+      if (viewMode === 'table') {
+        setFileTreeWidth(newWidth);
+      } else if (viewMode === 'editor') {
+        setEditorFileTreeWidth(newWidth);
+      }
     };
 
     const handleMouseUp = () => {
@@ -1955,8 +1986,12 @@ function App() {
       // Re-enable text selection
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
-      // Save to localStorage
-      localStorage.setItem('fileTreeWidth', fileTreeWidth.toString());
+      // Save to localStorage based on which panel was resized
+      if (viewMode === 'table') {
+        localStorage.setItem('fileTreeWidth', fileTreeWidth.toString());
+      } else if (viewMode === 'editor') {
+        localStorage.setItem('editorFileTreeWidth', editorFileTreeWidth.toString());
+      }
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -1969,10 +2004,10 @@ function App() {
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
     };
-  }, [isResizing, fileTreeWidth]);
+  }, [isResizing, fileTreeWidth, editorFileTreeWidth, viewMode]);
 
   const scrollToTop = () => {
-    const scrollContainer = document.querySelector('.flex-1.overflow-auto');
+    const scrollContainer = document.querySelector('.flex-1.overflow-y-auto');
     if (scrollContainer) {
       scrollContainer.scrollTo({
         top: 0,
@@ -2569,10 +2604,10 @@ function App() {
           </div>
         </div>
       ) : viewMode === 'table' ? (
-        <div className="flex-1 min-h-0 flex">
+        <div className="flex-1 min-h-0 flex relative">
           {/* File Tree Sidebar */}
           {isFileTreeVisible && (
-            <div className="relative min-h-0 border-r overflow-y-auto overflow-x-hidden p-3 hidden sm:block text-muted-foreground" style={{ width: `${fileTreeWidth}px` }}>
+            <div className="relative min-h-0 border-r overflow-y-auto overflow-x-hidden hidden sm:block text-muted-foreground" style={{ width: `${fileTreeWidth}px` }}>
                 {/* Loading Overlay */}
                 {isMovingFile && (
                   <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -2588,9 +2623,77 @@ function App() {
                   </div>
                 )}
                 
-                <div className="mb-2 text-xs font-semibold text-muted-foreground uppercase">
-                  Folders
+                {/* Header with toggle */}
+                <div className="sticky top-0 bg-background border-b z-10">
+                  <div className="px-3 py-2 flex items-center justify-between">
+                    <div className="text-xs font-semibold text-muted-foreground uppercase">
+                      Files
+                    </div>
+                    <div className="flex items-center gap-0.5">
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowFileTreeConfig(!showFileTreeConfig)}
+                          className="p-1 hover:bg-accent rounded transition-colors flex items-center justify-center"
+                          title="Filter options"
+                        >
+                          <Sliders className="h-4 w-4" />
+                        </button>
+                        
+                        {showFileTreeConfig && (
+                          <>
+                            <div
+                              className="fixed inset-0 z-[998]"
+                              onClick={() => setShowFileTreeConfig(false)}
+                            />
+                            <div className="absolute right-0 top-full mt-1 z-[999] w-48 bg-background border border-border rounded-md shadow-lg py-1">
+                              <button
+                                onClick={() => {
+                                  setShowAllFolders(!showAllFolders);
+                                  setShowFileTreeConfig(false);
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex items-center justify-between"
+                              >
+                                <span>Show all folders</span>
+                                {showAllFolders && <Eye className="h-3 w-3" />}
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setIsFileTreeVisible(false)}
+                        className="p-1 hover:bg-accent rounded transition-colors flex items-center justify-center"
+                        title="Hide files"
+                      >
+                        <PanelRightOpen className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Search input */}
+                  <div className="px-3 pb-3">
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                      <input
+                        type="text"
+                        placeholder="Search..."
+                        value={fileTreeSearchQuery}
+                        onChange={(e) => setFileTreeSearchQuery(e.target.value)}
+                        className="w-full pl-7 pr-7 py-1 text-xs border border-border rounded bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                      {fileTreeSearchQuery && (
+                        <button
+                          onClick={() => setFileTreeSearchQuery('')}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-accent rounded"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
+                
+                <div className="p-3">
                 <button
                   onClick={() => setSelectedFolderPath(null)}
                   onDragOver={isDemoMode ? undefined : (e) => {
@@ -2623,6 +2726,7 @@ function App() {
                   files={fileTree}
                   selectedFile={selectedFolderPath}
                   hiddenFiles={hiddenFiles}
+                  searchQuery={fileTreeSearchQuery}
                   onFileSelect={(path) => {
                     // Check if this is a directory or file
                     const findItem = (items: FileTreeItem[], targetPath: string): FileTreeItem | null => {
@@ -2674,6 +2778,8 @@ function App() {
                       }
                   }
                 />
+                </div>
+                
                 {/* Resize Handle */}
                 <div
                   className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/50 active:bg-primary transition-colors group"
@@ -2704,59 +2810,234 @@ function App() {
                 onHide={isDemoMode ? () => toast.info('Hiding is disabled in demo mode') : handleHidePost}
                 title={selectedFolderPath || 'All Posts'}
                 onClearFilter={selectedFolderPath ? () => setSelectedFolderPath(null) : undefined}
-                onToggleSidebar={() => setIsFileTreeVisible(!isFileTreeVisible)}
-                isSidebarVisible={isFileTreeVisible}
+                onToggleFileTree={() => setIsFileTreeVisible(true)}
+                isFileTreeVisible={isFileTreeVisible}
               />
             </div>
         </div>
       ) : (
-        <div className="flex-1 overflow-auto">
-          <div className="min-h-full flex justify-center">
-            {currentFile ? (
-              <div className="w-full max-w-[720px]">
-                <MarkdownEditor
-                  content={currentFile.content}
-                  onChange={handleContentChange}
-                  title={currentFile.frontmatter.title || ''}
-                  onTitleChange={handleTitleChange}
-                  autoFocus={shouldAutoFocus}
-                  currentFrontmatter={currentFile.frontmatter}
-                  onMetaChange={(meta) => {
-                    // Merge AI-generated meta with existing frontmatter
-                    if (currentFile) {
-                      const updatedFrontmatter = {
-                        ...currentFile.frontmatter,
-                        ...meta,
-                      };
-                      handleMetaChange(updatedFrontmatter);
+        <div className="flex-1 min-h-0 flex relative">
+          {/* Editor File Tree Sidebar */}
+          {isEditorFileTreeVisible && (
+            <div className="relative min-h-0 border-r overflow-y-auto overflow-x-hidden hidden sm:block text-muted-foreground" style={{ width: `${editorFileTreeWidth}px` }}>
+                {/* Loading Overlay */}
+                {isMovingFile && (
+                  <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+                    <div className="text-center space-y-3 p-6">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">Moving file...</p>
+                        <p className="text-xs text-muted-foreground">
+                          This may take a moment due to browser limitations
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Header with toggle */}
+                <div className="sticky top-0 bg-background border-b z-10">
+                  <div className="px-3 py-2 flex items-center justify-between">
+                    <div className="text-xs font-semibold text-muted-foreground uppercase">
+                      Files
+                    </div>
+                    <div className="flex items-center gap-0.5">
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowEditorFileTreeConfig(!showEditorFileTreeConfig)}
+                          className="p-1 hover:bg-accent rounded transition-colors flex items-center justify-center"
+                          title="Filter options"
+                        >
+                          <Sliders className="h-4 w-4" />
+                        </button>
+                        
+                        {showEditorFileTreeConfig && (
+                          <>
+                            <div
+                              className="fixed inset-0 z-[998]"
+                              onClick={() => setShowEditorFileTreeConfig(false)}
+                            />
+                            <div className="absolute right-0 top-full mt-1 z-[999] w-48 bg-background border border-border rounded-md shadow-lg py-1">
+                              <button
+                                onClick={() => {
+                                  setShowAllFolders(!showAllFolders);
+                                  setShowEditorFileTreeConfig(false);
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex items-center justify-between"
+                              >
+                                <span>Show all folders</span>
+                                {showAllFolders && <Eye className="h-3 w-3" />}
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setIsEditorFileTreeVisible(false)}
+                        className="p-1 hover:bg-accent rounded transition-colors flex items-center justify-center"
+                        title="Hide files"
+                      >
+                        <PanelRightOpen className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Search input */}
+                  <div className="px-3 pb-3">
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                      <input
+                        type="text"
+                        placeholder="Search..."
+                        value={editorFileTreeSearchQuery}
+                        onChange={(e) => setEditorFileTreeSearchQuery(e.target.value)}
+                        className="w-full pl-7 pr-7 py-1 text-xs border border-border rounded bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                      {editorFileTreeSearchQuery && (
+                        <button
+                          onClick={() => setEditorFileTreeSearchQuery('')}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-accent rounded"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-3">
+                <FileBrowser
+                  files={fileTree}
+                  selectedFile={currentFile?.path || null}
+                  hiddenFiles={hiddenFiles}
+                  searchQuery={editorFileTreeSearchQuery}
+                  onFileSelect={(path) => {
+                    // Check if this is a directory or file
+                    const findItem = (items: FileTreeItem[], targetPath: string): FileTreeItem | null => {
+                      for (const item of items) {
+                        if (item.path === targetPath) return item;
+                        if (item.children) {
+                          const found = findItem(item.children, targetPath);
+                          if (found) return found;
+                        }
+                      }
+                      return null;
+                    };
+                    const item = findItem(fileTree, path);
+                    if (!item?.isDirectory) {
+                      // If file, find the post and open it for editing
+                      const post = allPosts.find(p => p.path === path);
+                      if (post) {
+                        handleEditPost(post);
+                      }
                     }
                   }}
+                  onFileMove={isDemoMode ? undefined : handleFileMove}
+                  isMoving={isMovingFile}
+                  onFileEdit={(path) => {
+                    const post = allPosts.find(p => p.path === path);
+                    if (post) {
+                      handleEditPost(post);
+                    }
+                  }}
+                  onFileHide={isDemoMode 
+                    ? () => toast.info('Hiding is disabled in demo mode')
+                    : (path) => {
+                        const post = allPosts.find(p => p.path === path);
+                        if (post) {
+                          handleHidePost(post);
+                        }
+                      }
+                  }
+                  onFileDelete={isDemoMode 
+                    ? () => toast.info('Deleting is disabled in demo mode')
+                    : (path) => {
+                        const post = allPosts.find(p => p.path === path);
+                        if (post) {
+                          handleDeletePost(post);
+                        }
+                      }
+                  }
                 />
-              </div>
-            ) : (
-              <div className="flex items-center justify-center text-muted-foreground w-full">
-                <div className="text-center space-y-2">
-                  <p>No file selected</p>
-                  <button
-                    onClick={() => {
-                      setViewMode('table');
-                      window.history.pushState({ viewMode: 'table' }, '', '#posts');
-                    }}
-                    className="text-sm text-primary hover:underline px-4 py-2"
-                  >
-                    Go to Table View to select a post
-                  </button>
+                </div>
+                
+                {/* Resize Handle */}
+                <div
+                  className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/50 active:bg-primary transition-colors group"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    setIsResizing(true);
+                  }}
+                  title="Drag to resize"
+                >
+                  <div className="absolute inset-y-0 -right-1 w-3" />
                 </div>
               </div>
             )}
+
+          {/* Toggle button when file tree is hidden */}
+          {!isEditorFileTreeVisible && (
+            <button
+              onClick={() => setIsEditorFileTreeVisible(true)}
+              className="hidden sm:flex absolute left-0 top-24 z-10 bg-background border border-l-0 rounded-r-md p-2 hover:bg-accent transition-colors shadow-md"
+              title="Show files"
+            >
+              <PanelRightOpen className="h-4 w-4 rotate-180" />
+            </button>
+          )}
+
+          {/* Editor Content - Always centered regardless of sidebar */}
+          <div className="flex-1 overflow-y-auto overflow-x-hidden">
+            <div className="min-h-full flex justify-center" style={{ 
+              marginLeft: isEditorFileTreeVisible ? `-${editorFileTreeWidth / 2}px` : '0',
+              transition: 'margin-left 0.2s ease-in-out'
+            }}>
+              {currentFile ? (
+                <div className="w-full max-w-[720px]">
+                  <MarkdownEditor
+                    content={currentFile.content}
+                    onChange={handleContentChange}
+                    title={currentFile.frontmatter.title || ''}
+                    onTitleChange={handleTitleChange}
+                    autoFocus={shouldAutoFocus}
+                    currentFrontmatter={currentFile.frontmatter}
+                    onMetaChange={(meta) => {
+                      // Merge AI-generated meta with existing frontmatter
+                      if (currentFile) {
+                        const updatedFrontmatter = {
+                          ...currentFile.frontmatter,
+                          ...meta,
+                        };
+                        handleMetaChange(updatedFrontmatter);
+                      }
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center justify-center text-muted-foreground w-full min-h-full">
+                  <div className="text-center space-y-2">
+                    <p>No file selected</p>
+                    <button
+                      onClick={() => {
+                        setViewMode('table');
+                        window.history.pushState({ viewMode: 'table' }, '', '#posts');
+                      }}
+                      className="text-sm text-primary hover:underline px-4 py-2"
+                    >
+                      Go to Table View to select a post
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
 
       {/* Sidebar Sheet */}
       {viewMode === 'editor' && (
-        <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
-          <SheetContent side="right" className="w-full sm:max-w-md p-0">
+        <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen} modal={false}>
+          <SheetContent side="right" className="w-full sm:max-w-md p-0" hideOverlay={true}>
             <SheetHeader className="sr-only">
               <SheetTitle>Post Metadata and Settings</SheetTitle>
               <SheetDescription>

@@ -133,7 +133,7 @@ export async function refreshPosts(handle: FileSystemDirectoryHandle, fileTree?:
   await inFlightScan;
 }
 
-export async function refreshFileTree(handle: FileSystemDirectoryHandle): Promise<FileTreeItem[]> {
+export async function refreshFileTree(handle: FileSystemDirectoryHandle, includeEmptyFolders = false): Promise<FileTreeItem[]> {
   const projectKey = handle.name;
   if (state.projectKey !== projectKey) {
     state = { projectKey, posts: [], isLoading: true, fileTree: [], isLoadingTree: true };
@@ -143,7 +143,7 @@ export async function refreshFileTree(handle: FileSystemDirectoryHandle): Promis
     notify();
   }
 
-  const tree = await readDirectory(handle);
+  const tree = await readDirectory(handle, '', includeEmptyFolders);
   state = { ...state, fileTree: tree, isLoadingTree: false };
   notify();
   try { await saveFileTreeCache(projectKey, tree); } catch {}
