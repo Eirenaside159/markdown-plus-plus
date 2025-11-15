@@ -1010,10 +1010,17 @@ function App() {
   useEffect(() => {
     if (dirHandle) {
       setHiddenFiles(getHiddenFiles(dirHandle.name));
+    } else if (isRemoteMode) {
+      const remoteWorkspace = getCurrentRemoteWorkspace();
+      if (remoteWorkspace) {
+        setHiddenFiles(getHiddenFiles(remoteWorkspace.repository.fullName));
+      } else {
+        setHiddenFiles([]);
+      }
     } else {
       setHiddenFiles([]);
     }
-  }, [dirHandle]);
+  }, [dirHandle, isRemoteMode]);
   
   // Clean up recent items that don't have saved handles on mount
   useEffect(() => {
@@ -2000,10 +2007,21 @@ categories: []
   };
 
   const handleHidePost = (post: MarkdownFile) => {
-    if (!dirHandle) return;
+    let workspaceId: string | null = null;
+    
+    if (dirHandle) {
+      workspaceId = dirHandle.name;
+    } else if (isRemoteMode) {
+      const remoteWorkspace = getCurrentRemoteWorkspace();
+      if (remoteWorkspace) {
+        workspaceId = remoteWorkspace.repository.fullName;
+      }
+    }
+    
+    if (!workspaceId) return;
 
-    hideFile(dirHandle.name, post.path);
-    setHiddenFiles(getHiddenFiles(dirHandle.name));
+    hideFile(workspaceId, post.path);
+    setHiddenFiles(getHiddenFiles(workspaceId));
     toast.info(`"${post.frontmatter.title || post.name}" hidden`);
   };
 
@@ -3329,10 +3347,15 @@ categories: []
                 window.history.pushState({ viewMode: 'table' }, '', '#posts');
                 await reloadPosts();
               }} 
-              directoryName={dirHandle?.name}
+              directoryName={dirHandle?.name || (isRemoteMode ? getCurrentRemoteWorkspace()?.repository.fullName : undefined)}
               onHiddenFilesChange={() => {
                 if (dirHandle) {
                   setHiddenFiles(getHiddenFiles(dirHandle.name));
+                } else if (isRemoteMode) {
+                  const remoteWorkspace = getCurrentRemoteWorkspace();
+                  if (remoteWorkspace) {
+                    setHiddenFiles(getHiddenFiles(remoteWorkspace.repository.fullName));
+                  }
                 }
               }}
               isLocalMode={dirHandle !== null}
@@ -3535,7 +3558,7 @@ categories: []
             <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4">
               <PostsDataTable
                 posts={allPosts.filter(post => {
-                  if (!dirHandle) return true;
+                  // Filter hidden files in both local and remote modes
                   if (!isDemoMode && hiddenFiles.includes(post.path)) return false;
                   // Filter by selected folder
                   if (selectedFolderPath && !post.path.startsWith(selectedFolderPath + '/')) return false;
