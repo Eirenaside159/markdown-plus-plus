@@ -93,6 +93,11 @@ export async function refreshRemoteWorkspace(): Promise<void> {
   notify();
 
   try {
+    // Re-check after state update (TypeScript type narrowing)
+    if (!state.workspace?.remote) {
+      throw new Error('No remote workspace connected');
+    }
+
     const { files, tree } = await fetchRemoteFiles(state.workspace.remote);
 
     console.log(`[Remote] 📁 Found ${files.length} markdown files in ${state.workspace.remote.repository.fullName}`);
