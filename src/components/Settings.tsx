@@ -550,7 +550,8 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange, isLocalM
           <div className="flex-1">
             {/* Git Tab */}
             <TabsContent value="git" className="mt-0 space-y-6 pr-2">
-          {/* Git Configuration */}
+          {/* Git Configuration - Only show in local mode */}
+          {isLocalMode && (
           <Section 
             title="Git Configuration" 
             description="Set your Git author name and email for commits. These will be used when publishing changes via Markdown++."
@@ -688,6 +689,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange, isLocalM
               </div>
             </div>
           </Section>
+          )}
 
           {/* Remote Repository Integration */}
           {!isLocalMode && (
