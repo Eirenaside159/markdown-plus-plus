@@ -165,9 +165,10 @@ function ProviderCard({
                   onChange={(e) => onApiKeyChange(e.target.value)}
                   onBlur={(e) => onApiKeyBlur(e.target.value)}
                   placeholder="Enter your API key"
+                  autoComplete="off"
                   className={`w-full h-10 px-3 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 font-mono pr-10 transition-colors ${
                     savedFields[`api-key-${providerType}`]
-                      ? 'border-green-500 focus:ring-green-500'
+                      ? 'border-emerald-700 focus:ring-emerald-700'
                       : 'border-input focus:ring-ring'
                   }`}
                 />
@@ -199,7 +200,7 @@ function ProviderCard({
               </button>
             </div>
             {savedFields[`api-key-${providerType}`] && (
-              <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
+              <p className="text-xs text-emerald-800 dark:text-emerald-600 flex items-center gap-1">
                 <Check className="h-3 w-3" />
                 Saved
               </p>
@@ -239,7 +240,7 @@ function ProviderCard({
                     >
                       <SelectTrigger className={`w-full transition-colors ${
                         savedFields[`model-${providerType}`]
-                          ? 'border-green-500 focus:ring-green-500'
+                          ? 'border-emerald-700 focus:ring-emerald-700'
                           : ''
                       }`}>
                         <SelectValue placeholder="Select default model" />
@@ -254,7 +255,7 @@ function ProviderCard({
                     </Select>
                   </div>
                   {savedFields[`model-${providerType}`] && (
-                    <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
+                    <p className="text-xs text-emerald-800 dark:text-emerald-600 flex items-center gap-1">
                       <Check className="h-3 w-3" />
                       Saved
                     </p>

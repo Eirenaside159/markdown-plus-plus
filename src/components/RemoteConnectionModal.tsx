@@ -339,7 +339,7 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
                 <Label htmlFor="token">
                   {provider === 'github' ? 'GitHub' : 'GitLab'} Personal Access Token
                   {token && (
-                    <span className="ml-2 text-xs text-green-600 dark:text-green-500">
+                    <span className="ml-2 text-xs text-emerald-800 dark:text-emerald-600">
                       ✓ Loaded from Settings
                     </span>
                   )}
@@ -460,6 +460,7 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
                   placeholder="Search by name or description..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  autoComplete="off"
                 />
               </div>
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings as SettingsIcon, X, Trash2, Download, Upload, AlertTriangle, EyeOff, Eye, Save, Link2, Palette, FileText, ListTree, Archive, FolderOpen, Info, Github, BookOpen, Heart, ExternalLink, ChevronDown, ChevronRight, Sparkles, GitBranch } from 'lucide-react';
+import { Settings as SettingsIcon, X, Trash2, Download, Upload, AlertTriangle, EyeOff, Eye, Save, Link2, Palette, FileText, ListTree, Archive, FolderOpen, Info, Github, BookOpen, Heart, ExternalLink, ChevronDown, ChevronRight, Sparkles, GitBranch, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { getSettings, saveSettings } from '@/lib/settings';
@@ -551,13 +551,13 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                   placeholder="Your Name"
                   className={`w-full px-3 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 transition-colors ${
                     savedFields['git-author'] 
-                      ? 'border-green-500 focus:ring-green-500' 
+                      ? 'border-emerald-700 focus:ring-emerald-700' 
                       : 'border-input focus:ring-ring'
                   }`}
                 />
                 {savedFields['git-author'] && (
-                  <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
-                    <Save className="h-3 w-3" />
+                  <p className="text-xs text-emerald-800 dark:text-emerald-600 flex items-center gap-1">
+                    <Check className="h-3 w-3" />
                     Saved
                   </p>
                 )}
@@ -582,13 +582,13 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                   placeholder="your.email@example.com"
                   className={`w-full px-3 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 transition-colors ${
                     savedFields['git-email'] 
-                      ? 'border-green-500 focus:ring-green-500' 
+                      ? 'border-emerald-700 focus:ring-emerald-700' 
                       : 'border-input focus:ring-ring'
                   }`}
                 />
                 {savedFields['git-email'] && (
-                  <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
-                    <Save className="h-3 w-3" />
+                  <p className="text-xs text-emerald-800 dark:text-emerald-600 flex items-center gap-1">
+                    <Check className="h-3 w-3" />
                     Saved
                   </p>
                 )}
@@ -616,7 +616,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                     placeholder="ghp_xxxxxxxxxxxx or glpat-xxxxxxxxxxxx"
                     className={`w-full px-3 py-2 pr-10 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 font-mono transition-colors ${
                       savedFields['git-token'] 
-                        ? 'border-green-500 focus:ring-green-500' 
+                        ? 'border-emerald-700 focus:ring-emerald-700' 
                         : 'border-input focus:ring-ring'
                     }`}
                   />
@@ -634,8 +634,8 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                   </button>
                 </div>
                 {savedFields['git-token'] && (
-                  <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
-                    <Save className="h-3 w-3" />
+                  <p className="text-xs text-emerald-800 dark:text-emerald-600 flex items-center gap-1">
+                    <Check className="h-3 w-3" />
                     Saved
                   </p>
                 )}
@@ -697,7 +697,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                     placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
                     className={`w-full px-3 py-2 pr-10 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 font-mono transition-colors ${
                       savedFields['github-token'] 
-                        ? 'border-green-500 focus:ring-green-500' 
+                        ? 'border-emerald-700 focus:ring-emerald-700' 
                         : 'border-input focus:ring-ring'
                     }`}
                   />
@@ -715,8 +715,8 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                   </button>
                 </div>
                 {savedFields['github-token'] && (
-                  <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
-                    <Save className="h-3 w-3" />
+                  <p className="text-xs text-emerald-800 dark:text-emerald-600 flex items-center gap-1">
+                    <Check className="h-3 w-3" />
                     Saved
                   </p>
                 )}
@@ -760,7 +760,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                     placeholder="glpat-xxxxxxxxxxxxxxxxxxxx"
                     className={`w-full px-3 py-2 pr-10 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 font-mono transition-colors ${
                       savedFields['gitlab-token'] 
-                        ? 'border-green-500 focus:ring-green-500' 
+                        ? 'border-emerald-700 focus:ring-emerald-700' 
                         : 'border-input focus:ring-ring'
                     }`}
                   />
@@ -778,8 +778,8 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                   </button>
                 </div>
                 {savedFields['gitlab-token'] && (
-                  <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
-                    <Save className="h-3 w-3" />
+                  <p className="text-xs text-emerald-800 dark:text-emerald-600 flex items-center gap-1">
+                    <Check className="h-3 w-3" />
                     Saved
                   </p>
                 )}
@@ -849,13 +849,13 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                   placeholder="https://oauth-github.your-subdomain.workers.dev"
                   className={`w-full px-3 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 font-mono transition-colors ${
                     savedFields['github-oauth-url'] 
-                      ? 'border-green-500 focus:ring-green-500' 
+                      ? 'border-emerald-700 focus:ring-emerald-700' 
                       : 'border-input focus:ring-ring'
                   }`}
                 />
                 {savedFields['github-oauth-url'] && (
-                  <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
-                    <Save className="h-3 w-3" />
+                  <p className="text-xs text-emerald-800 dark:text-emerald-600 flex items-center gap-1">
+                    <Check className="h-3 w-3" />
                     Saved
                   </p>
                 )}
@@ -883,13 +883,13 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                   placeholder="https://oauth-gitlab.your-subdomain.workers.dev"
                   className={`w-full px-3 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 font-mono transition-colors ${
                     savedFields['gitlab-oauth-url'] 
-                      ? 'border-green-500 focus:ring-green-500' 
+                      ? 'border-emerald-700 focus:ring-emerald-700' 
                       : 'border-input focus:ring-ring'
                   }`}
                 />
                 {savedFields['gitlab-oauth-url'] && (
-                  <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
-                    <Save className="h-3 w-3" />
+                  <p className="text-xs text-emerald-800 dark:text-emerald-600 flex items-center gap-1">
+                    <Check className="h-3 w-3" />
                     Saved
                   </p>
                 )}
@@ -972,13 +972,13 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                   placeholder="https://myblog.com/blog/{SLUG}"
                   className={`w-full px-3 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 font-mono transition-colors ${
                     savedFields['url-pattern'] 
-                      ? 'border-green-500 focus:ring-green-500' 
+                      ? 'border-emerald-700 focus:ring-emerald-700' 
                       : 'border-input focus:ring-ring'
                   }`}
                 />
                 {savedFields['url-pattern'] && (
-                  <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
-                    <Save className="h-3 w-3" />
+                  <p className="text-xs text-emerald-800 dark:text-emerald-600 flex items-center gap-1">
+                    <Check className="h-3 w-3" />
                     Saved
                   </p>
                 )}
@@ -1059,6 +1059,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                         type="text"
                         value={key}
                         disabled
+                        autoComplete="off"
                         className="w-40 px-3 py-2 text-sm rounded-md border border-input bg-muted cursor-not-allowed font-medium"
                       />
                       <input
@@ -1072,7 +1073,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                         placeholder="Value"
                         className={`flex-1 px-3 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 transition-colors ${
                           savedFields[`meta-${key}`]
-                            ? 'border-green-500 focus:ring-green-500'
+                            ? 'border-emerald-700 focus:ring-emerald-700'
                             : 'border-input focus:ring-ring'
                         }`}
                       />
@@ -1085,8 +1086,8 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                       </button>
                     </div>
                     {savedFields[`meta-${key}`] && (
-                      <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1 ml-44">
-                        <Save className="h-3 w-3" />
+                      <p className="text-xs text-emerald-800 dark:text-emerald-600 flex items-center gap-1 ml-44">
+                        <Check className="h-3 w-3" />
                         Saved
                       </p>
                     )}
@@ -1163,11 +1164,12 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                         type="text"
                         value={key}
                         disabled
+                        autoComplete="off"
                         className="flex-1 px-3 py-2 text-sm rounded-md border border-input bg-muted cursor-not-allowed font-medium"
                       />
                       <div className={`inline-flex rounded-md border p-0.5 transition-colors ${
                         savedFields[`multiplicity-${key}`]
-                          ? 'border-green-500'
+                          ? 'border-emerald-700'
                           : 'border-input'
                       }`}>
                         <button
@@ -1196,8 +1198,8 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                       </button>
                     </div>
                     {savedFields[`multiplicity-${key}`] && (
-                      <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
-                        <Save className="h-3 w-3" />
+                      <p className="text-xs text-emerald-800 dark:text-emerald-600 flex items-center gap-1">
+                        <Check className="h-3 w-3" />
                         Saved
                       </p>
                     )}
