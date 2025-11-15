@@ -78,3 +78,6 @@ Desktop.ini
 
 # Vite
 .vite
+
+wrangler-github.toml
+wrangler-gitlab.toml

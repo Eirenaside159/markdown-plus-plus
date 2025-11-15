@@ -116,11 +116,11 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
     if (provider === 'github') {
       authUrl = savedSettings.githubOAuthUrl && savedSettings.githubOAuthUrl.trim()
         ? `${savedSettings.githubOAuthUrl.trim().replace(/\/$/, '')}/auth/github/login`
-        : 'https://oauth-github.YOUR-SUBDOMAIN.workers.dev/auth/github/login';
+        : 'https://oauth-github.moneo.workers.dev/auth/github/login';
     } else {
       authUrl = savedSettings.gitlabOAuthUrl && savedSettings.gitlabOAuthUrl.trim()
         ? `${savedSettings.gitlabOAuthUrl.trim().replace(/\/$/, '')}/auth/gitlab/login`
-        : 'https://oauth-gitlab.YOUR-SUBDOMAIN.workers.dev/auth/gitlab/login';
+        : 'https://oauth-gitlab.moneo.workers.dev/auth/gitlab/login';
     }
     
     // Check if URL is still placeholder
