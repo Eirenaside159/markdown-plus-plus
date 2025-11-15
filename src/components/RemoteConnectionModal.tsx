@@ -380,12 +380,13 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
                   <Input
                     id="token"
                     type={showToken ? 'text' : 'password'}
+                    name="accessToken"
                     placeholder={provider === 'github' ? 'ghp_xxxxxxxxxxxxxxxxxxxx' : 'glpat-xxxxxxxxxxxxxxxxxxxx'}
                     value={token}
                     onChange={(e) => setToken(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleTokenSubmit()}
                     className="pr-10"
-                    autoComplete="off"
+                    onePassword="block"
                     autoCorrect="off"
                     autoCapitalize="off"
                     spellCheck="false"
@@ -489,11 +490,13 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
                 <Label htmlFor="search">Search repositories</Label>
                 <Input
                   id="search"
+                  name="repoSearch"
                   type="text"
                   placeholder="Search by name or description..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   autoComplete="off"
+                  onePassword="ignore"
                 />
               </div>
 
