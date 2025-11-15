@@ -18,9 +18,16 @@ export interface AppSettings {
   metaFieldMultiplicity?: Record<string, MetaMultiplicity>;
   colorPalette?: ColorPalette;
   theme?: ThemeMode;
+  // Local Git settings
   gitAuthor?: string;
   gitEmail?: string;
   gitToken?: string;
+  // Remote Repository settings
+  githubToken?: string;
+  gitlabToken?: string;
+  // OAuth settings (optional - for self-hosted deployments)
+  githubOAuthUrl?: string;
+  gitlabOAuthUrl?: string;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -33,5 +40,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   gitAuthor: '',
   gitEmail: '',
   gitToken: '',
+  githubToken: '',
+  gitlabToken: '',
+  githubOAuthUrl: '',
+  gitlabOAuthUrl: '',
 };
 

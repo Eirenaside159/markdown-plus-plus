@@ -30,6 +30,7 @@ Markdown++ gives you a modern, WordPress-like admin panel for your static site�
 - **Manage** frontmatter with smart, auto-detected form fields
 - **Create** new posts with pre-filled templates
 - **Publish** to Git with one click
+- **Connect Remote Repos** - Work directly with GitHub/GitLab without downloading files
 - **Collaborate** by deploying the app with authentication
 
 ### Key Advantages
@@ -37,7 +38,9 @@ Markdown++ gives you a modern, WordPress-like admin panel for your static site�
 - ✅ **No backend** - Runs entirely in your browser using modern web APIs
 - ✅ **No database** - Your files stay on your computer, no cloud storage needed
 - ✅ **Zero setup** - Just open the app and select your folder (or try the demo!)
+- ✅ **Remote-first** - Connect GitHub/GitLab repos and edit directly (no downloads!)
 - ✅ **Privacy-first** - No tracking, no data collection, completely offline-capable
+- ✅ **Works on iOS** - Remote mode works on iPhone/iPad (local mode needs desktop)
 - ✅ **Works on Android** - Edit your site from your phone or tablet
 - ✅ **Git-integrated** - Commit and push changes with a single button
 - ✅ **Framework-agnostic** - Works with any static site generator
@@ -82,8 +85,15 @@ Built for developers who love static sites but want a better content editing exp
 - **Related Posts** - Automatically link posts by canonical URL for multilingual sites
 - **Bulk Operations** - Manage multiple files efficiently
 
-### 🚀 Git Integration
-- **One-Click Publishing** - Commit and push changes to Git with a single button
+### 🚀 Git Integration & Remote Repositories
+- **Remote Repository Support** - Connect directly to GitHub or GitLab repos
+  - OAuth authentication flow (secure & easy)
+  - Personal Access Token support
+  - Browse all your repositories
+  - Select branch to work on
+  - Auto-commits on save
+  - Works on iOS/iPad (no File System API needed!)
+- **One-Click Publishing** - Commit and push changes to Git with a single button (local mode)
 - **CORS Proxy Support** - Pushes via cors.isomorphic-git.org to bypass browser restrictions
 - **Smart Error Handling** - Categorized errors with specific solutions (auth, network, rate limit, etc.)
 - **Personal Access Token** - Secure authentication for GitHub and GitLab private repos
@@ -95,7 +105,7 @@ Built for developers who love static sites but want a better content editing exp
 - **Copy Error Details** - Copy full error messages for debugging
 - **Console Logging** - Detailed [Git Publish] logs for troubleshooting
 - **Git Status** - See which files have been modified
-- **Works in Browser** - No server needed, uses isomorphic-git
+- **Works in Browser** - No server needed, uses isomorphic-git and GitHub/GitLab APIs
 
 ### 🔧 Smart Features
 - **Demo Mode** - Try the app without selecting files - explore with sample content
@@ -125,11 +135,22 @@ Built for developers who love static sites but want a better content editing exp
 The easiest way to get started—no installation required!
 
 1. Visit <a href="https://markdown-plus-plus.com/" style="text-decoration:none;">markdown-plus-plus.com</a>
-2. Click "Try Demo" to explore without selecting files, or "Select Folder" to work with your own files
-3. Grant browser permission to access the folder (if using your own files)
-4. Start editing!
+2. Choose your workflow:
+   - **"Connect Remote"** - Work with GitHub/GitLab repos (works on iOS/iPad!)
+   - **"Select Folder"** - Work with local files (desktop only)
+   - **"Try Demo"** - Explore without any setup
+3. If connecting remote:
+   - Click "Connect Remote"
+   - Choose GitHub or GitLab
+   - Enter your Personal Access Token or use OAuth
+   - Select repository and branch
+   - Start editing!
+4. If using local files:
+   - Click "Select Folder"
+   - Grant browser permission to access the folder
+   - Start editing!
 
-**Note:** All processing happens in your browser. Your files never leave your computer.
+**Note:** All processing happens in your browser. Local files never leave your computer. Remote mode connects directly to GitHub/GitLab APIs.
 
 ### Option 2: Run Locally
 Perfect for development or offline use:
@@ -170,6 +191,31 @@ npm run build
 ## 📖 How to Use
 
 ### First-Time Setup
+
+#### Option A: Remote Repository (Recommended for Mobile/iOS)
+
+1. **Open the App**
+   - Visit the hosted version or run locally
+   - You'll see a welcome screen with "Connect Remote" button
+
+2. **Connect to Your Repository**
+   - Click "Connect Remote"
+   - Choose **GitHub** or **GitLab**
+   - Enter your Personal Access Token:
+     - **GitHub**: [Create token](https://github.com/settings/tokens) with `repo` scope
+     - **GitLab**: [Create token](https://gitlab.com/-/user_settings/personal_access_tokens) with `api`, `read_user`, `write_repository` scopes
+   - Browse your repositories
+   - Select the repository and branch you want to work on
+   - Click "Connect"
+
+3. **Start Editing**
+   - All markdown files will be loaded automatically
+   - Use the **File Browser** (left sidebar) to navigate folders
+   - Use the **Table View** (main area) to see all posts at once
+   - Click any post to start editing
+   - **Saves auto-commit** to your repository!
+
+#### Option B: Local Files (Desktop Only)
 
 1. **Open the App**
    - Visit the hosted version or run locally
@@ -286,7 +332,7 @@ For pushing to **private repositories**, you need a Personal Access Token:
 4. Copy the token and paste it in Settings → Git → Personal Access Token
 
 **GitLab:**
-1. Go to [GitLab Profile → Access Tokens](https://gitlab.com/-/profile/personal_access_tokens)
+1. Go to [GitLab Settings → Access Tokens](https://gitlab.com/-/user_settings/personal_access_tokens)
 2. Create a new token with `write_repository` scope
 3. Copy the token and paste it in Settings → Git → Personal Access Token
 
@@ -649,7 +695,7 @@ Yes! The settings panel lets you configure editor behavior, visible columns, and
 ### What about my private Git repositories?
 For private repos, you need a Personal Access Token. Go to Settings → Git and add your token:
 - **GitHub:** [Create token](https://github.com/settings/tokens) with `repo` scope
-- **GitLab:** [Create token](https://gitlab.com/-/profile/personal_access_tokens) with `write_repository` scope
+- **GitLab:** [Create token](https://gitlab.com/-/user_settings/personal_access_tokens) with `api`, `read_user`, `write_repository` scopes
 
 Tokens are stored locally in your browser and never sent to our servers.
 

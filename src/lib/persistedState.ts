@@ -12,6 +12,19 @@ interface AppState {
   selectedFilePath: string | null;
   viewMode: 'table' | 'editor' | 'settings';
   lastUpdate: number;
+  // Remote workspace state
+  workspaceType?: 'local' | 'remote';
+  remoteProvider?: 'github' | 'gitlab';
+  remoteToken?: string;
+  remoteRepo?: {
+    id: string;
+    name: string;
+    fullName: string;
+    owner?: string;
+    branch: string;
+    defaultBranch: string;
+    url: string;
+  };
 }
 
 // Open IndexedDB

@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { WelcomeWarningModal, shouldShowWarning } from '@/components/WelcomeWarningModal';
 import { DemoInfoModal } from '@/components/DemoInfoModal';
 import { FileBrowser } from '@/components/FileBrowser';
+import { RemoteConnectionModal } from '@/components/RemoteConnectionModal';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import confetti from 'canvas-confetti';
 import { selectDirectory, readFile, writeFile, deleteFile, renameFile, moveFile, isFileSystemAccessSupported, selectSingleFile, createNewFile, readSingleFile, writeSingleFile } from '@/lib/fileSystem';
@@ -23,7 +24,9 @@ import { checkGitStatus, publishFile, generateCommitMessage, type GitStatus } fr
 import { hideFile, getHiddenFiles } from '@/lib/hiddenFiles';
 import { updateFaviconBadge } from '@/lib/faviconBadge';
 import type { FileTreeItem, MarkdownFile } from '@/types';
-import { FolderOpen, Save, Clock, FileCode, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen, Loader2, BookOpen, Sun, Moon, Monitor, LogOut, Eye, Search, X, Sliders, File } from 'lucide-react';
+import { FolderOpen, Save, Clock, FileCode, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen, Loader2, BookOpen, Sun, Moon, Monitor, LogOut, Eye, Search, X, Sliders, File, Cloud, Play } from 'lucide-react';
+import { connectRemoteWorkspace, subscribeWorkspace, loadRemoteFile, saveRemoteFileContent, deleteRemoteFileFromWorkspace, renameRemoteFileInWorkspace, isRemoteWorkspace, getCurrentRemoteWorkspace } from '@/lib/workspaceManager';
+import type { Repository } from '@/lib/remoteProviders';
 
 type ViewMode = 'table' | 'editor' | 'settings';
 
@@ -986,6 +989,8 @@ function App() {
   const [isMovingFile, setIsMovingFile] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [showDemoModal, setShowDemoModal] = useState(false);
+  const [showRemoteModal, setShowRemoteModal] = useState(false);
+  const [isRemoteMode, setIsRemoteMode] = useState(false);
   const [recentFolders, setRecentFolders] = useState(() => getRecentFolders());
   const [hiddenFiles, setHiddenFiles] = useState<string[]>([]);
   
@@ -1041,6 +1046,19 @@ function App() {
     });
     return unsubscribe;
   }, []);
+  
+  // Remote workspace subscription
+  useEffect(() => {
+    const unsubscribe = subscribeWorkspace(({ posts, isLoading, fileTree, workspace }) => {
+      if (workspace?.type === 'remote') {
+        setAllPosts(posts);
+        setIsLoadingPosts(isLoading);
+        setFileTree(fileTree);
+        setIsRemoteMode(true);
+      }
+    });
+    return unsubscribe;
+  }, []);
   const [isRefreshingPosts, setIsRefreshingPosts] = useState(false);
   
   // Confirm dialog hook
@@ -1053,6 +1071,36 @@ function App() {
   useEffect(() => {
     setShowWarningModal(!isDemoMode && shouldShowWarning());
   }, [isDemoMode]);
+
+  // Handle OAuth callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthToken = params.get('token');
+    const oauthProvider = params.get('provider') as 'github' | 'gitlab' | null;
+    const oauthError = params.get('error');
+
+    if (oauthError) {
+      toast.error(`OAuth Error: ${params.get('error_description') || oauthError}`);
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+      return;
+    }
+
+    if (oauthToken && oauthProvider) {
+      // OAuth başarılı! Modal'ı aç ve token'ı set et
+      toast.success('Authentication successful! Loading repositories...');
+      
+      // Modal'ı aç
+      setShowRemoteModal(true);
+      
+      // Token'ı localStorage'a geçici olarak kaydet
+      localStorage.setItem('oauth_temp_token', oauthToken);
+      localStorage.setItem('oauth_temp_provider', oauthProvider);
+      
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   // PWA Install Prompt Handler
   useEffect(() => {
@@ -1092,18 +1140,29 @@ function App() {
       const baseTitle = currentFile.frontmatter.title === 'Untitled Post' 
         ? 'Untitled' 
         : (currentFile.frontmatter.title || currentFile.name || 'Untitled');
-      const suffix = isSingleFileMode && singleFileHandle 
-        ? ` - ${singleFileHandle.name}` 
-        : '';
+      
+      let suffix = '';
+      if (isSingleFileMode && singleFileHandle) {
+        suffix = ` - ${singleFileHandle.name}`;
+      } else if (isRemoteMode) {
+        const remoteWorkspace = getCurrentRemoteWorkspace();
+        suffix = remoteWorkspace ? ` - ${remoteWorkspace.repository.fullName}` : '';
+      }
+      
       document.title = `${baseTitle}${suffix} - Markdown++`;
     } else if (viewMode === 'settings') {
       document.title = 'Settings - Markdown++';
+    } else if (viewMode === 'table' && isRemoteMode) {
+      const remoteWorkspace = getCurrentRemoteWorkspace();
+      document.title = remoteWorkspace 
+        ? `${remoteWorkspace.repository.fullName} - Markdown++`
+        : 'Markdown++';
     } else if (viewMode === 'table' && dirHandle) {
       document.title = `${dirHandle.name} - Markdown++`;
     } else {
       document.title = 'Markdown++';
     }
-  }, [viewMode, currentFile, dirHandle, isSingleFileMode, singleFileHandle]);
+  }, [viewMode, currentFile, dirHandle, isSingleFileMode, singleFileHandle, isRemoteMode]);
 
   // Update favicon badge based on changes (only in editor mode)
   useEffect(() => {
@@ -1373,11 +1432,135 @@ categories: []
     }
   };
 
+  const handleRemoteConnect = async (provider: 'github' | 'gitlab', repo: Repository & { branch: string; token: string }) => {
+    try {
+      toast.dismiss();
+      setIsLoadingPosts(true);
+      
+      // Clear local and demo modes
+      setDirHandle(null);
+      setIsSingleFileMode(false);
+      setSingleFileHandle(null);
+      setIsDemoMode(false);
+      await clearCurrentWorkspace();
+      await clearSingleFileHandle();
+      
+      // Connect to remote workspace
+      await connectRemoteWorkspace(provider, repo.token, {
+        id: repo.id.toString(),
+        name: repo.name,
+        fullName: repo.fullName,
+        owner: repo.owner,
+        branch: repo.branch,
+        defaultBranch: repo.defaultBranch,
+        url: repo.url,
+      });
+      
+      setIsRemoteMode(true);
+      setShowRemoteModal(false);
+      
+      // Save remote workspace info for restoration
+      try {
+        await saveAppState({
+          workspaceType: 'remote',
+          remoteProvider: provider,
+          remoteRepo: {
+            id: repo.id.toString(),
+            name: repo.name,
+            fullName: repo.fullName,
+            owner: repo.owner,
+            branch: repo.branch,
+            defaultBranch: repo.defaultBranch,
+            url: repo.url,
+          },
+          remoteToken: repo.token,
+        });
+      } catch (error) {
+        console.error('Failed to save remote workspace state:', error);
+      }
+      
+      // Show success toast with slight delay to avoid duplicates
+      setTimeout(() => {
+        toast.success(`Connected to ${repo.fullName} (${repo.branch})`);
+      }, 200);
+    } catch (error: any) {
+      console.error('Failed to connect remote workspace:', error);
+      toast.dismiss();
+      toast.error(error.message || 'Failed to connect to repository');
+      setIsLoadingPosts(false);
+      setIsRemoteMode(false);
+    }
+  };
+
+  const handleDisconnectRemote = async () => {
+    const confirmed = await confirm(
+      'Are you sure you want to disconnect from the remote repository? You can reconnect anytime.',
+      {
+        title: 'Disconnect Repository',
+        confirmLabel: 'Disconnect',
+        cancelLabel: 'Cancel',
+        variant: 'destructive'
+      }
+    );
+    
+    if (confirmed) {
+      // Clear state
+      setIsRemoteMode(false);
+      setAllPosts([]);
+      setFileTree([]);
+      setCurrentFile(null);
+      setSelectedFilePath(null);
+      setViewMode('table');
+      setHasChanges(false);
+      
+      // Clear persisted state (including remote token)
+      await clearCurrentWorkspace();
+      
+      toast.success('Disconnected from repository');
+    }
+  };
+
   // Restore directory and state on mount
   useEffect(() => {
     const restoreState = async () => {
       try {
-        // First, try to load single file handle
+        // First, check for remote workspace
+        const savedState = await loadAppState();
+        
+        if (savedState?.workspaceType === 'remote' && savedState.remoteProvider && savedState.remoteToken && savedState.remoteRepo) {
+          console.log('Restoring remote workspace:', savedState.remoteRepo.fullName);
+          
+          try {
+            setIsLoadingPosts(true);
+            
+            // Dismiss any existing toasts first
+            toast.dismiss();
+            
+            await connectRemoteWorkspace(
+              savedState.remoteProvider,
+              savedState.remoteToken,
+              savedState.remoteRepo
+            );
+            
+            setIsRemoteMode(true);
+            
+            // Show success toast after a brief delay to ensure only one shows
+            setTimeout(() => {
+              toast.success(`Reconnected to ${savedState.remoteRepo!.fullName}`);
+            }, 100);
+          } catch (error: any) {
+            console.error('Failed to restore remote workspace:', error);
+            toast.dismiss();
+            toast.error('Failed to restore remote connection. Please reconnect.');
+            // Clear invalid remote state
+            await clearCurrentWorkspace();
+          }
+          
+          setIsRestoring(false);
+          return;
+        }
+        
+        // Try to load single file handle
         const savedFileHandle = await loadSingleFileHandle();
         
         if (savedFileHandle) {
@@ -1653,7 +1836,7 @@ categories: []
   };
 
   const handleDeletePost = async (post: MarkdownFile) => {
-    if (!dirHandle) return;
+    if (!dirHandle && !isRemoteMode) return;
 
     const confirmed = await confirm(`Are you sure you want to delete "${post.frontmatter.title || post.name}"?\n\nThis action cannot be undone.`, {
       title: 'Delete Post',
@@ -1663,21 +1846,37 @@ categories: []
     if (!confirmed) return;
 
     try {
-      await deleteFile(dirHandle, post.path);
+      if (isRemoteMode) {
+        // Remote mode
+        await deleteRemoteFileFromWorkspace(post.path);
+        
+        // Clear current file if it was deleted
+        if (currentFile?.path === post.path) {
+          setCurrentFile(null);
+          setSelectedFilePath(null);
+          setHasChanges(false);
+          setHasPendingPublish(false);
+        }
+        
+        toast.success('Post deleted and committed');
+      } else if (dirHandle) {
+        // Local mode
+        await deleteFile(dirHandle, post.path);
 
-      // Update centralized posts store and refresh file tree
-      await applyPostDeleted(dirHandle.name, post.path);
-      await refreshFileTree(dirHandle);
+        // Update centralized posts store and refresh file tree
+        await applyPostDeleted(dirHandle.name, post.path);
+        await refreshFileTree(dirHandle);
 
-      // Clear current file if it was deleted
-      if (currentFile?.path === post.path) {
-        setCurrentFile(null);
-        setSelectedFilePath(null);
-        setHasChanges(false);
-        setHasPendingPublish(false);
+        // Clear current file if it was deleted
+        if (currentFile?.path === post.path) {
+          setCurrentFile(null);
+          setSelectedFilePath(null);
+          setHasChanges(false);
+          setHasPendingPublish(false);
+        }
+
+        toast.success('Post deleted');
       }
-
-      toast.success('Post deleted');
     } catch (error) {
       toast.error('Failed to delete file');
       setIsLoadingPosts(false);
@@ -1795,6 +1994,39 @@ categories: []
         fireCelebrationConfetti();
       } catch (error) {
         toast.error('Failed to save file');
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
+    
+    // Remote mode
+    if (isRemoteMode && currentFile && selectedFilePath) {
+      try {
+        setIsSaving(true);
+        
+        await saveRemoteFileContent(
+          selectedFilePath,
+          currentFile.content,
+          currentFile.frontmatter
+        );
+        
+        // Update current file
+        const updatedFile = {
+          ...currentFile,
+          rawContent: stringifyMarkdown(currentFile),
+        };
+        
+        setCurrentFile(updatedFile);
+        setHasChanges(false);
+        setHasPendingPublish(false); // Remote saves commit directly
+        
+        toast.success('Changes saved and committed');
+        
+        // Celebrate with confetti! 🎉
+        fireCelebrationConfetti();
+      } catch (error: any) {
+        toast.error(error.message || 'Failed to save file');
       } finally {
         setIsSaving(false);
       }
@@ -2234,8 +2466,8 @@ categories: []
     }
   };
 
-  // Show folder selection screen only if no folder AND no single file
-  if (!dirHandle && !isSingleFileMode && !isDemoMode) {
+  // Show folder selection screen only if no folder AND no single file AND not remote
+  if (!dirHandle && !isSingleFileMode && !isDemoMode && !isRemoteMode) {
     // Show loading while restoring
     if (isRestoring) {
       return (
@@ -2255,6 +2487,16 @@ categories: []
     
     return (
       <div className="flex h-screen items-center justify-center bg-background p-4 sm:p-6">
+        {/* Try Demo Button - Left Side */}
+        <button
+          onClick={handleStartDemo}
+          className="fixed left-0 bg-gradient-to-r from-primary/90 to-primary hover:from-primary hover:to-primary/90 text-primary-foreground font-medium shadow-lg hover:shadow-xl transition-all duration-300 rounded-r-lg group z-50 flex items-center gap-2 py-3 text-sm overflow-hidden px-3 hover:px-4"
+          style={{ top: '25%', transform: 'translateY(-50%)' }}
+        >
+          <Play className="h-4 w-4 shrink-0 group-hover:scale-110 transition-transform" />
+          <span className="whitespace-nowrap w-0 opacity-0 group-hover:w-auto group-hover:opacity-100 transition-all duration-300 overflow-hidden">Try Demo</span>
+        </button>
+        
         <div className="w-full max-w-2xl space-y-6 sm:space-y-8">
           {/* Header */}
               <div className="text-center space-y-2 sm:space-y-3">
@@ -2298,7 +2540,7 @@ categories: []
           )}
 
           {/* Main Buttons */}
-          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+          <div className="flex flex-col sm:flex-row justify-center items-stretch gap-3 sm:gap-4">
             {/* Select Folder Button Group with Dropdown */}
             <div className="relative flex items-stretch justify-center">
               <button
@@ -2365,11 +2607,11 @@ categories: []
             </div>
             
             <button
-              onClick={handleStartDemo}
-              className="inline-flex items-center justify-center gap-2 sm:gap-3 rounded-md bg-white dark:bg-white/10 border-2 border-primary/20 px-6 py-3 sm:py-2.5 text-sm sm:text-base font-medium text-foreground hover:bg-accent hover:border-primary/40 transition-colors shadow-lg hover:shadow-xl touch-target"
+              onClick={() => setShowRemoteModal(true)}
+              className="relative inline-flex items-center justify-center gap-2 sm:gap-3 rounded-md bg-gradient-to-r from-blue-500 to-purple-600 dark:from-blue-600 dark:to-purple-700 px-6 text-sm sm:text-base font-medium text-white shadow-lg touch-target overflow-hidden transition-all duration-300 hover:brightness-110 hover:shadow-[0_0_25px_rgba(139,92,246,0.6)]"
             >
-              <Eye className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-              Try Demo
+              <Cloud className="h-4 w-4 sm:h-5 sm:w-5" />
+              Connect Remote
             </button>
           </div>
 
@@ -2513,6 +2755,13 @@ categories: []
             </div>
           </div>
         )}
+
+        {/* Remote Connection Modal */}
+        <RemoteConnectionModal
+          open={showRemoteModal}
+          onClose={() => setShowRemoteModal(false)}
+          onConnect={handleRemoteConnect}
+        />
 
         <ConfirmDialog />
       </div>
@@ -2752,6 +3001,17 @@ categories: []
                               <LogOut className="h-4 w-4 text-muted-foreground group-hover:text-destructive" />
                               <span className="text-muted-foreground group-hover:text-destructive">Exit Demo</span>
                             </button>
+                          ) : isRemoteMode ? (
+                            <button
+                              onClick={() => {
+                                setShowSettingsDropdown(false);
+                                handleDisconnectRemote();
+                              }}
+                              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors group"
+                            >
+                              <Cloud className="h-4 w-4 text-muted-foreground group-hover:text-destructive" />
+                              <span className="text-muted-foreground group-hover:text-destructive">Disconnect Repository</span>
+                            </button>
                           ) : (
                             <button
                               onClick={() => {
@@ -2761,7 +3021,7 @@ categories: []
                               className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors group"
                             >
                               <LogOut className="h-4 w-4 text-muted-foreground group-hover:text-destructive" />
-                              <span className="text-muted-foreground group-hover:text-destructive">Log Out</span>
+                              <span className="text-muted-foreground group-hover:text-destructive">Close Workspace</span>
                             </button>
                           )}
                         </div>
@@ -3026,6 +3286,7 @@ categories: []
                   selectedFile={selectedFolderPath}
                   hiddenFiles={hiddenFiles}
                   searchQuery={fileTreeSearchQuery}
+                  isLoading={isLoadingPosts}
                   onFileSelect={(path) => {
                     // Check if this is a directory or file
                     const findItem = (items: FileTreeItem[], targetPath: string): FileTreeItem | null => {
@@ -3210,6 +3471,7 @@ categories: []
                   selectedFile={currentFile?.path || null}
                   hiddenFiles={hiddenFiles}
                   searchQuery={editorFileTreeSearchQuery}
+                  isLoading={isLoadingPosts}
                   onFileSelect={(path) => {
                     // Check if this is a directory or file
                     const findItem = (items: FileTreeItem[], targetPath: string): FileTreeItem | null => {
@@ -3380,6 +3642,13 @@ categories: []
           projectPath={dirHandle?.name}
         />
       )}
+
+      {/* Remote Connection Modal */}
+      <RemoteConnectionModal
+        open={showRemoteModal}
+        onClose={() => setShowRemoteModal(false)}
+        onConnect={handleRemoteConnect}
+      />
 
       {/* Confirm Dialog */}
       <ConfirmDialog />

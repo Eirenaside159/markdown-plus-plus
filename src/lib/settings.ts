@@ -22,6 +22,10 @@ export function getSettings(): AppSettings {
         gitAuthor: parsed.gitAuthor ?? DEFAULT_SETTINGS.gitAuthor,
         gitEmail: parsed.gitEmail ?? DEFAULT_SETTINGS.gitEmail,
         gitToken: parsed.gitToken ?? DEFAULT_SETTINGS.gitToken,
+        githubToken: parsed.githubToken ?? DEFAULT_SETTINGS.githubToken,
+        gitlabToken: parsed.gitlabToken ?? DEFAULT_SETTINGS.gitlabToken,
+        githubOAuthUrl: parsed.githubOAuthUrl ?? DEFAULT_SETTINGS.githubOAuthUrl,
+        gitlabOAuthUrl: parsed.gitlabOAuthUrl ?? DEFAULT_SETTINGS.gitlabOAuthUrl,
       };
     }
   } catch (error) {

@@ -97,6 +97,11 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
   const [savedFields, setSavedFields] = useState<Record<string, boolean>>({});
   const saveTimeoutRef = useRef<Record<string, number>>({});
   
+  // Token visibility toggles
+  const [showGitToken, setShowGitToken] = useState(false);
+  const [showGithubToken, setShowGithubToken] = useState(false);
+  const [showGitlabToken, setShowGitlabToken] = useState(false);
+  
   // Show save feedback
   const showSaveFeedback = (fieldId: string, showToast: boolean = true) => {
     // Clear existing timeout for this field
@@ -592,28 +597,42 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                 <label htmlFor="git-token-input" className="text-sm font-medium text-foreground">
                   Personal Access Token (Optional)
                 </label>
-                <input
-                  id="git-token-input"
-                  name="gitToken"
-                  type="password"
-                  autoComplete="off"
-                  value={settings.gitToken || ''}
-                  onChange={(e) => {
-                    const updatedSettings = { ...settings, gitToken: e.target.value };
-                    setSettings(updatedSettings);
-                  }}
-                  onBlur={(e) => {
-                    const updatedSettings = { ...settings, gitToken: e.target.value };
-                    saveSettings(updatedSettings);
-                    showSaveFeedback('git-token');
-                  }}
-                  placeholder="ghp_xxxxxxxxxxxx or glpat-xxxxxxxxxxxx"
-                  className={`w-full px-3 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 font-mono transition-colors ${
-                    savedFields['git-token'] 
-                      ? 'border-green-500 focus:ring-green-500' 
-                      : 'border-input focus:ring-ring'
-                  }`}
-                />
+                <div className="relative">
+                  <input
+                    id="git-token-input"
+                    name="gitToken"
+                    type={showGitToken ? 'text' : 'password'}
+                    autoComplete="off"
+                    value={settings.gitToken || ''}
+                    onChange={(e) => {
+                      const updatedSettings = { ...settings, gitToken: e.target.value };
+                      setSettings(updatedSettings);
+                    }}
+                    onBlur={(e) => {
+                      const updatedSettings = { ...settings, gitToken: e.target.value };
+                      saveSettings(updatedSettings);
+                      showSaveFeedback('git-token');
+                    }}
+                    placeholder="ghp_xxxxxxxxxxxx or glpat-xxxxxxxxxxxx"
+                    className={`w-full px-3 py-2 pr-10 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 font-mono transition-colors ${
+                      savedFields['git-token'] 
+                        ? 'border-green-500 focus:ring-green-500' 
+                        : 'border-input focus:ring-ring'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowGitToken(!showGitToken)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-accent rounded"
+                    title={showGitToken ? 'Hide token' : 'Show token'}
+                  >
+                    {showGitToken ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </button>
+                </div>
                 {savedFields['git-token'] && (
                   <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
                     <Save className="h-3 w-3" />
@@ -640,6 +659,246 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
                     GitLab
                   </a>
                   {' '}with <code className="px-1 py-0.5 bg-muted rounded text-xs">write_repository</code> scope.
+                </p>
+              </div>
+            </div>
+          </Section>
+
+          {/* Remote Repository Integration */}
+          <Section 
+            title="Remote Repository Integration" 
+            description="Configure Personal Access Tokens for GitHub and GitLab to work directly with your repositories without downloading files."
+          >
+            <div className="space-y-4">
+              {/* GitHub Token */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Github className="h-4 w-4 text-muted-foreground" />
+                  <label htmlFor="github-token-input" className="text-sm font-medium text-foreground">
+                    GitHub Personal Access Token
+                  </label>
+                </div>
+                <div className="relative">
+                  <input
+                    id="github-token-input"
+                    name="githubToken"
+                    type={showGithubToken ? 'text' : 'password'}
+                    autoComplete="off"
+                    value={settings.githubToken || ''}
+                    onChange={(e) => {
+                      const updatedSettings = { ...settings, githubToken: e.target.value };
+                      setSettings(updatedSettings);
+                    }}
+                    onBlur={(e) => {
+                      const updatedSettings = { ...settings, githubToken: e.target.value };
+                      saveSettings(updatedSettings);
+                      showSaveFeedback('github-token');
+                    }}
+                    placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                    className={`w-full px-3 py-2 pr-10 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 font-mono transition-colors ${
+                      savedFields['github-token'] 
+                        ? 'border-green-500 focus:ring-green-500' 
+                        : 'border-input focus:ring-ring'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowGithubToken(!showGithubToken)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-accent rounded"
+                    title={showGithubToken ? 'Hide token' : 'Show token'}
+                  >
+                    {showGithubToken ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </button>
+                </div>
+                {savedFields['github-token'] && (
+                  <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
+                    <Save className="h-3 w-3" />
+                    Saved
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  <a 
+                    href="https://github.com/settings/tokens/new?scopes=repo&description=Markdown%2B%2B%20Remote%20Access" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    Create token <ExternalLink className="h-3 w-3" />
+                  </a>
+                  {' '}with <code className="px-1 py-0.5 bg-muted rounded text-xs">repo</code> scope
+                </p>
+              </div>
+
+              {/* GitLab Token */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <GitBranch className="h-4 w-4 text-muted-foreground" />
+                  <label htmlFor="gitlab-token-input" className="text-sm font-medium text-foreground">
+                    GitLab Personal Access Token
+                  </label>
+                </div>
+                <div className="relative">
+                  <input
+                    id="gitlab-token-input"
+                    name="gitlabToken"
+                    type={showGitlabToken ? 'text' : 'password'}
+                    autoComplete="off"
+                    value={settings.gitlabToken || ''}
+                    onChange={(e) => {
+                      const updatedSettings = { ...settings, gitlabToken: e.target.value };
+                      setSettings(updatedSettings);
+                    }}
+                    onBlur={(e) => {
+                      const updatedSettings = { ...settings, gitlabToken: e.target.value };
+                      saveSettings(updatedSettings);
+                      showSaveFeedback('gitlab-token');
+                    }}
+                    placeholder="glpat-xxxxxxxxxxxxxxxxxxxx"
+                    className={`w-full px-3 py-2 pr-10 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 font-mono transition-colors ${
+                      savedFields['gitlab-token'] 
+                        ? 'border-green-500 focus:ring-green-500' 
+                        : 'border-input focus:ring-ring'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowGitlabToken(!showGitlabToken)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-accent rounded"
+                    title={showGitlabToken ? 'Hide token' : 'Show token'}
+                  >
+                    {showGitlabToken ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </button>
+                </div>
+                {savedFields['gitlab-token'] && (
+                  <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
+                    <Save className="h-3 w-3" />
+                    Saved
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  <a 
+                    href="https://gitlab.com/-/user_settings/personal_access_tokens?name=Markdown%2B%2B&scopes=api,read_user,read_repository,write_repository" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    Create token <ExternalLink className="h-3 w-3" />
+                  </a>
+                  {' '}with scopes: <code className="px-1 py-0.5 bg-muted rounded text-xs">api</code>,{' '}
+                  <code className="px-1 py-0.5 bg-muted rounded text-xs">read_user</code>,{' '}
+                  <code className="px-1 py-0.5 bg-muted rounded text-xs">write_repository</code>
+                </p>
+              </div>
+
+              {/* Info Box */}
+              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-md">
+                <div className="flex gap-2">
+                  <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                  <div className="space-y-1 text-xs text-blue-900 dark:text-blue-100">
+                    <p className="font-medium">Remote Repository Mode</p>
+                    <p>
+                      Save your tokens here for quick access. When connecting to a remote repository, 
+                      saved tokens will be pre-filled automatically.
+                    </p>
+                    <p className="mt-2">
+                      <strong>Benefits:</strong> Works on iOS/iPad, no File System API needed, auto-commits on save!
+                    </p>
+                    <p className="mt-2 text-muted-foreground">
+                      <strong>Note:</strong> Tokens are stored securely in your browser's localStorage. 
+                      They are never sent to any server except GitHub/GitLab APIs.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Section>
+
+          {/* OAuth Configuration (Advanced) */}
+          <Section 
+            title="OAuth Configuration (Advanced)" 
+            description="Optional: Configure custom OAuth endpoints if you've deployed your own OAuth workers."
+          >
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="github-oauth-url-input" className="text-sm font-medium text-foreground">
+                  GitHub OAuth Worker URL
+                </label>
+                <input
+                  id="github-oauth-url-input"
+                  name="githubOAuthUrl"
+                  type="url"
+                  autoComplete="off"
+                  value={settings.githubOAuthUrl || ''}
+                  onChange={(e) => {
+                    const updatedSettings = { ...settings, githubOAuthUrl: e.target.value };
+                    setSettings(updatedSettings);
+                  }}
+                  onBlur={(e) => {
+                    const updatedSettings = { ...settings, githubOAuthUrl: e.target.value };
+                    saveSettings(updatedSettings);
+                    showSaveFeedback('github-oauth-url');
+                  }}
+                  placeholder="https://oauth-github.your-subdomain.workers.dev"
+                  className={`w-full px-3 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 font-mono transition-colors ${
+                    savedFields['github-oauth-url'] 
+                      ? 'border-green-500 focus:ring-green-500' 
+                      : 'border-input focus:ring-ring'
+                  }`}
+                />
+                {savedFields['github-oauth-url'] && (
+                  <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
+                    <Save className="h-3 w-3" />
+                    Saved
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="gitlab-oauth-url-input" className="text-sm font-medium text-foreground">
+                  GitLab OAuth Worker URL
+                </label>
+                <input
+                  id="gitlab-oauth-url-input"
+                  name="gitlabOAuthUrl"
+                  type="url"
+                  autoComplete="off"
+                  value={settings.gitlabOAuthUrl || ''}
+                  onChange={(e) => {
+                    const updatedSettings = { ...settings, gitlabOAuthUrl: e.target.value };
+                    setSettings(updatedSettings);
+                  }}
+                  onBlur={(e) => {
+                    const updatedSettings = { ...settings, gitlabOAuthUrl: e.target.value };
+                    saveSettings(updatedSettings);
+                    showSaveFeedback('gitlab-oauth-url');
+                  }}
+                  placeholder="https://oauth-gitlab.your-subdomain.workers.dev"
+                  className={`w-full px-3 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 font-mono transition-colors ${
+                    savedFields['gitlab-oauth-url'] 
+                      ? 'border-green-500 focus:ring-green-500' 
+                      : 'border-input focus:ring-ring'
+                  }`}
+                />
+                {savedFields['gitlab-oauth-url'] && (
+                  <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
+                    <Save className="h-3 w-3" />
+                    Saved
+                  </p>
+                )}
+              </div>
+
+              <div className="p-3 bg-muted/50 border border-border rounded-md">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  <strong>Leave empty to use manual tokens.</strong> OAuth URLs are only needed if you've deployed 
+                  Cloudflare Workers for OAuth authentication. See <code className="px-1 py-0.5 bg-background rounded">workers/README.md</code> for setup instructions.
                 </p>
               </div>
             </div>

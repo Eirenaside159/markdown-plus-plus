@@ -22,6 +22,7 @@ interface FileBrowserProps {
   onFileHide?: (path: string) => void;
   onFileDelete?: (path: string) => void;
   searchQuery?: string;
+  isLoading?: boolean;
 }
 
 function FileTreeNode({
@@ -257,8 +258,19 @@ function FileTreeNode({
   );
 }
 
-export function FileBrowser({ files, selectedFile, onFileSelect, hiddenFiles, onFileMove, isMoving, onFileEdit, onFileHide, onFileDelete, searchQuery }: FileBrowserProps) {
+export function FileBrowser({ files, selectedFile, onFileSelect, hiddenFiles, onFileMove, isMoving, onFileEdit, onFileHide, onFileDelete, searchQuery, isLoading }: FileBrowserProps) {
   const [contextMenuPath, setContextMenuPath] = useState<string | null>(null);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          Loading files...
+        </div>
+      </div>
+    );
+  }
 
   if (files.length === 0) {
     return (
