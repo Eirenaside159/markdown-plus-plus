@@ -3305,10 +3305,10 @@ categories: []
                                 setShowSettingsDropdown(false);
                                 handleDisconnectRemote();
                               }}
-                              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors group"
+                              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md hover:bg-destructive/30 hover:text-white transition-colors group"
                             >
-                              <Cloud className="h-4 w-4 text-muted-foreground group-hover:text-destructive" />
-                              <span className="text-muted-foreground group-hover:text-destructive">Disconnect Repository</span>
+                              <Cloud className="h-4 w-4 text-muted-foreground group-hover:text-white" />
+                              <span className="text-muted-foreground group-hover:text-white">Disconnect Repository</span>
                             </button>
                           ) : (
                             <button
@@ -3316,10 +3316,10 @@ categories: []
                                 setShowSettingsDropdown(false);
                                 handleLogout();
                               }}
-                              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors group"
+                              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md hover:bg-destructive/30 hover:text-white transition-colors group"
                             >
-                              <LogOut className="h-4 w-4 text-muted-foreground group-hover:text-destructive" />
-                              <span className="text-muted-foreground group-hover:text-destructive">Close Workspace</span>
+                              <LogOut className="h-4 w-4 text-muted-foreground group-hover:text-white" />
+                              <span className="text-muted-foreground group-hover:text-white">Close Workspace</span>
                             </button>
                           )}
                         </div>
