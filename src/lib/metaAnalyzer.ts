@@ -1,6 +1,6 @@
 import type { MarkdownFile } from '@/types';
 
-export type FieldType = 'string' | 'number' | 'boolean' | 'date' | 'array' | 'object';
+export type FieldType = 'string' | 'number' | 'boolean' | 'date' | 'datetime' | 'array' | 'object';
 
 export interface MetaField {
   key: string;

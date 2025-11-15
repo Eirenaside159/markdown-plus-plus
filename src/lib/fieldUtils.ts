@@ -56,8 +56,11 @@ export function inferFieldType(value: unknown): FieldType {
     return 'object';
   }
 
-  // String - check if it's a date
+  // String - check if it's a datetime or date
   if (typeof value === 'string') {
+    if (isDateTimeString(value)) {
+      return 'datetime';
+    }
     if (isDateString(value)) {
       return 'date';
     }
@@ -68,13 +71,27 @@ export function inferFieldType(value: unknown): FieldType {
 }
 
 /**
- * Checks if a string represents a date
+ * Checks if a string represents a datetime (with time component)
+ */
+export function isDateTimeString(str: string): boolean {
+  // DateTime patterns (must have time component)
+  const dateTimePatterns = [
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/, // ISO format: YYYY-MM-DDTHH:mm
+    /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/, // YYYY-MM-DD HH:mm
+    /^\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}/, // YYYY/MM/DD HH:mm
+  ];
+
+  return dateTimePatterns.some(pattern => pattern.test(str));
+}
+
+/**
+ * Checks if a string represents a date (without time or with time)
  */
 export function isDateString(str: string): boolean {
   // Common date patterns
   const datePatterns = [
-    /^\d{4}-\d{2}-\d{2}/, // YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss
-    /^\d{4}\/\d{2}\/\d{2}/, // YYYY/MM/DD
+    /^\d{4}-\d{2}-\d{2}$/, // YYYY-MM-DD (exact date only)
+    /^\d{4}\/\d{2}\/\d{2}$/, // YYYY/MM/DD (exact date only)
     /^\d{2}[-/.]\d{2}[-/.]\d{4}/, // DD-MM-YYYY, DD/MM/YYYY, DD.MM.YYYY
     /^\d{2}[-/.]\d{2}[-/.]\d{2}/, // DD-MM-YY, DD/MM/YY, DD.MM.YY
     /^\d{1,2}\s+\w+\s+\d{4}/, // 1 January 2025, 01 Jan 2025

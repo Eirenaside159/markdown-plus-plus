@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { format } from 'date-fns';
 import type { FieldType } from '@/lib/metaAnalyzer';
+import { MetaDatePicker } from '@/components/MetaDatePicker';
 
 interface DynamicFieldProps {
   fieldKey: string;
@@ -10,36 +12,6 @@ interface DynamicFieldProps {
   suggestions?: unknown[];
 }
 
-/**
- * Converts various date formats to YYYY-MM-DD format for date input
- */
-function formatDateForInput(dateValue: string | number | Date): string {
-  if (!dateValue) return '';
-  
-  try {
-    // If it's already in YYYY-MM-DD format, return as is
-    if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
-      return dateValue;
-    }
-
-    // Try to parse the date
-    const date = new Date(dateValue);
-    
-    // Check if valid date
-    if (isNaN(date.getTime())) {
-      return '';
-    }
-
-    // Format to YYYY-MM-DD
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    
-    return `${year}-${month}-${day}`;
-  } catch (error) {
-    return '';
-  }
-}
 
 export function DynamicField({ fieldKey, fieldLabel, fieldType, value, onChange, suggestions }: DynamicFieldProps) {
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -101,17 +73,74 @@ export function DynamicField({ fieldKey, fieldLabel, fieldType, value, onChange,
         );
 
       case 'date':
-        // Convert various date formats to YYYY-MM-DD for the input
-        const dateValue = value ? formatDateForInput(value as string) : '';
+        // Parse the date value
+        const dateValue = value ? new Date(value as string) : undefined;
+        const isValidDate = dateValue && !isNaN(dateValue.getTime());
         
         return (
-          <input
-            id={`field-${fieldKey}`}
-            type="date"
-            value={dateValue}
-            onChange={(e) => onChange(fieldKey, e.target.value)}
-            className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          <MetaDatePicker
+            value={isValidDate ? dateValue : undefined}
+            onChange={(selectedDate) => {
+              if (selectedDate) {
+                onChange(fieldKey, format(selectedDate, "yyyy-MM-dd"));
+              } else {
+                onChange(fieldKey, '');
+              }
+            }}
+            placeholder="Pick a date"
           />
+        );
+
+      case 'datetime':
+        // Parse the datetime value
+        const datetimeValue = value ? new Date(value as string) : undefined;
+        const isValidDateTime = datetimeValue && !isNaN(datetimeValue.getTime());
+        
+        // Extract time from the datetime value
+        const currentTime = isValidDateTime 
+          ? `${String(datetimeValue.getHours()).padStart(2, '0')}:${String(datetimeValue.getMinutes()).padStart(2, '0')}`
+          : '12:00';
+        const [timeInput, setTimeInput] = useState(currentTime);
+        
+        useEffect(() => {
+          setTimeInput(currentTime);
+        }, [currentTime]);
+        
+        const handleDateTimeChange = (selectedDate?: Date) => {
+          if (!selectedDate) return;
+          const [hours, minutes] = timeInput.split(':').map(Number);
+          selectedDate.setHours(hours || 0, minutes || 0, 0, 0);
+          onChange(fieldKey, selectedDate.toISOString());
+        };
+        
+        const handleTimeChange = (value: string) => {
+          setTimeInput(value);
+          const [hours, minutes] = value.split(':').map(Number);
+          const baseDate = isValidDateTime ? new Date(datetimeValue) : new Date();
+          baseDate.setHours(hours || 0, minutes || 0, 0, 0);
+          onChange(fieldKey, baseDate.toISOString());
+        };
+        
+        return (
+          <MetaDatePicker
+            value={isValidDateTime ? datetimeValue : undefined}
+            onChange={handleDateTimeChange}
+            placeholder="Pick a date and time"
+            closeOnSelect={false}
+          >
+            <div className="space-y-2">
+              <label htmlFor={`time-${fieldKey}`} className="text-sm font-medium text-muted-foreground">
+                Time
+              </label>
+              <input
+                id={`time-${fieldKey}`}
+                type="time"
+                value={timeInput}
+                onChange={(e) => handleTimeChange(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+          </MetaDatePicker>
         );
 
       case 'array':

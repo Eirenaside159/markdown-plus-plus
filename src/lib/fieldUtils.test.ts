@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { 
   formatFieldLabel, 
   inferFieldType, 
-  isDateString, 
+  isDateString,
+  isDateTimeString,
   formatDateValue, 
   normalizeDateValue,
   generateSlug 
@@ -17,7 +18,7 @@ describe('fieldUtils', () => {
     expect(formatFieldLabel('publishDate')).toBe('Publish Date');
   });
 
-  it('inferFieldType detects correct types including date strings', () => {
+  it('inferFieldType detects correct types including date and datetime strings', () => {
     expect(inferFieldType(null)).toBe('string');
     expect(inferFieldType(undefined)).toBe('string');
     expect(inferFieldType('')).toBe('string');
@@ -26,6 +27,8 @@ describe('fieldUtils', () => {
     expect(inferFieldType(42)).toBe('number');
     expect(inferFieldType({ a: 1 })).toBe('object');
     expect(inferFieldType('2025-01-01')).toBe('date');
+    expect(inferFieldType('2025-01-01T10:30:00Z')).toBe('datetime');
+    expect(inferFieldType('2025-01-01 10:30')).toBe('datetime');
     expect(inferFieldType('not a date')).toBe('string');
   });
 
@@ -36,11 +39,35 @@ describe('fieldUtils', () => {
     expect(inferFieldType('Thu, 01 Jan 2200 00:00:00 GMT')).toBe('string');
   });
 
+  describe('isDateTimeString', () => {
+    it('detects ISO 8601 datetime with time', () => {
+      expect(isDateTimeString('2025-01-15T10:30:00Z')).toBe(true);
+      expect(isDateTimeString('2025-01-15T10:30:00.000Z')).toBe(true);
+      expect(isDateTimeString('2025-01-15T10:30')).toBe(true);
+    });
+
+    it('detects datetime with space separator', () => {
+      expect(isDateTimeString('2025-01-15 10:30')).toBe(true);
+      expect(isDateTimeString('2025-01-15 10:30:00')).toBe(true);
+      expect(isDateTimeString('2025/01/15 10:30')).toBe(true);
+    });
+
+    it('rejects date-only strings', () => {
+      expect(isDateTimeString('2025-01-15')).toBe(false);
+      expect(isDateTimeString('2025/01/15')).toBe(false);
+    });
+
+    it('rejects non-date strings', () => {
+      expect(isDateTimeString('not a date')).toBe(false);
+      expect(isDateTimeString('hello world')).toBe(false);
+      expect(isDateTimeString('')).toBe(false);
+    });
+  });
+
   describe('isDateString', () => {
-    it('detects ISO 8601 dates', () => {
+    it('detects ISO 8601 date only', () => {
       expect(isDateString('2025-01-15')).toBe(true);
-      expect(isDateString('2025-01-15T10:30:00Z')).toBe(true);
-      expect(isDateString('2025-01-15T10:30:00.000Z')).toBe(true);
+      expect(isDateString('2025/01/15')).toBe(true);
     });
 
     it('detects various date formats', () => {
