@@ -18,17 +18,24 @@ import { parseMarkdown, stringifyMarkdown, updateFrontmatter } from '@/lib/markd
 import { getRecentItems, addRecentFolder, addRecentFile, addRecentRemote, clearRecentItems, formatTimestamp, type RecentItem } from '@/lib/recentFolders';
 import { getSettings, saveSettings } from '@/lib/settings';
 import { setTheme } from '@/lib/theme';
-import { saveDirectoryHandle, loadDirectoryHandle, saveAppState, loadAppState, clearCurrentWorkspace, saveRecentFolderHandle, loadRecentFolderHandle, clearAllRecentFolderHandles, saveSingleFileHandle, loadSingleFileHandle, clearSingleFileHandle } from '@/lib/persistedState';
+import { saveDirectoryHandle, loadDirectoryHandle, saveAppState, loadAppState, clearCurrentWorkspace, saveRecentFolderHandle, loadRecentFolderHandle, clearAllRecentFolderHandles, saveSingleFileHandle, loadSingleFileHandle, clearSingleFileHandle, loadPostsCache } from '@/lib/persistedState';
 import { subscribePosts, initializePosts, refreshPosts, refreshFileTree, applyPostAdded, applyPostUpdated, applyPostDeleted, applyPostPathChanged } from '@/lib/postsStore';
 import { checkGitStatus, publishFile, generateCommitMessage, type GitStatus } from '@/lib/gitOperations';
 import { hideFile, getHiddenFiles } from '@/lib/hiddenFiles';
 import { updateFaviconBadge } from '@/lib/faviconBadge';
 import type { FileTreeItem, MarkdownFile } from '@/types';
 import { FolderOpen, Save, Clock, FileCode, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen, Loader2, BookOpen, Sun, Moon, Monitor, LogOut, Eye, Search, X, Sliders, File, Cloud, Play, GitBranch } from 'lucide-react';
-import { connectRemoteWorkspace, subscribeWorkspace, saveRemoteFileContent, deleteRemoteFileFromWorkspace, getCurrentRemoteWorkspace, refreshRemoteWorkspace } from '@/lib/workspaceManager';
+import { connectRemoteWorkspace, subscribeWorkspace, saveRemoteFileContent, deleteRemoteFileFromWorkspace, getCurrentRemoteWorkspace, refreshRemoteWorkspace, loadRemoteFile } from '@/lib/workspaceManager';
 import type { Repository } from '@/lib/remoteProviders';
 
 type ViewMode = 'table' | 'editor' | 'settings';
+
+function buildRemoteCacheKey(
+  provider: 'github' | 'gitlab',
+  repository: { id: string; branch: string }
+) {
+  return `remote:${provider}:${repository.id}:${repository.branch}`;
+}
 
 // Demo sample posts
 const DEMO_POSTS: MarkdownFile[] = [
@@ -1581,30 +1588,96 @@ categories: []
         if (savedState?.workspaceType === 'remote' && savedState.remoteProvider && savedState.remoteToken && savedState.remoteRepo) {
           console.log('Restoring remote workspace:', savedState.remoteRepo.fullName);
           
+          toast.dismiss();
+          setIsLoadingPosts(true);
+          setIsRemoteMode(true);
+
+          const cacheKey = buildRemoteCacheKey(savedState.remoteProvider, savedState.remoteRepo);
+          let cachedRemotePosts: MarkdownFile[] | null = null;
           try {
-            setIsLoadingPosts(true);
-            
-            // Dismiss any existing toasts first
-            toast.dismiss();
-            
+            cachedRemotePosts = await loadPostsCache(cacheKey);
+          } catch (error) {
+            console.warn('Failed to load remote posts cache:', error);
+          }
+
+          const targetPath = savedState.selectedFilePath;
+          const shouldRestoreEditor = savedState.viewMode === 'editor' && !!targetPath;
+          let restoredEditorFromCache = false;
+
+          if (shouldRestoreEditor && targetPath) {
+            const cachedFile = cachedRemotePosts?.find(post => post.path === targetPath) || null;
+            setSelectedFilePath(targetPath);
+            setHasChanges(false);
+            setHasPendingPublish(false);
+            setShouldAutoFocus(false);
+            setViewMode('editor');
+            window.history.replaceState({ viewMode: 'editor', filePath: targetPath }, '', '#editor');
+
+            if (cachedFile) {
+              setCurrentFile(cachedFile);
+              restoredEditorFromCache = true;
+            } else {
+              setCurrentFile(null);
+            }
+          } else if (savedState.viewMode === 'settings') {
+            setCurrentFile(null);
+            setSelectedFilePath(null);
+            setHasChanges(false);
+            setHasPendingPublish(false);
+            setViewMode('settings');
+            window.history.replaceState({ viewMode: 'settings' }, '', '#settings');
+          } else {
+            setCurrentFile(null);
+            setSelectedFilePath(null);
+            setHasChanges(false);
+            setHasPendingPublish(false);
+            setViewMode('table');
+            window.history.replaceState({ viewMode: 'table' }, '', '#posts');
+          }
+          
+          try {
             await connectRemoteWorkspace(
               savedState.remoteProvider,
               savedState.remoteToken,
               savedState.remoteRepo
             );
-            
-            setIsRemoteMode(true);
-            
+
             // Show success toast after a brief delay to ensure only one shows
             setTimeout(() => {
               toast.success(`Reconnected to ${savedState.remoteRepo!.fullName}`);
             }, 100);
+
+            if (shouldRestoreEditor && !restoredEditorFromCache && targetPath) {
+              try {
+                const remoteFile = await loadRemoteFile(targetPath);
+                setCurrentFile(remoteFile);
+                setHasChanges(false);
+                setHasPendingPublish(false);
+                setShouldAutoFocus(false);
+              } catch (error) {
+                console.error('Failed to restore remote editor state from server:', error);
+                toast.error('Failed to load last edited file. Showing posts list.');
+                setCurrentFile(null);
+                setSelectedFilePath(null);
+                setHasChanges(false);
+                setHasPendingPublish(false);
+                setViewMode('table');
+                window.history.replaceState({ viewMode: 'table' }, '', '#posts');
+              }
+            }
           } catch (error: any) {
             console.error('Failed to restore remote workspace:', error);
-            toast.dismiss();
             toast.error('Failed to restore remote connection. Please reconnect.');
-            // Clear invalid remote state
             await clearCurrentWorkspace();
+            setIsRemoteMode(false);
+            setAllPosts([]);
+            setFileTree([]);
+            setCurrentFile(null);
+            setSelectedFilePath(null);
+            setHasChanges(false);
+            setHasPendingPublish(false);
+            setViewMode('table');
+            setIsLoadingPosts(false);
           }
           
           setIsRestoring(false);
@@ -2380,15 +2453,18 @@ categories: []
     }
   };
 
-  // Save view mode changes (only in folder mode)
+  // Save view mode changes (local folders and remote workspaces)
   useEffect(() => {
-    if (!isRestoring && dirHandle && !isDemoMode && !isSingleFileMode) {
-      saveAppState({
-        viewMode,
-        selectedFilePath: viewMode === 'editor' ? selectedFilePath : null,
-      });
+    const hasPersistedWorkspace = !!dirHandle || isRemoteMode;
+    if (isRestoring || !hasPersistedWorkspace || isDemoMode || isSingleFileMode) {
+      return;
     }
-  }, [viewMode, selectedFilePath, dirHandle, isRestoring, isDemoMode, isSingleFileMode]);
+
+    saveAppState({
+      viewMode,
+      selectedFilePath: viewMode === 'editor' ? selectedFilePath : null,
+    });
+  }, [viewMode, selectedFilePath, dirHandle, isRestoring, isDemoMode, isSingleFileMode, isRemoteMode]);
 
   // Handle browser back/forward buttons
   useEffect(() => {
@@ -3788,18 +3864,28 @@ categories: []
                 </div>
               ) : (
                 <div className="flex items-center justify-center text-muted-foreground w-full min-h-full">
-                  <div className="text-center space-y-2">
-                    <p>No file selected</p>
-                    <button
-                      onClick={() => {
-                        setViewMode('table');
-                        window.history.pushState({ viewMode: 'table' }, '', '#posts');
-                      }}
-                      className="text-sm text-primary hover:underline px-4 py-2"
-                    >
-                      Go to Table View to select a post
-                    </button>
-                  </div>
+                  {viewMode === 'editor' && isRemoteMode && selectedFilePath ? (
+                    <div className="text-center space-y-3">
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">Loading {selectedFilePath}...</p>
+                        <p className="text-xs text-muted-foreground">Fetching content from remote repository</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center space-y-2">
+                      <p>No file selected</p>
+                      <button
+                        onClick={() => {
+                          setViewMode('table');
+                          window.history.pushState({ viewMode: 'table' }, '', '#posts');
+                        }}
+                        className="text-sm text-primary hover:underline px-4 py-2"
+                      >
+                        Go to Table View to select a post
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
