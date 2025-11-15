@@ -8,6 +8,7 @@ import {
   updateFileMetadata,
 } from './remoteWorkspace';
 import { generateCommitMessage } from './gitOperations';
+import { loadPostsCache, savePostsCache, loadFileTreeCache, saveFileTreeCache } from './persistedState';
 
 interface WorkspaceState {
   workspace: Workspace | null;
@@ -29,6 +30,67 @@ const listeners = new Set<Listener>();
 
 function notify(): void {
   listeners.forEach((fn) => fn(state));
+}
+
+function getRemoteCacheKey(remote: RemoteWorkspace): string {
+  const { provider, repository } = remote;
+  return `remote:${provider}:${repository.id}:${repository.branch}`;
+}
+
+function isActiveRemote(remote: RemoteWorkspace): boolean {
+  const current = state.workspace?.remote;
+  if (!current) return false;
+  return getRemoteCacheKey(current) === getRemoteCacheKey(remote);
+}
+
+async function hydrateRemoteWorkspaceCache(remote: RemoteWorkspace): Promise<void> {
+  const cacheKey = getRemoteCacheKey(remote);
+  try {
+    const [cachedPosts, cachedTree] = await Promise.all([
+      loadPostsCache(cacheKey),
+      loadFileTreeCache(cacheKey),
+    ]);
+
+    if (!isActiveRemote(remote)) return;
+
+    const updates: Partial<WorkspaceState> = {};
+
+    if (cachedTree && cachedTree.length > 0) {
+      updates.fileTree = cachedTree;
+    }
+
+    if (cachedPosts && cachedPosts.length > 0) {
+      updates.posts = cachedPosts;
+      updates.isLoading = false;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      state = { ...state, ...updates };
+      notify();
+    }
+  } catch {
+    // Ignore cache hydration errors
+  }
+}
+
+async function persistRemotePostsCache(): Promise<void> {
+  const remote = state.workspace?.remote;
+  if (!remote) return;
+  try {
+    await savePostsCache(getRemoteCacheKey(remote), state.posts);
+  } catch {
+    // Ignore cache save errors
+  }
+}
+
+async function persistRemoteTreeCache(tree: FileTreeItem[]): Promise<void> {
+  const remote = state.workspace?.remote;
+  if (!remote) return;
+  try {
+    await saveFileTreeCache(getRemoteCacheKey(remote), tree);
+  } catch {
+    // Ignore cache save errors
+  }
 }
 
 export function subscribeWorkspace(listener: Listener): () => void {
@@ -57,21 +119,25 @@ export async function connectRemoteWorkspace(
     url: string;
   }
 ): Promise<void> {
+  const remoteWorkspace: RemoteWorkspace = {
+    provider,
+    token,
+    repository,
+    fileMetadata: new Map(),
+  };
+
   state = {
     workspace: {
       type: 'remote',
-      remote: {
-        provider,
-        token,
-        repository,
-        fileMetadata: new Map(),
-      },
+      remote: remoteWorkspace,
     },
     posts: [],
     fileTree: [],
     isLoading: true,
   };
   notify();
+
+  void hydrateRemoteWorkspaceCache(remoteWorkspace);
 
   try {
     await refreshRemoteWorkspace();
@@ -89,25 +155,26 @@ export async function refreshRemoteWorkspace(): Promise<void> {
     throw new Error('No remote workspace connected');
   }
 
+  const remote = state.workspace.remote;
   state = { ...state, isLoading: true };
   notify();
 
   try {
-    // Re-check after state update (TypeScript type narrowing)
-    if (!state.workspace?.remote) {
-      throw new Error('No remote workspace connected');
+    const { files, tree } = await fetchRemoteFiles(remote);
+
+    if (!isActiveRemote(remote)) {
+      return;
     }
 
-    const { files, tree } = await fetchRemoteFiles(state.workspace.remote);
-
-    console.log(`[Remote] 📁 Found ${files.length} markdown files in ${state.workspace.remote.repository.fullName}`);
+    console.log(`[Remote] 📁 Found ${files.length} markdown files in ${remote.repository.fullName}`);
 
     // Update file metadata
-    updateFileMetadata(state.workspace.remote, files);
+    updateFileMetadata(remote, files);
 
     // Update tree
     state = { ...state, fileTree: tree, isLoading: false };
     notify();
+    await persistRemoteTreeCache(tree);
 
     if (files.length === 0) {
       console.warn('[Remote] No markdown files found in repository');
@@ -123,9 +190,13 @@ export async function refreshRemoteWorkspace(): Promise<void> {
     console.log(`[Remote] 📄 Loading ${files.length} markdown files...`);
 
     for (let i = 0; i < files.length; i += chunkSize) {
+      if (!isActiveRemote(remote)) {
+        return;
+      }
+
       const chunk = files.slice(i, i + chunkSize);
       const results = await Promise.allSettled(
-        chunk.map(file => parseRemoteMarkdownFile(state.workspace!.remote!, file.path))
+        chunk.map(file => parseRemoteMarkdownFile(remote, file.path))
       );
 
       for (const result of results) {
@@ -137,6 +208,10 @@ export async function refreshRemoteWorkspace(): Promise<void> {
       }
 
       // Update state progressively
+      if (!isActiveRemote(remote)) {
+        return;
+      }
+
       state = { ...state, posts: [...posts] };
       notify();
 
@@ -150,6 +225,7 @@ export async function refreshRemoteWorkspace(): Promise<void> {
 
     state = { ...state, posts, isLoading: false };
     notify();
+    await persistRemotePostsCache();
   } catch (error) {
     console.error('Failed to refresh remote workspace:', error);
     state = { ...state, isLoading: false };
@@ -213,6 +289,8 @@ export async function saveRemoteFileContent(
 
   state = { ...state, posts: [...state.posts] };
   notify();
+
+  await persistRemotePostsCache();
 }
 
 /**
@@ -236,6 +314,8 @@ export async function deleteRemoteFileFromWorkspace(
     posts: state.posts.filter(p => p.path !== path),
   };
   notify();
+
+  await persistRemotePostsCache();
 }
 
 /**
@@ -263,6 +343,8 @@ export async function renameRemoteFileInWorkspace(
 
   state = { ...state, posts: [...state.posts] };
   notify();
+
+  await persistRemotePostsCache();
 }
 
 /**

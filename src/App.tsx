@@ -25,7 +25,7 @@ import { hideFile, getHiddenFiles } from '@/lib/hiddenFiles';
 import { updateFaviconBadge } from '@/lib/faviconBadge';
 import type { FileTreeItem, MarkdownFile } from '@/types';
 import { FolderOpen, Save, Clock, FileCode, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen, Loader2, BookOpen, Sun, Moon, Monitor, LogOut, Eye, Search, X, Sliders, File, Cloud, Play, GitBranch } from 'lucide-react';
-import { connectRemoteWorkspace, subscribeWorkspace, saveRemoteFileContent, deleteRemoteFileFromWorkspace, getCurrentRemoteWorkspace } from '@/lib/workspaceManager';
+import { connectRemoteWorkspace, subscribeWorkspace, saveRemoteFileContent, deleteRemoteFileFromWorkspace, getCurrentRemoteWorkspace, refreshRemoteWorkspace } from '@/lib/workspaceManager';
 import type { Repository } from '@/lib/remoteProviders';
 
 type ViewMode = 'table' | 'editor' | 'settings';
@@ -1195,6 +1195,16 @@ function App() {
     try {
       // Cache-first: initializePosts loads from cache then refreshes in background
       await initializePosts(dirHandle);
+    } finally {
+      setIsRefreshingPosts(false);
+    }
+  };
+
+  const refreshRemotePosts = async () => {
+    if (!isRemoteMode || isRefreshingPosts) return;
+    setIsRefreshingPosts(true);
+    try {
+      await refreshRemoteWorkspace();
     } finally {
       setIsRefreshingPosts(false);
     }
@@ -3572,6 +3582,8 @@ categories: []
                 onClearFilter={selectedFolderPath ? () => setSelectedFolderPath(null) : undefined}
                 onToggleFileTree={() => setIsFileTreeVisible(true)}
                 isFileTreeVisible={isFileTreeVisible}
+                onRefreshPosts={isRemoteMode ? refreshRemotePosts : undefined}
+                isRefreshingPosts={isRefreshingPosts}
               />
             </div>
         </div>

@@ -13,7 +13,7 @@ import type {
   SortingState,
   VisibilityState,
 } from '@tanstack/react-table';
-import { ArrowUpDown, MoreHorizontal, Eye, EyeOff, Trash2, ExternalLink, Loader2, PanelRightOpen } from 'lucide-react';
+import { ArrowUpDown, MoreHorizontal, Eye, EyeOff, Trash2, ExternalLink, Loader2, PanelRightOpen, RotateCcw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -51,6 +51,8 @@ interface PostsDataTableProps {
   onClearFilter?: () => void;
   onToggleFileTree?: () => void;
   isFileTreeVisible?: boolean;
+  onRefreshPosts?: () => void;
+  isRefreshingPosts?: boolean;
 }
 
 // Helper functions
@@ -74,7 +76,19 @@ const formatCellValue = (value: unknown): string => {
   return strValue;
 };
 
-export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onHide, title = 'All Posts', onClearFilter, onToggleFileTree, isFileTreeVisible }: PostsDataTableProps) {
+export function PostsDataTable({
+  posts,
+  isLoading = false,
+  onEdit,
+  onDelete,
+  onHide,
+  title = 'All Posts',
+  onClearFilter,
+  onToggleFileTree,
+  isFileTreeVisible,
+  onRefreshPosts,
+  isRefreshingPosts,
+}: PostsDataTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() => loadColumnVisibility());
@@ -348,18 +362,41 @@ export function PostsDataTable({ posts, isLoading = false, onEdit, onDelete, onH
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-        <Input
-          placeholder="Search all columns..."
-          value={globalFilter ?? ''}
-          onChange={(event) => setGlobalFilter(event.target.value)}
-          className="w-full sm:max-w-xs text-sm"
-        />
-        <ColumnSelector 
-          key={visibilityKey}
-          table={table}
-          onVisibilityChange={() => setVisibilityKey(k => k + 1)}
-        />
+      <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1">
+          <Input
+            placeholder="Search all columns..."
+            value={globalFilter ?? ''}
+            onChange={(event) => setGlobalFilter(event.target.value)}
+            className="w-full sm:max-w-xs text-sm"
+          />
+          <ColumnSelector 
+            key={visibilityKey}
+            table={table}
+            onVisibilityChange={() => setVisibilityKey(k => k + 1)}
+          />
+        </div>
+        {onRefreshPosts && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center justify-center gap-2 w-full sm:w-auto h-10"
+            onClick={onRefreshPosts}
+            disabled={isRefreshingPosts}
+          >
+            {isRefreshingPosts ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Refreshing...
+              </>
+            ) : (
+              <>
+                <RotateCcw className="h-4 w-4" />
+                Refresh
+              </>
+            )}
+          </Button>
+        )}
       </div>
 
       {/* Table */}
