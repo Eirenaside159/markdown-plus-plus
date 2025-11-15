@@ -1268,7 +1268,6 @@ function App() {
     setHasChanges(false);
     setViewMode('table');
     
-    toast.info('Demo exited');
   };
 
   const handleInstallClick = async () => {
@@ -1574,7 +1573,6 @@ categories: []
       // Clear persisted state (including remote token)
       await clearCurrentWorkspace();
       
-      toast.success('Disconnected from repository');
     }
   };
 
