@@ -18,7 +18,7 @@ import { parseMarkdown, stringifyMarkdown, updateFrontmatter } from '@/lib/markd
 import { getRecentItems, addRecentFolder, addRecentFile, addRecentRemote, clearRecentItems, formatTimestamp, type RecentItem } from '@/lib/recentFolders';
 import { getSettings, saveSettings } from '@/lib/settings';
 import { setTheme } from '@/lib/theme';
-import { saveDirectoryHandle, loadDirectoryHandle, saveAppState, loadAppState, clearCurrentWorkspace, saveRecentFolderHandle, loadRecentFolderHandle, clearAllRecentFolderHandles, saveSingleFileHandle, loadSingleFileHandle, clearSingleFileHandle, loadPostsCache } from '@/lib/persistedState';
+import { saveDirectoryHandle, loadDirectoryHandle, saveAppState, loadAppState, clearCurrentWorkspace, saveRecentFolderHandle, loadRecentFolderHandle, clearAllRecentFolderHandles, saveSingleFileHandle, loadSingleFileHandle, clearSingleFileHandle, loadPostsCache, loadRemoteMetadataCache } from '@/lib/persistedState';
 import { subscribePosts, initializePosts, refreshPosts, refreshFileTree, applyPostAdded, applyPostUpdated, applyPostDeleted, applyPostPathChanged } from '@/lib/postsStore';
 import { checkGitStatus, publishFile, generateCommitMessage, type GitStatus } from '@/lib/gitOperations';
 import { hideFile, getHiddenFiles } from '@/lib/hiddenFiles';
@@ -1063,13 +1063,16 @@ function App() {
   
   // Centralized posts subscription (cache-first, serialized scanning)
   useEffect(() => {
+    if (isRemoteMode) {
+      return;
+    }
     const unsubscribe = subscribePosts(({ posts, isLoading, fileTree }) => {
       setAllPosts(posts);
       setIsLoadingPosts(isLoading);
       setFileTree(fileTree);
     });
-    return unsubscribe;
-  }, []);
+    return () => unsubscribe();
+  }, [isRemoteMode]);
   
   // Remote workspace subscription
   useEffect(() => {
@@ -1079,6 +1082,8 @@ function App() {
         setIsLoadingPosts(isLoading);
         setFileTree(fileTree);
         setIsRemoteMode(true);
+      } else {
+        setIsRemoteMode(false);
       }
     });
     return unsubscribe;
@@ -1597,6 +1602,15 @@ categories: []
           } catch (error) {
             console.warn('Failed to load remote posts cache:', error);
           }
+          let cachedRemoteMetadata = null as Awaited<ReturnType<typeof loadRemoteMetadataCache>>;
+          try {
+            cachedRemoteMetadata = await loadRemoteMetadataCache(cacheKey);
+          } catch (error) {
+            console.warn('Failed to load remote metadata cache:', error);
+          }
+          const hasCachedRemotePosts = Array.isArray(cachedRemotePosts) && cachedRemotePosts.length > 0;
+          const hasCachedRemoteMetadata = !!(cachedRemoteMetadata && Object.keys(cachedRemoteMetadata).length > 0);
+          const canRestoreFromCache = hasCachedRemotePosts && hasCachedRemoteMetadata;
 
           const targetPath = savedState.selectedFilePath;
           const shouldRestoreEditor = savedState.viewMode === 'editor' && !!targetPath;
@@ -1637,13 +1651,19 @@ categories: []
             await connectRemoteWorkspace(
               savedState.remoteProvider,
               savedState.remoteToken,
-              savedState.remoteRepo
+              savedState.remoteRepo,
+              {
+                autoRefresh: !canRestoreFromCache,
+                hasCachedData: canRestoreFromCache,
+              }
             );
 
-            // Show success toast after a brief delay to ensure only one shows
-            setTimeout(() => {
-              toast.success(`Reconnected to ${savedState.remoteRepo!.fullName}`);
-            }, 100);
+            if (!canRestoreFromCache) {
+              // Show success toast after a brief delay to ensure only one shows
+              setTimeout(() => {
+                toast.success(`Reconnected to ${savedState.remoteRepo!.fullName}`);
+              }, 100);
+            }
 
             if (shouldRestoreEditor && !restoredEditorFromCache && targetPath) {
               try {

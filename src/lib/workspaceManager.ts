@@ -8,13 +8,26 @@ import {
   updateFileMetadata,
 } from './remoteWorkspace';
 import { generateCommitMessage } from './gitOperations';
-import { loadPostsCache, savePostsCache, loadFileTreeCache, saveFileTreeCache } from './persistedState';
+import {
+  loadPostsCache,
+  savePostsCache,
+  loadFileTreeCache,
+  saveFileTreeCache,
+  loadRemoteMetadataCache,
+  saveRemoteMetadataCache,
+  type RemoteMetadataCache,
+} from './persistedState';
 
 interface WorkspaceState {
   workspace: Workspace | null;
   posts: MarkdownFile[];
   fileTree: FileTreeItem[];
   isLoading: boolean;
+}
+
+interface ConnectRemoteOptions {
+  autoRefresh?: boolean;
+  hasCachedData?: boolean;
 }
 
 type Listener = (state: WorkspaceState) => void;
@@ -46,12 +59,20 @@ function isActiveRemote(remote: RemoteWorkspace): boolean {
 async function hydrateRemoteWorkspaceCache(remote: RemoteWorkspace): Promise<void> {
   const cacheKey = getRemoteCacheKey(remote);
   try {
-    const [cachedPosts, cachedTree] = await Promise.all([
+    const [cachedPosts, cachedTree, cachedMetadata] = await Promise.all([
       loadPostsCache(cacheKey),
       loadFileTreeCache(cacheKey),
+      loadRemoteMetadataCache(cacheKey),
     ]);
 
     if (!isActiveRemote(remote)) return;
+
+    if (cachedMetadata) {
+      remote.fileMetadata.clear();
+      Object.entries(cachedMetadata).forEach(([path, data]) => {
+        remote.fileMetadata.set(path, { ...data });
+      });
+    }
 
     const updates: Partial<WorkspaceState> = {};
 
@@ -93,6 +114,20 @@ async function persistRemoteTreeCache(tree: FileTreeItem[]): Promise<void> {
   }
 }
 
+async function persistRemoteMetadataCache(): Promise<void> {
+  const remote = state.workspace?.remote;
+  if (!remote) return;
+  try {
+    const metadata: RemoteMetadataCache = {};
+    remote.fileMetadata.forEach((value, key) => {
+      metadata[key] = { ...value };
+    });
+    await saveRemoteMetadataCache(getRemoteCacheKey(remote), metadata);
+  } catch {
+    // Ignore cache save errors
+  }
+}
+
 export function subscribeWorkspace(listener: Listener): () => void {
   listeners.add(listener);
   listener(state);
@@ -117,8 +152,10 @@ export async function connectRemoteWorkspace(
     branch: string;
     defaultBranch: string;
     url: string;
-  }
+  },
+  options: ConnectRemoteOptions = {}
 ): Promise<void> {
+  const { autoRefresh = true, hasCachedData = false } = options;
   const remoteWorkspace: RemoteWorkspace = {
     provider,
     token,
@@ -133,11 +170,16 @@ export async function connectRemoteWorkspace(
     },
     posts: [],
     fileTree: [],
-    isLoading: true,
+    isLoading: autoRefresh || !hasCachedData,
   };
   notify();
 
-  void hydrateRemoteWorkspaceCache(remoteWorkspace);
+  const hydratePromise = hydrateRemoteWorkspaceCache(remoteWorkspace);
+
+  if (!autoRefresh) {
+    await hydratePromise;
+    return;
+  }
 
   try {
     await refreshRemoteWorkspace();
@@ -170,6 +212,7 @@ export async function refreshRemoteWorkspace(): Promise<void> {
 
     // Update file metadata
     updateFileMetadata(remote, files);
+    await persistRemoteMetadataCache();
 
     // Update tree
     state = { ...state, fileTree: tree, isLoading: false };
@@ -271,6 +314,8 @@ export async function saveRemoteFileContent(
     message
   );
 
+  await persistRemoteMetadataCache();
+
   // Update local state
   const updated: MarkdownFile = {
     name: path.split('/').pop() || path,
@@ -291,6 +336,7 @@ export async function saveRemoteFileContent(
   notify();
 
   await persistRemotePostsCache();
+  await persistRemoteMetadataCache();
 }
 
 /**
@@ -345,6 +391,7 @@ export async function renameRemoteFileInWorkspace(
   notify();
 
   await persistRemotePostsCache();
+  await persistRemoteMetadataCache();
 }
 
 /**

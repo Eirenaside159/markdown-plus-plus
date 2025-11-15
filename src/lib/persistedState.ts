@@ -2,11 +2,12 @@
 import type { MarkdownFile, FileTreeItem } from '@/types';
 
 const DB_NAME = 'mdplusplus-db';
-const DB_VERSION = 3; // bump for file tree cache store
+const DB_VERSION = 4; // bump for metadata cache store
 const HANDLE_STORE = 'directory-handles';
 const STATE_STORE = 'app-state';
 const POSTS_STORE = 'posts-cache';
 const FILETREE_STORE = 'filetree-cache';
+const METADATA_STORE = 'metadata-cache';
 
 interface AppState {
   selectedFilePath: string | null;
@@ -50,6 +51,9 @@ function openDB(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(FILETREE_STORE)) {
         db.createObjectStore(FILETREE_STORE);
+      }
+      if (!db.objectStoreNames.contains(METADATA_STORE)) {
+        db.createObjectStore(METADATA_STORE);
       }
     };
   });
@@ -204,12 +208,16 @@ export async function loadAppState(): Promise<AppState | null> {
 export async function clearPersistedData(): Promise<void> {
   try {
     const db = await openDB();
-    const transaction = db.transaction([HANDLE_STORE, STATE_STORE, POSTS_STORE, FILETREE_STORE], 'readwrite');
+    const transaction = db.transaction(
+      [HANDLE_STORE, STATE_STORE, POSTS_STORE, FILETREE_STORE, METADATA_STORE],
+      'readwrite'
+    );
     
     transaction.objectStore(HANDLE_STORE).clear();
     transaction.objectStore(STATE_STORE).clear();
     transaction.objectStore(POSTS_STORE).clear();
     transaction.objectStore(FILETREE_STORE).clear();
+    transaction.objectStore(METADATA_STORE).clear();
     
     return new Promise((resolve, reject) => {
       transaction.oncomplete = () => {
@@ -230,7 +238,10 @@ export async function clearPersistedData(): Promise<void> {
 export async function clearCurrentWorkspace(): Promise<void> {
   try {
     const db = await openDB();
-    const transaction = db.transaction([HANDLE_STORE, STATE_STORE, POSTS_STORE, FILETREE_STORE], 'readwrite');
+    const transaction = db.transaction(
+      [HANDLE_STORE, STATE_STORE, POSTS_STORE, FILETREE_STORE, METADATA_STORE],
+      'readwrite'
+    );
     
     // Only delete current-directory and current-single-file, keep recent-* handles
     transaction.objectStore(HANDLE_STORE).delete('current-directory');
@@ -238,6 +249,7 @@ export async function clearCurrentWorkspace(): Promise<void> {
     transaction.objectStore(STATE_STORE).clear();
     transaction.objectStore(POSTS_STORE).clear();
     transaction.objectStore(FILETREE_STORE).clear();
+    transaction.objectStore(METADATA_STORE).clear();
     
     return new Promise((resolve, reject) => {
       transaction.oncomplete = () => {
@@ -405,6 +417,57 @@ export async function loadFileTreeCache(projectKey: string): Promise<FileTreeIte
         const result = request.result as { tree: FileTreeItem[]; updatedAt: number } | undefined;
         if (!result) return resolve(null);
         resolve(result.tree);
+      };
+      request.onerror = () => {
+        db.close();
+        reject(request.error);
+      };
+    });
+  } catch {
+    return null;
+  }
+}
+
+export type RemoteMetadataCache = Record<string, { sha?: string; lastFetched: number }>;
+
+export async function saveRemoteMetadataCache(
+  projectKey: string,
+  metadata: RemoteMetadataCache
+): Promise<void> {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction([METADATA_STORE], 'readwrite');
+    const store = transaction.objectStore(METADATA_STORE);
+    store.put({ metadata, updatedAt: Date.now() }, projectKey);
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      transaction.onerror = () => {
+        db.close();
+        reject(transaction.error);
+      };
+    });
+  } catch {
+    // Ignore metadata cache errors
+  }
+}
+
+export async function loadRemoteMetadataCache(
+  projectKey: string
+): Promise<RemoteMetadataCache | null> {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction([METADATA_STORE], 'readonly');
+    const store = transaction.objectStore(METADATA_STORE);
+    return await new Promise<RemoteMetadataCache | null>((resolve, reject) => {
+      const request = store.get(projectKey);
+      request.onsuccess = () => {
+        db.close();
+        const result = request.result as { metadata: RemoteMetadataCache } | undefined;
+        if (!result) return resolve(null);
+        resolve(result.metadata);
       };
       request.onerror = () => {
         db.close();
