@@ -10,6 +10,30 @@ import { useConfirm } from './ui/confirm-dialog';
 import { AISettings } from './AISettings';
 import packageJson from '../../package.json';
 
+// GitLab Icon Component
+const GitLabIcon = ({ size = 24, className = '' }: { size?: number; className?: string }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 210 194"
+    xmlns="http://www.w3.org/2000/svg"
+    fill="currentColor"
+    className={className}
+    style={{ display: 'block' }}
+  >
+    <g>
+      <path d="M105.0614 193.655L105 193.517l.0614.138z" fill="#E24329"/>
+      <path d="M105.0614 193.655L67.2452 74.6914H142.815L105.0614 193.655z" fill="#E24329"/>
+      <path d="M105.0614 193.6548L67.2452 74.6914H12.2637L105.0614 193.6548z" fill="#FC6D26"/>
+      <path d="M12.2637 74.6914L.5688 110.9619c-1.0599 3.2434.0633 6.8062 2.8046 8.9033l101.6879 73.7896L12.2637 74.6914z" fill="#FCA326"/>
+      <path d="M12.2637 74.6914h54.9815L47.4043 12.1832c-.5952-1.8239-3.1666-1.8239-3.7617 0L12.2637 74.6914z" fill="#E24329"/>
+      <path d="M105.0614 193.6548L142.8776 74.6914h54.9815L105.0614 193.6548z" fill="#FC6D26"/>
+      <path d="M197.8591 74.6914L209.554 110.9619c1.0599 3.2434-.0633 6.8062-2.8046 8.9033l-101.6879 73.7896 92.7976-118.9634z" fill="#FCA326"/>
+      <path d="M197.8591 74.6914h-54.9815l19.8409-62.5082c.5952-1.8239 3.1666-1.8239 3.7617 0l31.3789 62.5082z" fill="#E24329"/>
+    </g>
+  </svg>
+);
+
 function UrlPreview({ baseUrl, urlFormat }: { baseUrl: string; urlFormat: string }) {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -736,7 +760,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
               {/* GitLab Token */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <GitBranch className="h-4 w-4 text-muted-foreground" />
+                  <GitLabIcon size={16} className="text-muted-foreground" />
                   <label htmlFor="gitlab-token-input" className="text-sm font-medium text-foreground">
                     GitLab Personal Access Token
                   </label>

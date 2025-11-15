@@ -1437,6 +1437,14 @@ categories: []
       toast.dismiss();
       setIsLoadingPosts(true);
       
+      // Save token to settings so it appears in Settings page
+      const currentSettings = getSettings();
+      const updatedSettings = {
+        ...currentSettings,
+        [provider === 'github' ? 'githubToken' : 'gitlabToken']: repo.token,
+      };
+      saveSettings(updatedSettings);
+      
       // Clear local and demo modes
       setDirHandle(null);
       setIsSingleFileMode(false);

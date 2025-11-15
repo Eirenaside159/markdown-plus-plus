@@ -5,7 +5,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Github, Loader2, AlertCircle, Cloud, Eye, EyeOff, Lock, Globe } from 'lucide-react';
 import { createRemoteProvider, type Repository } from '@/lib/remoteProviders';
-import { getSettings } from '@/lib/settings';
+import { getSettings, saveSettings } from '@/lib/settings';
 
 // GitLab Icon Component
 const GitLabIcon = ({ size = 24 }: { size?: number }) => (
@@ -154,6 +154,14 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
         return;
       }
 
+      // Token is valid, save it to settings
+      const currentSettings = getSettings();
+      const updatedSettings = {
+        ...currentSettings,
+        [providerValue === 'github' ? 'githubToken' : 'gitlabToken']: tokenValue.trim(),
+      };
+      saveSettings(updatedSettings);
+
       setRepos(fetchedRepos);
       setStep('repos');
     } catch (err: any) {
@@ -202,6 +210,9 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
       branch: selectedBranch,
       token,
     });
+    
+    // Close modal immediately after connecting
+    onClose();
   };
 
   const filteredRepos = repos.filter(repo =>
