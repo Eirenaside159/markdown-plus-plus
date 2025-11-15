@@ -15,7 +15,7 @@ import { useConfirm } from '@/components/ui/confirm-dialog';
 import confetti from 'canvas-confetti';
 import { selectDirectory, readFile, writeFile, deleteFile, renameFile, moveFile, isFileSystemAccessSupported, selectSingleFile, createNewFile, readSingleFile, writeSingleFile } from '@/lib/fileSystem';
 import { parseMarkdown, stringifyMarkdown, updateFrontmatter } from '@/lib/markdown';
-import { getRecentFolders, addRecentFolder, clearRecentFolders, formatTimestamp } from '@/lib/recentFolders';
+import { getRecentItems, addRecentFolder, addRecentFile, addRecentRemote, clearRecentItems, formatTimestamp, type RecentItem } from '@/lib/recentFolders';
 import { getSettings, saveSettings } from '@/lib/settings';
 import { setTheme } from '@/lib/theme';
 import { saveDirectoryHandle, loadDirectoryHandle, saveAppState, loadAppState, clearCurrentWorkspace, saveRecentFolderHandle, loadRecentFolderHandle, clearAllRecentFolderHandles, saveSingleFileHandle, loadSingleFileHandle, clearSingleFileHandle } from '@/lib/persistedState';
@@ -24,7 +24,7 @@ import { checkGitStatus, publishFile, generateCommitMessage, type GitStatus } fr
 import { hideFile, getHiddenFiles } from '@/lib/hiddenFiles';
 import { updateFaviconBadge } from '@/lib/faviconBadge';
 import type { FileTreeItem, MarkdownFile } from '@/types';
-import { FolderOpen, Save, Clock, FileCode, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen, Loader2, BookOpen, Sun, Moon, Monitor, LogOut, Eye, Search, X, Sliders, File, Cloud, Play } from 'lucide-react';
+import { FolderOpen, Save, Clock, FileCode, Plus, RotateCcw, Settings as SettingsIcon, Github, AlertCircle, Upload, Lightbulb, ChevronDown, PanelRightOpen, Loader2, BookOpen, Sun, Moon, Monitor, LogOut, Eye, Search, X, Sliders, File, Cloud, Play, GitBranch } from 'lucide-react';
 import { connectRemoteWorkspace, subscribeWorkspace, saveRemoteFileContent, deleteRemoteFileFromWorkspace, getCurrentRemoteWorkspace } from '@/lib/workspaceManager';
 import type { Repository } from '@/lib/remoteProviders';
 
@@ -991,8 +991,9 @@ function App() {
   const [showDemoModal, setShowDemoModal] = useState(false);
   const [showRemoteModal, setShowRemoteModal] = useState(false);
   const [isRemoteMode, setIsRemoteMode] = useState(false);
-  const [recentFolders, setRecentFolders] = useState(() => getRecentFolders());
+  const [recentItems, setRecentItems] = useState<RecentItem[]>(() => getRecentItems());
   const [hiddenFiles, setHiddenFiles] = useState<string[]>([]);
+  const [isRecentScrolledToBottom, setIsRecentScrolledToBottom] = useState(false);
   
   // File tree filters
   const [fileTreeSearchQuery, setFileTreeSearchQuery] = useState('');
@@ -1014,27 +1015,36 @@ function App() {
     }
   }, [dirHandle]);
   
-  // Clean up recent folders that don't have saved handles on mount
+  // Clean up recent items that don't have saved handles on mount
   useEffect(() => {
-    const cleanupRecentFolders = async () => {
-      const folders = getRecentFolders();
-      const validFolders: typeof folders = [];
+    const cleanupRecentItems = async () => {
+      const items = getRecentItems();
+      const validItems: RecentItem[] = [];
       
-      for (const folder of folders) {
-        const handle = await loadRecentFolderHandle(folder.name);
-        if (handle) {
-          validFolders.push(folder);
+      for (const item of items) {
+        if (item.type === 'folder') {
+          const handle = await loadRecentFolderHandle(item.name);
+          if (handle) {
+            validItems.push(item);
+          }
+        } else if (item.type === 'file') {
+          // For single files, we can't reliably check if handle still exists
+          // So we'll keep them and let user deal with errors when opening
+          validItems.push(item);
+        } else if (item.type === 'remote') {
+          // Remote repositories don't need handle validation
+          validItems.push(item);
         }
       }
       
-      // If some folders were removed, update localStorage and state
-      if (validFolders.length !== folders.length) {
-        localStorage.setItem('mdplusplus_recent_folders', JSON.stringify(validFolders));
-        setRecentFolders(validFolders);
+      // If some items were removed, update localStorage and state
+      if (validItems.length !== items.length) {
+        localStorage.setItem('mdplusplus_recent_items', JSON.stringify(validItems));
+        setRecentItems(validItems);
       }
     };
     
-    cleanupRecentFolders();
+    cleanupRecentItems();
   }, []);
   
   // Centralized posts subscription (cache-first, serialized scanning)
@@ -1277,7 +1287,7 @@ function App() {
       
       setDirHandle(handle);
       addRecentFolder(handle);
-      setRecentFolders(getRecentFolders());
+      setRecentItems(getRecentItems());
       // Save to IndexedDB for persistence
       try {
         await saveDirectoryHandle(handle);
@@ -1327,6 +1337,10 @@ function App() {
         setIsSingleFileMode(true);
         setSingleFileHandle(handle);
         await saveSingleFileHandle(handle);
+        
+        // Add to recent items
+        addRecentFile(handle);
+        setRecentItems(getRecentItems());
         
         // Read and parse the file
         try {
@@ -1466,6 +1480,18 @@ categories: []
       
       setIsRemoteMode(true);
       setShowRemoteModal(false);
+      
+      // Add to recent items
+      addRecentRemote(provider, {
+        id: repo.id.toString(),
+        name: repo.name,
+        fullName: repo.fullName,
+        owner: repo.owner || repo.fullName.split('/')[0] || '',
+        branch: repo.branch,
+        defaultBranch: repo.defaultBranch,
+        url: repo.url,
+      });
+      setRecentItems(getRecentItems());
       
       // Save remote workspace info for restoration
       try {
@@ -1615,7 +1641,7 @@ categories: []
           // Set handle first so UI can render app shell immediately
           setDirHandle(savedHandle);
           addRecentFolder(savedHandle);
-          setRecentFolders(getRecentFolders());
+          setRecentItems(getRecentItems());
           try {
             await saveRecentFolderHandle(savedHandle.name, savedHandle);
           } catch (error) {
@@ -1733,61 +1759,143 @@ categories: []
   };
 
   const handleClearRecent = async () => {
-    const confirmed = await confirm('Clear all recent folders?', {
-      title: 'Clear Recent Folders',
+    const confirmed = await confirm('Clear all recent items?', {
+      title: 'Clear Recent Items',
       confirmLabel: 'Clear',
       variant: 'destructive'
     });
     if (confirmed) {
-      clearRecentFolders();
+      clearRecentItems();
       await clearAllRecentFolderHandles();
-      setRecentFolders([]);
-      toast.success('Recent folders cleared');
+      setRecentItems([]);
+      toast.success('Recent items cleared');
     }
   };
 
-  const handleOpenRecentFolder = async (folderName: string) => {
-    const toastId = toast.loading(`Opening ${folderName}...`);
-    
-    try {
-      // Try to load the saved handle
-      const handle = await loadRecentFolderHandle(folderName);
+  const handleOpenRecentItem = async (item: RecentItem) => {
+    if (item.type === 'folder') {
+      const toastId = toast.loading(`Opening ${item.name}...`);
       
-      if (!handle) {
-        // Handle not found or permission denied
-        toast.dismiss(toastId);
-        toast.error(`Cannot access "${folderName}". Permission may have been revoked.`);
-        return;
-      }
-
-      // Save handle and update recent folders
-      await saveDirectoryHandle(handle);
-      await saveRecentFolderHandle(handle.name, handle);
-      addRecentFolder(handle);
-      setRecentFolders(getRecentFolders());
-      
-      // Open UI immediately with cached data
-      setDirHandle(handle);
-      setViewMode('table');
-      
-      // Dismiss loading toast and show success
-      toast.dismiss(toastId);
-      toast.success(`Opened ${folderName}`);
-      
-      // Initialize posts in background (cache-first, then refresh)
-      initializePosts(handle);
-      
-      // Refresh file tree and git status in background
-      (async () => {
-        const tree = await refreshFileTree(handle);
-        setFileTree(tree);
+      try {
+        // Try to load the saved handle
+        const handle = await loadRecentFolderHandle(item.name);
         
-        const status = await checkGitStatus(handle);
-        setGitStatus(status);
-      })();
-    } catch (error) {
-      toast.dismiss(toastId);
-      toast.error('Failed to open folder');
+        if (!handle) {
+          // Handle not found or permission denied
+          toast.dismiss(toastId);
+          toast.error(`Cannot access "${item.name}". Permission may have been revoked.`);
+          return;
+        }
+
+        // Save handle and update recent items
+        await saveDirectoryHandle(handle);
+        await saveRecentFolderHandle(handle.name, handle);
+        addRecentFolder(handle);
+        setRecentItems(getRecentItems());
+        
+        // Open UI immediately with cached data
+        setDirHandle(handle);
+        setViewMode('table');
+        
+        // Dismiss loading toast and show success
+        toast.dismiss(toastId);
+        toast.success(`Opened ${item.name}`);
+        
+        // Initialize posts in background (cache-first, then refresh)
+        initializePosts(handle);
+        
+        // Refresh file tree and git status in background
+        (async () => {
+          const tree = await refreshFileTree(handle);
+          setFileTree(tree);
+          
+          const status = await checkGitStatus(handle);
+          setGitStatus(status);
+        })();
+      } catch (error) {
+        toast.dismiss(toastId);
+        toast.error('Failed to open folder');
+      }
+    } else if (item.type === 'file') {
+      // Open single file (we can't restore file handle, so we ask user to select it again)
+      toast.info(`Please select "${item.name}" again to open it`);
+      await handleSelectSingleFile();
+    } else if (item.type === 'remote' && item.remote) {
+      const toastId = toast.loading(`Connecting to ${item.remote.fullName}...`);
+      
+      try {
+        // Get stored settings to retrieve token
+        const settings = getSettings();
+        const token = item.remote.provider === 'github' ? settings.githubToken : settings.gitlabToken;
+        
+        if (!token) {
+          toast.dismiss(toastId);
+          toast.error(`No ${item.remote.provider === 'github' ? 'GitHub' : 'GitLab'} token found. Please connect again.`);
+          setShowRemoteModal(true);
+          return;
+        }
+        
+        // Clear local modes
+        setDirHandle(null);
+        setIsSingleFileMode(false);
+        setSingleFileHandle(null);
+        setIsDemoMode(false);
+        await clearCurrentWorkspace();
+        await clearSingleFileHandle();
+        
+        // Connect to remote workspace
+        await connectRemoteWorkspace(item.remote.provider, token, {
+          id: item.remote.repoId,
+          name: item.name,
+          fullName: item.remote.fullName,
+          owner: item.remote.owner,
+          branch: item.remote.branch,
+          defaultBranch: item.remote.defaultBranch,
+          url: item.remote.url,
+        });
+        
+        setIsRemoteMode(true);
+        
+        // Update recent items
+        addRecentRemote(item.remote.provider, {
+          id: item.remote.repoId,
+          name: item.name,
+          fullName: item.remote.fullName,
+          owner: item.remote.owner,
+          branch: item.remote.branch,
+          defaultBranch: item.remote.defaultBranch,
+          url: item.remote.url,
+        });
+        setRecentItems(getRecentItems());
+        
+        // Save remote workspace info for restoration
+        try {
+          await saveAppState({
+            workspaceType: 'remote',
+            remoteProvider: item.remote.provider,
+            remoteRepo: {
+              id: item.remote.repoId,
+              name: item.name,
+              fullName: item.remote.fullName,
+              owner: item.remote.owner,
+              branch: item.remote.branch,
+              defaultBranch: item.remote.defaultBranch,
+              url: item.remote.url,
+            },
+            remoteToken: token,
+          });
+        } catch (error) {
+          console.error('Failed to save remote workspace state:', error);
+        }
+        
+        toast.dismiss(toastId);
+        toast.success(`Connected to ${item.remote.fullName} (${item.remote.branch})`);
+      } catch (error: any) {
+        console.error('Failed to connect remote workspace:', error);
+        toast.dismiss(toastId);
+        toast.error(error.message || 'Failed to connect to repository');
+        setIsRemoteMode(false);
+      }
     }
   };
 
@@ -2623,43 +2731,93 @@ categories: []
             </button>
           </div>
 
-          {/* Recent Folders */}
-          {recentFolders.length > 0 && (
+          {/* Recent Items */}
+          {recentItems.length > 0 && (
             <div className="space-y-3 sm:space-y-4">
-              <div className="flex items-center justify-between px-1 sm:px-2">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs sm:text-sm font-medium text-muted-foreground">
                   <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  Recent Folders
+                  Recent
                 </div>
                 <button
                   onClick={handleClearRecent}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 sm:px-3 py-1.5 touch-target"
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors touch-target"
                 >
                   Clear
                 </button>
               </div>
               
-              <div className="grid gap-2">
-                {recentFolders.map((folder) => (
-                  <button
-                    key={folder.name + folder.timestamp}
-                    onClick={() => handleOpenRecentFolder(folder.name)}
-                    disabled={!isSupported}
-                    className="flex items-center justify-between p-3 sm:p-4 rounded-md border border-border bg-card hover:bg-accent active:bg-accent/80 transition-colors text-left group touch-target disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-card"
-                  >
-                    <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                      <div className="shrink-0">
-                        <FolderOpen className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate text-sm sm:text-base">{folder.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {formatTimestamp(folder.timestamp)}
+              <div className="relative">
+                <div 
+                  className="grid gap-2 max-h-[11rem] sm:max-h-[12rem] overflow-y-auto scrollbar-hide"
+                  onScroll={(e) => {
+                    const target = e.currentTarget;
+                    const isAtBottom = Math.abs(target.scrollHeight - target.scrollTop - target.clientHeight) < 5;
+                    setIsRecentScrolledToBottom(isAtBottom);
+                  }}
+                >
+                  {recentItems.map((item) => {
+                  const getIcon = () => {
+                    if (item.type === 'folder') {
+                      return <FolderOpen className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground group-hover:text-foreground transition-colors" />;
+                    } else if (item.type === 'file') {
+                      return <File className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground group-hover:text-foreground transition-colors" />;
+                    } else if (item.type === 'remote') {
+                      return item.remote?.provider === 'github' 
+                        ? <Github className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                        : <Cloud className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground group-hover:text-foreground transition-colors" />;
+                    }
+                  };
+
+                  const getTitle = () => {
+                    if (item.type === 'remote' && item.remote) {
+                      return item.remote.fullName;
+                    }
+                    return item.name;
+                  };
+
+                  const getSubtitle = () => {
+                    if (item.type === 'remote' && item.remote) {
+                      return (
+                        <div className="flex items-center gap-1">
+                          <GitBranch className="h-3 w-3" />
+                          <span>{item.remote.branch}</span>
+                          <span className="mx-1">•</span>
+                          <span>{formatTimestamp(item.timestamp)}</span>
+                        </div>
+                      );
+                    }
+                    return formatTimestamp(item.timestamp);
+                  };
+
+                  const isDisabled = item.type === 'folder' && !isSupported;
+
+                  return (
+                    <button
+                      key={item.type + item.name + item.timestamp}
+                      onClick={() => handleOpenRecentItem(item)}
+                      disabled={isDisabled}
+                      className="flex items-center justify-between p-3 sm:p-4 rounded-md border border-border bg-card hover:bg-accent active:bg-accent/80 transition-colors text-left group touch-target disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-card"
+                    >
+                      <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                        <div className="shrink-0">
+                          {getIcon()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate text-sm sm:text-base">{getTitle()}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {getSubtitle()}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
+                </div>
+                {/* Gradient fade overlay at bottom */}
+                {recentItems.length > 2 && !isRecentScrolledToBottom && (
+                  <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background/80 via-background/40 to-transparent pointer-events-none transition-opacity duration-300" />
+                )}
               </div>
             </div>
           )}
@@ -2711,7 +2869,6 @@ categories: []
                   <span className="xs:hidden">Support</span>
                 </a>
               </div>
-              <span className="text-xs">v0.7.0-beta</span>
             </div>
           </div>
 

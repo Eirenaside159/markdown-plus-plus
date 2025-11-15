@@ -1,60 +1,184 @@
-interface RecentFolder {
+export type RecentItemType = 'folder' | 'file' | 'remote';
+
+export interface RecentItem {
+  type: RecentItemType;
   name: string;
   timestamp: number;
+  // For remote repositories
+  remote?: {
+    provider: 'github' | 'gitlab';
+    fullName: string;
+    owner: string;
+    branch: string;
+    repoId: string;
+    defaultBranch: string;
+    url: string;
+  };
 }
 
-const RECENT_FOLDERS_KEY = 'mdplusplus_recent_folders';
-const MAX_RECENT_FOLDERS = 8;
+const RECENT_ITEMS_KEY = 'mdplusplus_recent_items';
+const RECENT_FOLDERS_KEY = 'mdplusplus_recent_folders'; // Keep for migration
+const MAX_RECENT_ITEMS = 10;
 
 /**
- * Get list of recently opened folders
+ * Migrate old recent folders to new format
  */
-export function getRecentFolders(): RecentFolder[] {
+function migrateOldRecentFolders(): void {
   try {
-    const stored = localStorage.getItem(RECENT_FOLDERS_KEY);
+    const oldStored = localStorage.getItem(RECENT_FOLDERS_KEY);
+    if (!oldStored) return;
+    
+    const oldFolders = JSON.parse(oldStored) as Array<{ name: string; timestamp: number }>;
+    const migratedItems: RecentItem[] = oldFolders.map(folder => ({
+      type: 'folder' as const,
+      name: folder.name,
+      timestamp: folder.timestamp,
+    }));
+    
+    localStorage.setItem(RECENT_ITEMS_KEY, JSON.stringify(migratedItems));
+    localStorage.removeItem(RECENT_FOLDERS_KEY);
+  } catch (error) {
+    console.error('Failed to migrate recent folders:', error);
+  }
+}
+
+/**
+ * Get list of recent items (folders, files, and remote repositories)
+ */
+export function getRecentItems(): RecentItem[] {
+  try {
+    // Try to migrate old format
+    const oldStored = localStorage.getItem(RECENT_FOLDERS_KEY);
+    if (oldStored) {
+      migrateOldRecentFolders();
+    }
+    
+    const stored = localStorage.getItem(RECENT_ITEMS_KEY);
     if (!stored) return [];
     
-    const folders = JSON.parse(stored) as RecentFolder[];
-    return folders.sort((a, b) => b.timestamp - a.timestamp);
+    const items = JSON.parse(stored) as RecentItem[];
+    return items.sort((a, b) => b.timestamp - a.timestamp);
   } catch (error) {
     return [];
   }
 }
 
 /**
- * Add a folder to recent folders list
+ * Add a folder to recent items list
  */
 export function addRecentFolder(handle: FileSystemDirectoryHandle): void {
   try {
-    const folders = getRecentFolders();
+    const items = getRecentItems();
     
-    // Remove if already exists
-    const filtered = folders.filter(f => f.name !== handle.name);
+    // Remove if already exists (same type and name)
+    const filtered = items.filter(item => !(item.type === 'folder' && item.name === handle.name));
     
     // Add to beginning
-    const newFolder: RecentFolder = {
+    const newItem: RecentItem = {
+      type: 'folder',
       name: handle.name,
       timestamp: Date.now(),
     };
     
-    const updated = [newFolder, ...filtered].slice(0, MAX_RECENT_FOLDERS);
+    const updated = [newItem, ...filtered].slice(0, MAX_RECENT_ITEMS);
     
-    localStorage.setItem(RECENT_FOLDERS_KEY, JSON.stringify(updated));
+    localStorage.setItem(RECENT_ITEMS_KEY, JSON.stringify(updated));
   } catch (error) {
-    // Silently handle error
+    console.error('Failed to add recent folder:', error);
   }
 }
 
 /**
- * Clear all recent folders
+ * Add a file to recent items list
  */
-export function clearRecentFolders(): void {
+export function addRecentFile(handle: FileSystemFileHandle): void {
   try {
-    localStorage.removeItem(RECENT_FOLDERS_KEY);
+    const items = getRecentItems();
+    
+    // Remove if already exists (same type and name)
+    const filtered = items.filter(item => !(item.type === 'file' && item.name === handle.name));
+    
+    // Add to beginning
+    const newItem: RecentItem = {
+      type: 'file',
+      name: handle.name,
+      timestamp: Date.now(),
+    };
+    
+    const updated = [newItem, ...filtered].slice(0, MAX_RECENT_ITEMS);
+    
+    localStorage.setItem(RECENT_ITEMS_KEY, JSON.stringify(updated));
   } catch (error) {
-    // Silently handle error
+    console.error('Failed to add recent file:', error);
   }
 }
+
+/**
+ * Add a remote repository to recent items list
+ */
+export function addRecentRemote(
+  provider: 'github' | 'gitlab',
+  repository: {
+    id: string;
+    name: string;
+    fullName: string;
+    owner: string;
+    branch: string;
+    defaultBranch: string;
+    url: string;
+  }
+): void {
+  try {
+    const items = getRecentItems();
+    
+    // Remove if already exists (same provider, owner, name, and branch)
+    const filtered = items.filter(item => {
+      if (item.type !== 'remote' || !item.remote) return true;
+      return !(
+        item.remote.provider === provider &&
+        item.remote.fullName === repository.fullName &&
+        item.remote.branch === repository.branch
+      );
+    });
+    
+    // Add to beginning
+    const newItem: RecentItem = {
+      type: 'remote',
+      name: repository.name,
+      timestamp: Date.now(),
+      remote: {
+        provider,
+        fullName: repository.fullName,
+        owner: repository.owner,
+        branch: repository.branch,
+        repoId: repository.id,
+        defaultBranch: repository.defaultBranch,
+        url: repository.url,
+      },
+    };
+    
+    const updated = [newItem, ...filtered].slice(0, MAX_RECENT_ITEMS);
+    
+    localStorage.setItem(RECENT_ITEMS_KEY, JSON.stringify(updated));
+  } catch (error) {
+    console.error('Failed to add recent remote:', error);
+  }
+}
+
+/**
+ * Clear all recent items
+ */
+export function clearRecentItems(): void {
+  try {
+    localStorage.removeItem(RECENT_ITEMS_KEY);
+  } catch (error) {
+    console.error('Failed to clear recent items:', error);
+  }
+}
+
+// Keep old function names for backward compatibility
+export const getRecentFolders = getRecentItems;
+export const clearRecentFolders = clearRecentItems;
 
 /**
  * Format timestamp to readable date
