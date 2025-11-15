@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Github, Loader2, AlertCircle, Cloud, Eye, EyeOff, Lock, Globe } from 'lucide-react';
+import { Github, Loader2, AlertCircle, Cloud, Eye, EyeOff, Lock, Globe, ChevronLeft } from 'lucide-react';
 import { createRemoteProvider, type Repository } from '@/lib/remoteProviders';
 import { getSettings, saveSettings } from '@/lib/settings';
 
@@ -221,9 +221,29 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
     repo.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleOpenChange = (open: boolean) => {
+    // Prevent closing when on repository or branch selection step
+    if (!open && (step === 'repos' || step === 'branch')) {
+      return;
+    }
+    onClose();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-xl max-h-[90vh] overflow-auto">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent 
+        className="max-w-xl max-h-[90vh] overflow-auto"
+        onEscapeKeyDown={(e) => {
+          if (step === 'repos' || step === 'branch') {
+            e.preventDefault();
+          }
+        }}
+        onPointerDownOutside={(e) => {
+          if (step === 'repos' || step === 'branch') {
+            e.preventDefault();
+          }
+        }}
+      >
         {/* Dynamic Header based on step */}
         {step === 'provider' && (
           <DialogHeader>
@@ -287,9 +307,10 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
           <>
             <button 
               onClick={() => setStep('provider')}
-              className="absolute left-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-sm flex items-center gap-1"
+              className="absolute left-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-sm inline-flex items-center gap-0.5"
             >
-              ← Back
+              <ChevronLeft className="w-4 h-4" />
+              <span>Back</span>
             </button>
             <DialogHeader className="pt-6">
               <DialogTitle className="flex items-center gap-2">
@@ -439,9 +460,10 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
           <>
             <button 
               onClick={() => setStep('token')}
-              className="absolute left-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-sm flex items-center gap-1"
+              className="absolute left-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-sm inline-flex items-center gap-0.5"
             >
-              ← Back
+              <ChevronLeft className="w-4 h-4" />
+              <span>Back</span>
             </button>
             <DialogHeader className="pt-6">
               <DialogTitle className="flex items-center gap-2">
@@ -520,9 +542,10 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
           <>
             <button 
               onClick={() => setStep('repos')}
-              className="absolute left-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-sm flex items-center gap-1"
+              className="absolute left-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-sm inline-flex items-center gap-0.5"
             >
-              ← Back
+              <ChevronLeft className="w-4 h-4" />
+              <span>Back</span>
             </button>
             <DialogHeader className="pt-6">
               <DialogTitle className="flex items-center gap-2">
