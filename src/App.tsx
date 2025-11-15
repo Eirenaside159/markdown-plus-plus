@@ -2851,13 +2851,24 @@ categories: []
             )}
             
             {isSingleFileMode && singleFileHandle && (
-              <div
-                className="px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded-full whitespace-nowrap flex items-center gap-1"
-                title={`Editing single file: ${singleFileHandle.name}`}
+              <button
+                onClick={async () => {
+                  if (hasChanges) {
+                    const confirmed = await confirm('You have unsaved changes. Discard them and close file?', {
+                      title: 'Close File',
+                      confirmLabel: 'Close',
+                      variant: 'destructive'
+                    });
+                    if (!confirmed) return;
+                  }
+                  await handleLogout();
+                }}
+                className="px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded-full hover:bg-primary/20 hover:border-primary/30 transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1"
+                title="Click to close file"
               >
-                <File className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                <span className="hidden sm:inline">{singleFileHandle.name}</span>
-              </div>
+                <span className="hidden xs:inline">{singleFileHandle.name} ✕</span>
+                <span className="xs:hidden">✕</span>
+              </button>
             )}
           </div>
           
