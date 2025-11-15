@@ -497,7 +497,7 @@ export function AISettings() {
           <>
             Configure AI providers to enable content generation. You can enable multiple providers
             and switch between them when generating content.{' '}
-            <span className="text-warning font-medium">
+            <span className="font-bold">
               API keys are stored locally in your browser.
             </span>
           </>
@@ -539,7 +539,7 @@ export function AISettings() {
           <li>Set a default model for quick access when generating content</li>
           <li>Test your connection to verify your API key is working</li>
           <li>
-            <span className="text-warning font-medium">Remember:</span> AI API usage incurs costs
+            <span className="font-bold">Remember:</span> AI API usage incurs costs
             from the providers
           </li>
         </ul>

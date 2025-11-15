@@ -3335,6 +3335,7 @@ categories: []
                   setHiddenFiles(getHiddenFiles(dirHandle.name));
                 }
               }}
+              isLocalMode={dirHandle !== null}
             />
           </div>
         </div>

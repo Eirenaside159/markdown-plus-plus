@@ -66,6 +66,7 @@ interface SettingsProps {
   onClose?: () => void;
   directoryName?: string;
   onHiddenFilesChange?: () => void;
+  isLocalMode?: boolean;
 }
 
 const Section = ({
@@ -104,7 +105,7 @@ const Section = ({
   );
 };
 
-export function Settings({ onClose, directoryName, onHiddenFilesChange }: SettingsProps = {}) {
+export function Settings({ onClose, directoryName, onHiddenFilesChange, isLocalMode = false }: SettingsProps = {}) {
   const [settings, setSettings] = useState<AppSettings>(getSettings());
   const [activeTab, setActiveTab] = useState<string>('git');
   const [newMetaKey, setNewMetaKey] = useState('');
@@ -689,6 +690,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
           </Section>
 
           {/* Remote Repository Integration */}
+          {!isLocalMode && (
           <Section 
             title="Remote Repository Integration" 
             description="Configure Personal Access Tokens for GitHub and GitLab to work directly with your repositories without downloading files."
@@ -844,8 +846,10 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
               </div>
             </div>
           </Section>
+          )}
 
           {/* OAuth Configuration (Advanced) */}
+          {!isLocalMode && (
           <Section 
             title="OAuth Configuration (Advanced)" 
             description="Optional: Configure custom OAuth endpoints if you've deployed your own OAuth workers."
@@ -927,6 +931,7 @@ export function Settings({ onClose, directoryName, onHiddenFilesChange }: Settin
               </div>
             </div>
           </Section>
+          )}
             </TabsContent>
 
             {/* Website Tab */}
