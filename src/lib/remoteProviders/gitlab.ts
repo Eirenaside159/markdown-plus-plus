@@ -31,17 +31,18 @@ export class GitLabProvider implements IRemoteProvider {
     // OAuth tokens are usually 64 characters or less, Personal Access Tokens are usually longer
     // We'll use Bearer for OAuth tokens and PRIVATE-TOKEN for PATs
     const isOAuthToken = !this.token.startsWith('glpat-') && this.token.length <= 64;
-    const authHeader = isOAuthToken 
-      ? { 'Authorization': `Bearer ${this.token}` }
-      : { 'PRIVATE-TOKEN': this.token };
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(isOAuthToken 
+        ? { 'Authorization': `Bearer ${this.token}` }
+        : { 'PRIVATE-TOKEN': this.token }),
+      ...(options.headers as Record<string, string> || {}),
+    };
 
     const response = await fetch(url, {
       ...options,
-      headers: {
-        ...authHeader,
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
     });
 
     if (!response.ok) {

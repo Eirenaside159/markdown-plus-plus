@@ -267,11 +267,11 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent 
         className="max-w-xl max-h-[90vh] overflow-auto"
-        onEscapeKeyDown={(e) => {
+        onEscapeKeyDown={() => {
           // Allow closing with ESC key - user can always close the modal
           // No need to prevent default
         }}
-        onPointerDownOutside={(e) => {
+        onPointerDownOutside={() => {
           // Allow closing by clicking outside - user can always close the modal
           // No need to prevent default
         }}
