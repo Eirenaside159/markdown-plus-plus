@@ -25,10 +25,20 @@ export class GitLabProvider implements IRemoteProvider {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
 
+    // GitLab supports two token formats:
+    // 1. Personal Access Token: Use PRIVATE-TOKEN header (starts with 'glpat-' or is a long hex string)
+    // 2. OAuth Access Token: Use Authorization Bearer header (typically shorter hex string from OAuth)
+    // OAuth tokens are usually 64 characters or less, Personal Access Tokens are usually longer
+    // We'll use Bearer for OAuth tokens and PRIVATE-TOKEN for PATs
+    const isOAuthToken = !this.token.startsWith('glpat-') && this.token.length <= 64;
+    const authHeader = isOAuthToken 
+      ? { 'Authorization': `Bearer ${this.token}` }
+      : { 'PRIVATE-TOKEN': this.token };
+
     const response = await fetch(url, {
       ...options,
       headers: {
-        'PRIVATE-TOKEN': this.token,
+        ...authHeader,
         'Content-Type': 'application/json',
         ...options.headers,
       },

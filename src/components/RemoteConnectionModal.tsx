@@ -258,11 +258,9 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
   );
 
   const handleOpenChange = (open: boolean) => {
-    // Prevent closing when on repository or branch selection step
-    if (!open && (step === 'repos' || step === 'branch')) {
-      return;
+    if (!open) {
+      onClose();
     }
-    onClose();
   };
 
   return (
@@ -270,14 +268,12 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
       <DialogContent 
         className="max-w-xl max-h-[90vh] overflow-auto"
         onEscapeKeyDown={(e) => {
-          if (step === 'repos' || step === 'branch') {
-            e.preventDefault();
-          }
+          // Allow closing with ESC key - user can always close the modal
+          // No need to prevent default
         }}
         onPointerDownOutside={(e) => {
-          if (step === 'repos' || step === 'branch') {
-            e.preventDefault();
-          }
+          // Allow closing by clicking outside - user can always close the modal
+          // No need to prevent default
         }}
       >
         {/* Dynamic Header based on step */}
@@ -297,7 +293,7 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
         {error && (
           <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-lg flex items-start gap-2">
             <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-            <div className="text-sm whitespace-pre-line">{error}</div>
+            <div className="text-sm whitespace-pre-line flex-1">{error}</div>
           </div>
         )}
 
@@ -348,7 +344,7 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
               <ChevronLeft className="w-4 h-4" />
               <span>Back</span>
             </button>
-            <DialogHeader className="pt-6">
+            <DialogHeader className="pt-10">
               <DialogTitle className="flex items-center gap-2">
                 {provider === 'github' ? (
                   <>
@@ -502,7 +498,7 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
               <ChevronLeft className="w-4 h-4" />
               <span>Back</span>
             </button>
-            <DialogHeader className="pt-6">
+            <DialogHeader className="pt-10">
               <DialogTitle className="flex items-center gap-2">
                 {provider === 'github' ? (
                   <>
@@ -586,7 +582,7 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
               <ChevronLeft className="w-4 h-4" />
               <span>Back</span>
             </button>
-            <DialogHeader className="pt-6">
+            <DialogHeader className="pt-10">
               <DialogTitle className="flex items-center gap-2">
                 {provider === 'github' ? (
                   <>
