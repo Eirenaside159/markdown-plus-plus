@@ -8,7 +8,7 @@
 
 ## 🎬 Demo
 
-[![Watch the video](public/readme.png)](https://www.youtube.com/watch?v=IyDVN-sSOfA)
+[![Watch the video](public/readme.png)](https://youtu.be/dyUUNJkQqR8)
 
 ## 💡 Why Markdown++?
 
