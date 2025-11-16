@@ -48,8 +48,38 @@ export default {
         const state = crypto.randomUUID();
         const redirectUri = `${url.origin}/auth/github/callback`;
         
+        // Get client_id from query parameter or fallback to environment variable
+        const queryClientId = url.searchParams.get('client_id');
+        const envClientId = env.GITHUB_CLIENT_ID;
+        
+        // Prefer query parameter, fallback to env variable
+        const clientId = (queryClientId && queryClientId !== 'undefined' && queryClientId.trim()) 
+          ? queryClientId.trim() 
+          : (envClientId && envClientId !== 'undefined' && envClientId.trim() 
+            ? envClientId.trim() 
+            : null);
+        
+        if (!clientId) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'client_id is required',
+              details: {
+                queryClientId: queryClientId || 'not provided',
+                envClientId: envClientId ? 'provided' : 'not provided'
+              }
+            }),
+            {
+              status: 400,
+              headers: {
+                'Content-Type': 'application/json',
+                ...corsHeaders,
+              },
+            }
+          );
+        }
+        
         const authUrl = new URL('https://github.com/login/oauth/authorize');
-        authUrl.searchParams.set('client_id', env.GITHUB_CLIENT_ID);
+        authUrl.searchParams.set('client_id', clientId);
         authUrl.searchParams.set('redirect_uri', redirectUri);
         authUrl.searchParams.set('scope', 'repo');
         authUrl.searchParams.set('state', state);

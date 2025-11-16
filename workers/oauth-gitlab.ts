@@ -51,12 +51,49 @@ export default {
         const state = crypto.randomUUID();
         const redirectUri = `${url.origin}/auth/gitlab/callback`;
         
+        // Get client_id from query parameter or fallback to environment variable
+        const queryClientId = url.searchParams.get('client_id');
+        const envClientId = env.GITLAB_CLIENT_ID;
+        
+        console.log('[Worker Debug] Query client_id:', queryClientId);
+        console.log('[Worker Debug] Env client_id:', envClientId);
+        
+        // Prefer query parameter, fallback to env variable
+        const clientId = (queryClientId && queryClientId !== 'undefined' && queryClientId.trim()) 
+          ? queryClientId.trim() 
+          : (envClientId && envClientId !== 'undefined' && envClientId.trim() 
+            ? envClientId.trim() 
+            : null);
+        
+        console.log('[Worker Debug] Final clientId:', clientId);
+        
+        if (!clientId) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'client_id is required',
+              details: {
+                queryClientId: queryClientId || 'not provided',
+                envClientId: envClientId ? 'provided' : 'not provided'
+              }
+            }),
+            {
+              status: 400,
+              headers: {
+                'Content-Type': 'application/json',
+                ...corsHeaders,
+              },
+            }
+          );
+        }
+        
         const authUrl = new URL(`${gitlabUrl}/oauth/authorize`);
-        authUrl.searchParams.set('client_id', env.GITLAB_CLIENT_ID);
+        authUrl.searchParams.set('client_id', clientId);
         authUrl.searchParams.set('redirect_uri', redirectUri);
         authUrl.searchParams.set('response_type', 'code');
         authUrl.searchParams.set('scope', 'api read_user read_repository write_repository');
         authUrl.searchParams.set('state', state);
+        
+        console.log('[Worker Debug] Redirecting to GitLab:', authUrl.toString());
         
         return Response.redirect(authUrl.toString(), 302);
       }
@@ -66,6 +103,8 @@ export default {
         const code = url.searchParams.get('code');
         const state = url.searchParams.get('state');
         
+        console.log('[Worker] GitLab callback received, code:', code ? 'present' : 'missing');
+        
         if (!code) {
           return redirectToApp(env.APP_URL, {
             error: 'missing_code',
@@ -74,6 +113,10 @@ export default {
         }
         
         const redirectUri = `${url.origin}/auth/gitlab/callback`;
+        
+        console.log('[Worker] Exchanging code for token...');
+        console.log('[Worker] Client ID:', env.GITLAB_CLIENT_ID ? 'present' : 'missing');
+        console.log('[Worker] Client Secret:', env.GITLAB_CLIENT_SECRET ? 'present' : 'missing');
         
         // Exchange code for access token
         const tokenResponse = await fetch(`${gitlabUrl}/oauth/token`, {
@@ -91,7 +134,11 @@ export default {
           }),
         });
         
+        console.log('[Worker] Token response status:', tokenResponse.status);
+        
         if (!tokenResponse.ok) {
+          const errorText = await tokenResponse.text();
+          console.error('[Worker] Token exchange failed:', errorText);
           return redirectToApp(env.APP_URL, {
             error: 'token_exchange_failed',
             error_description: 'Failed to exchange code for token',
@@ -100,12 +147,25 @@ export default {
         
         const tokenData = await tokenResponse.json() as any;
         
+        console.log('[Worker] Token data received, access_token:', tokenData.access_token ? 'present' : 'missing');
+        
         if (tokenData.error) {
+          console.error('[Worker] Token data contains error:', tokenData.error);
           return redirectToApp(env.APP_URL, {
             error: tokenData.error,
             error_description: tokenData.error_description,
           });
         }
+        
+        if (!tokenData.access_token) {
+          console.error('[Worker] No access_token in response:', tokenData);
+          return redirectToApp(env.APP_URL, {
+            error: 'no_access_token',
+            error_description: 'Access token not provided in response',
+          });
+        }
+        
+        console.log('[Worker] Redirecting to app with token (length:', tokenData.access_token.length, ')');
         
         // Redirect back to app with token
         return redirectToApp(env.APP_URL, {

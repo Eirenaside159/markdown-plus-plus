@@ -57,6 +57,8 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
       const oauthToken = localStorage.getItem('oauth_temp_token');
       const oauthProvider = localStorage.getItem('oauth_temp_provider') as 'github' | 'gitlab' | null;
       
+      console.log('[OAuth] Token from localStorage:', oauthToken ? `${oauthToken.substring(0, 10)}...` : 'null', 'Provider:', oauthProvider);
+      
       if (oauthToken && oauthProvider) {
         // OAuth'dan geliyoruz, token'ı set et ve direkt repo listesine geç
         setToken(oauthToken);
@@ -69,6 +71,7 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
         
         // Auto-submit
         setTimeout(() => {
+          console.log('[OAuth] Submitting token for provider:', oauthProvider, 'Token length:', oauthToken.length);
           handleTokenSubmitWithProvider(oauthToken, oauthProvider);
         }, 100);
       }
@@ -112,21 +115,39 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
     const savedSettings = getSettings();
     
     let authUrl: string;
+    let clientId: string | undefined;
     
     if (provider === 'github') {
       authUrl = savedSettings.githubOAuthUrl && savedSettings.githubOAuthUrl.trim()
         ? `${savedSettings.githubOAuthUrl.trim().replace(/\/$/, '')}/auth/github/login`
         : 'https://oauth-github.moneo.workers.dev/auth/github/login';
+      // Get client_id from environment variable
+      const envClientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
+      clientId = (envClientId && typeof envClientId === 'string' && envClientId.trim() && envClientId !== 'undefined') 
+        ? envClientId.trim() 
+        : undefined;
     } else {
       authUrl = savedSettings.gitlabOAuthUrl && savedSettings.gitlabOAuthUrl.trim()
         ? `${savedSettings.gitlabOAuthUrl.trim().replace(/\/$/, '')}/auth/gitlab/login`
         : 'https://oauth-gitlab.moneo.workers.dev/auth/gitlab/login';
+      // Get client_id from environment variable
+      const envClientId = import.meta.env.VITE_GITLAB_CLIENT_ID;
+      clientId = (envClientId && typeof envClientId === 'string' && envClientId.trim() && envClientId !== 'undefined') 
+        ? envClientId.trim() 
+        : undefined;
     }
     
     // Check if URL is still placeholder
     if (authUrl.includes('YOUR-SUBDOMAIN')) {
       setError('OAuth not configured. Please use Personal Access Token or configure OAuth URLs in Settings.');
       return;
+    }
+    
+    // Add client_id as query parameter only if it's a valid non-empty string
+    if (clientId && clientId !== 'undefined' && clientId.trim().length > 0) {
+      const url = new URL(authUrl);
+      url.searchParams.set('client_id', clientId);
+      authUrl = url.toString();
     }
     
     // Provider bilgisini localStorage'a kaydet (geri dönüşte kullanmak için)
@@ -141,12 +162,19 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
       return;
     }
 
+    console.log('[OAuth] Validating token for provider:', providerValue, 'Token preview:', tokenValue.substring(0, 20) + '...');
+
     setLoading(true);
     setError('');
 
     try {
-      const providerInstance = createRemoteProvider(providerValue, tokenValue.trim());
+      const trimmedToken = tokenValue.trim();
+      console.log('[OAuth] Creating provider instance with token length:', trimmedToken.length);
+      const providerInstance = createRemoteProvider(providerValue, trimmedToken);
+      console.log('[OAuth] Fetching repositories...');
       const fetchedRepos = await providerInstance.listRepositories();
+      
+      console.log('[OAuth] Fetched repositories count:', fetchedRepos.length);
       
       if (fetchedRepos.length === 0) {
         setError('No repositories found. Make sure your token has the correct permissions.');
@@ -158,14 +186,22 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
       const currentSettings = getSettings();
       const updatedSettings = {
         ...currentSettings,
-        [providerValue === 'github' ? 'githubToken' : 'gitlabToken']: tokenValue.trim(),
+        [providerValue === 'github' ? 'githubToken' : 'gitlabToken']: trimmedToken,
       };
       saveSettings(updatedSettings);
 
       setRepos(fetchedRepos);
       setStep('repos');
     } catch (err: any) {
-      console.error('Failed to fetch repositories:', err);
+      console.error('[OAuth] Failed to fetch repositories:', err);
+      console.error('[OAuth] Error details:', {
+        message: err.message,
+        statusCode: err.statusCode,
+        code: err.code,
+        provider: providerValue,
+        tokenLength: tokenValue.trim().length,
+        tokenPreview: tokenValue.trim().substring(0, 20) + '...'
+      });
       setError(err.message || 'Failed to fetch repositories. Check your token and try again.');
     } finally {
       setLoading(false);
