@@ -50,19 +50,33 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showToken, setShowToken] = useState(false);
+  const [oauthLoading, setOAuthLoading] = useState(false);
 
-  // Check for OAuth token on mount
+  // Check for OAuth token on mount and when modal opens
   useEffect(() => {
     if (open) {
+      // Check URL first (in case App.tsx hasn't processed it yet)
+      const params = new URLSearchParams(window.location.search);
+      const urlToken = params.get('token');
+      const urlProvider = params.get('provider') as 'github' | 'gitlab' | null;
+      
+      // Check localStorage (App.tsx processes URL and stores here)
       const oauthToken = localStorage.getItem('oauth_temp_token');
       const oauthProvider = localStorage.getItem('oauth_temp_provider') as 'github' | 'gitlab' | null;
       
-      console.log('[OAuth] Token from localStorage:', oauthToken ? `${oauthToken.substring(0, 10)}...` : 'null', 'Provider:', oauthProvider);
+      const token = urlToken || oauthToken;
+      const provider = urlProvider || oauthProvider;
       
-      if (oauthToken && oauthProvider) {
+      console.log('[OAuth] Token from localStorage:', oauthToken ? `${oauthToken.substring(0, 10)}...` : 'null', 'Provider:', oauthProvider);
+      console.log('[OAuth] Token from URL:', urlToken ? `${urlToken.substring(0, 10)}...` : 'null', 'Provider:', urlProvider);
+      
+      if (token && provider) {
+        // OAuth callback dönüşü - loading durumunu aktif et
+        setOAuthLoading(true);
+        
         // OAuth'dan geliyoruz, token'ı set et ve direkt repo listesine geç
-        setToken(oauthToken);
-        setProvider(oauthProvider);
+        setToken(token);
+        setProvider(provider);
         setStep('token');
         
         // Clean up temp storage
@@ -71,8 +85,8 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
         
         // Auto-submit
         setTimeout(() => {
-          console.log('[OAuth] Submitting token for provider:', oauthProvider, 'Token length:', oauthToken.length);
-          handleTokenSubmitWithProvider(oauthToken, oauthProvider);
+          console.log('[OAuth] Submitting token for provider:', provider, 'Token length:', token.length);
+          handleTokenSubmitWithProvider(token, provider);
         }, 100);
       }
     }
@@ -90,6 +104,7 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
         setSelectedBranch('');
         setError('');
         setSearchQuery('');
+        setOAuthLoading(false);
       }, 300);
     }
   }, [open]);
@@ -179,6 +194,7 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
       if (fetchedRepos.length === 0) {
         setError('No repositories found. Make sure your token has the correct permissions.');
         setLoading(false);
+        setOAuthLoading(false);
         return;
       }
 
@@ -192,6 +208,7 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
 
       setRepos(fetchedRepos);
       setStep('repos');
+      setOAuthLoading(false);
     } catch (err: any) {
       console.error('[OAuth] Failed to fetch repositories:', err);
       console.error('[OAuth] Error details:', {
@@ -203,6 +220,7 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
         tokenPreview: tokenValue.trim().substring(0, 20) + '...'
       });
       setError(err.message || 'Failed to fetch repositories. Check your token and try again.');
+      setOAuthLoading(false);
     } finally {
       setLoading(false);
     }
@@ -370,18 +388,38 @@ export function RemoteConnectionModal({ open, onClose, onConnect }: RemoteConnec
                 {provider === 'github' ? (
                   <button
                     onClick={() => handleOAuthLogin(provider)}
-                    className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#24292e] hover:bg-[#2c313a] text-white font-medium rounded-lg transition-colors shadow-sm"
+                    disabled={oauthLoading}
+                    className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#24292e] hover:bg-[#2c313a] text-white font-medium rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Github className="w-5 h-5" />
-                    <span>Continue with GitHub</span>
+                    {oauthLoading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Authenticating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Github className="w-5 h-5" />
+                        <span>Continue with GitHub</span>
+                      </>
+                    )}
                   </button>
                 ) : (
                   <button
                     onClick={() => handleOAuthLogin(provider)}
-                    className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#FC6D26] hover:bg-[#e8590c] text-white font-medium rounded-lg transition-colors shadow-sm"
+                    disabled={oauthLoading}
+                    className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#FC6D26] hover:bg-[#e8590c] text-white font-medium rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <GitLabIcon size={20} />
-                    <span>Continue with GitLab</span>
+                    {oauthLoading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Authenticating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <GitLabIcon size={20} />
+                        <span>Continue with GitLab</span>
+                      </>
+                    )}
                   </button>
                 )}
                 <div className="text-xs text-muted-foreground text-center">
